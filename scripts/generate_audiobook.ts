@@ -18,9 +18,16 @@ async function main() {
 
     const outputDir = path.join(import.meta.dir, '..', 'output', bookTitle)
     const audioDir = path.join(outputDir, 'audio')
+    let txtSourceDir = path.join(outputDir, 'txt')
 
     try {
         await fs.access(outputDir)
+        // Check if 'txt' subdirectory exists, otherwise fallback to outputDir
+        try {
+            await fs.access(txtSourceDir)
+        } catch {
+            txtSourceDir = outputDir
+        }
     } catch {
         console.error(`Error: Book directory not found at ${outputDir}`)
         process.exit(1)
@@ -28,14 +35,14 @@ async function main() {
 
     await fs.mkdir(audioDir, { recursive: true })
 
-    const entries = await fs.readdir(outputDir, { withFileTypes: true })
+    const entries = await fs.readdir(txtSourceDir, { withFileTypes: true })
     let txtFiles = entries
         .filter(entry => entry.isFile() && entry.name.endsWith('.txt') && entry.name !== 'metadata.txt')
         .map(entry => entry.name)
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
 
     if (txtFiles.length === 0) {
-        console.log(`No chapter text files found in ${outputDir}`)
+        console.log(`No chapter text files found in ${txtSourceDir}`)
         return
     }
 
@@ -43,7 +50,7 @@ async function main() {
         txtFiles = txtFiles.slice(0, maxChapters)
     }
 
-    console.log(`Found ${txtFiles.length} chapters. Starting audio generation (Edge TTS - Yunxi, Rate: ${rateArg})...`)
+    console.log(`Found ${txtFiles.length} chapters in ${txtSourceDir === outputDir ? 'root' : 'txt/'}. Starting audio generation (Edge TTS - Yunxi, Rate: ${rateArg})...`)
 
     const ttsProvider = new MicrosoftEdgeTTSProvider('zh-CN-YunxiNeural', rateArg)
 
@@ -52,7 +59,7 @@ async function main() {
     let completedCount = 0
 
     const promises = txtFiles.map(filename => limit(async () => {
-        const inputPath = path.join(outputDir, filename)
+        const inputPath = path.join(txtSourceDir, filename)
         const outputFilename = filename.replace('.txt', '.mp3')
         const outputPath = path.join(audioDir, outputFilename)
 

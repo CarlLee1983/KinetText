@@ -1,69 +1,71 @@
-import * as path from 'path';
-import type { StorageAdapter } from './StorageAdapter';
-import type { Book, Chapter } from '../core/types';
+import * as path from 'path'
+import type { StorageAdapter } from './StorageAdapter'
+import type { Book, Chapter } from '../core/types'
 
 export class TxtStorageAdapter implements StorageAdapter {
-    private baseDir: string;
+    private baseDir: string
 
     constructor(baseDir: string = './output') {
-        this.baseDir = baseDir;
+        this.baseDir = baseDir
     }
 
     private async ensureDir(dirPath: string) {
         try {
-            const stat = await Bun.file(dirPath).stat();
+            const stat = await Bun.file(dirPath).stat()
             if (!stat?.isDirectory()) {
-                throw new Error(`Path exists but is not a directory: ${dirPath}`);
+                throw new Error(`Path exists but is not a directory: ${dirPath}`)
             }
         } catch {
             // Directory doesn't exist, create it
-            await Bun.$`mkdir -p ${dirPath}`;
+            await Bun.$`mkdir -p ${dirPath}`
         }
     }
 
     async saveBookMetadata(book: Omit<Book, 'chapters'>): Promise<void> {
-        const bookDir = path.join(this.baseDir, this.sanitizeFilename(book.title));
-        await this.ensureDir(bookDir);
+        const bookDir = path.join(this.baseDir, this.sanitizeFilename(book.title))
+        await this.ensureDir(bookDir)
 
         const metaContent = `
 Title: ${book.title}
 Author: ${book.author}
 Description:
 ${book.description}
-    `.trim();
+    `.trim()
 
-        await Bun.write(path.join(bookDir, 'metadata.txt'), metaContent);
+        await Bun.write(path.join(bookDir, 'metadata.txt'), metaContent)
     }
 
     async saveChapter(bookTitle: string, chapter: Chapter): Promise<void> {
-        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle));
-        await this.ensureDir(bookDir);
+        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle))
+        const txtDir = path.join(bookDir, 'txt')
+        await this.ensureDir(txtDir)
 
-        const chapterFileName = this.getChapterFilename(chapter);
-        const chapterPath = path.join(bookDir, chapterFileName);
+        const chapterFileName = this.getChapterFilename(chapter)
+        const chapterPath = path.join(txtDir, chapterFileName)
 
         const content = `
 ${chapter.title}
 --------------------------------------------------
 ${chapter.content || ''}
-    `.trim();
+    `.trim()
 
-        await Bun.write(chapterPath, content);
+        await Bun.write(chapterPath, content)
     }
 
     async chapterExists(bookTitle: string, chapter: Chapter): Promise<boolean> {
-        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle));
-        const chapterFileName = this.getChapterFilename(chapter);
-        const chapterPath = path.join(bookDir, chapterFileName);
+        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle))
+        const txtDir = path.join(bookDir, 'txt')
+        const chapterFileName = this.getChapterFilename(chapter)
+        const chapterPath = path.join(txtDir, chapterFileName)
 
-        return await Bun.file(chapterPath).exists();
+        return await Bun.file(chapterPath).exists()
     }
 
     private getChapterFilename(chapter: Chapter): string {
-        return `${String(chapter.index).padStart(4, '0')} - ${this.sanitizeFilename(chapter.title)}.txt`;
+        return `${String(chapter.index).padStart(4, '0')} - ${this.sanitizeFilename(chapter.title)}.txt`
     }
 
     private sanitizeFilename(name: string): string {
-        return name.replace(/[<>:"/\\|?*]+/g, '_').trim();
+        return name.replace(/[<>:"/\\|?*]+/g, '_').trim()
     }
 }
