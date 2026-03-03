@@ -5,24 +5,27 @@ import { MicrosoftEdgeTTSProvider } from '../src/tts/MicrosoftEdgeTTSProvider'
 
 async function main() {
     const bookTitle = process.argv[2]
-    const limitArg = process.argv[3] // Optional limit
+    const selectionArg = process.argv[3] // Optional limit or range/list (e.g., "5", "10-20", "2,4,10")
     const rateArg = process.argv[4] || '+0%' // Optional rate (e.g., '+20%', '-10%', '1.5')
+    const concurrencyArg = process.argv[5] || '3' // Optional concurrency (default to 3)
 
     if (!bookTitle) {
-        console.log('Usage: bun run scripts/generate_audiobook.ts <BookTitle> [Limit] [Rate]')
-        console.log('Example: bun run scripts/generate_audiobook.ts "請不要逼我做神仙" 5 +20%')
+        console.log('Usage: bun run scripts/generate_audiobook.ts <BookTitle> [Selection] [Rate] [Concurrency]')
+        console.log('Examples:')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 5          # First 5 chapters')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 10-20      # Chapters 10 to 20')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 2,4,10     # Chapters 2, 4, 10')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" all +20% 5 # All chapters, 1.2x speed, 5 concurrent')
         process.exit(1)
     }
 
-    const maxChapters = limitArg ? parseInt(limitArg) : Infinity
-
+    const concurrency = parseInt(concurrencyArg) || 3
     const outputDir = path.join(import.meta.dir, '..', 'output', bookTitle)
     const audioDir = path.join(outputDir, 'audio')
     let txtSourceDir = path.join(outputDir, 'txt')
 
     try {
         await fs.access(outputDir)
-        // Check if 'txt' subdirectory exists, otherwise fallback to outputDir
         try {
             await fs.access(txtSourceDir)
         } catch {
@@ -46,16 +49,52 @@ async function main() {
         return
     }
 
-    if (maxChapters !== Infinity) {
-        txtFiles = txtFiles.slice(0, maxChapters)
+    // Handle selection
+    if (selectionArg && selectionArg !== 'all') {
+        const selectedIndices = new Set<number>()
+
+        if (selectionArg.includes(',')) {
+            // List: 2,4,10
+            selectionArg.split(',').forEach(s => {
+                const num = parseInt(s.trim())
+                if (!isNaN(num)) selectedIndices.add(num)
+            })
+        } else if (selectionArg.includes('-')) {
+            // Range: 10-20
+            const [start, end] = selectionArg.split('-').map(s => parseInt(s.trim()))
+            if (!isNaN(start || 0) && !isNaN(end || 0)) {
+                for (let i = start || 0; i <= (end || 0); i++) selectedIndices.add(i)
+            }
+        } else {
+            // Single number: if small, interpret as limit; if large or specific target index, interpret as limit up to that many chapters.
+            // For better UX, if it's just a number "5", we'll treat it as "up to index 5" 
+            const limit = parseInt(selectionArg)
+            if (!isNaN(limit)) {
+                txtFiles = txtFiles.slice(0, limit)
+            }
+        }
+
+        if (selectedIndices.size > 0) {
+            txtFiles = txtFiles.filter(filename => {
+                const match = filename.match(/^(\d+)/)
+                if (match) {
+                    const idx = parseInt(match[1] || '0')
+                    return selectedIndices.has(idx)
+                }
+                return false
+            })
+        }
     }
 
-    console.log(`Found ${txtFiles.length} chapters in ${txtSourceDir === outputDir ? 'root' : 'txt/'}. Starting audio generation (Edge TTS - Yunxi, Rate: ${rateArg})...`)
+    if (txtFiles.length === 0) {
+        console.log('No chapters matched the selection.')
+        return
+    }
+
+    console.log(`Processing ${txtFiles.length} chapters. Concurrency: ${concurrency}, Rate: ${rateArg}`)
 
     const ttsProvider = new MicrosoftEdgeTTSProvider('zh-CN-YunxiNeural', rateArg)
-
-    // Edge TTS is faster and more stable, 1 at a time is still recommended
-    const limit = pLimit(1)
+    const limit = pLimit(concurrency)
     let completedCount = 0
 
     const promises = txtFiles.map(filename => limit(async () => {
@@ -64,16 +103,13 @@ async function main() {
         const outputPath = path.join(audioDir, outputFilename)
 
         try {
-            // Check if audio file already exists and is not empty (Breakpoint resume)
             try {
                 const stats = await fs.stat(outputPath)
                 if (stats.size > 0) {
                     completedCount++
                     return
                 }
-            } catch {
-                // File does not exist, proceed with generation
-            }
+            } catch { }
 
             console.log(`[Generating] ${outputFilename}...`)
             await ttsProvider.generateAudioFromFile(inputPath, outputPath)
@@ -86,7 +122,7 @@ async function main() {
 
     await Promise.all(promises)
 
-    console.log('\nAll chapters generated. Merging into final audiobook...')
+    console.log('\nAll selected chapters processed. Merging into final audiobook...')
 
     try {
         const audioFiles = (await fs.readdir(audioDir))
@@ -97,6 +133,7 @@ async function main() {
             const finalOutputPath = path.join(outputDir, `${bookTitle}.mp3`)
             const buffers: Buffer[] = []
 
+            console.log(`[Merging] ${audioFiles.length} files...`)
             for (const file of audioFiles) {
                 const buf = await fs.readFile(path.join(audioDir, file))
                 buffers.push(buf)
@@ -110,7 +147,6 @@ async function main() {
     }
 
     console.log(`\nAudiobook generation complete for "${bookTitle}"!`)
-    console.log(`Individual audio files: ${audioDir}`)
 }
 
 main().catch(console.error)

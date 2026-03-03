@@ -1,22 +1,23 @@
 import { v4 as uuidv4 } from 'uuid'
 import * as crypto from 'crypto'
 import WebSocket from 'ws'
+import * as fs from 'fs/promises'
+import pLimit from 'p-limit'
 import type { TTSProvider } from './TTSProvider'
 
 export class MicrosoftEdgeTTSProvider implements TTSProvider {
     private voice: string
     private rate: string
     private endpoint: string = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
-    private trustedClientToken: string
+    private trustedClientToken: string = '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
 
     constructor(voice: string = 'zh-CN-YunxiNeural', rate: string = '+0%') {
         this.voice = voice
         this.rate = rate
-        this.trustedClientToken = process.env.MICROSOFT_TTS_TOKEN || '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
     }
 
     async generateAudioFromFile(inputFilePath: string, outputFilePath: string): Promise<void> {
-        let text = await Bun.file(inputFilePath).text()
+        let text = await fs.readFile(inputFilePath, 'utf-8')
 
         // Remove chapter title and separator lines to prevent TTS from reading them
         const lines = text.split('\n')
@@ -26,14 +27,15 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
 
         const chunks = this.splitText(text, 2000)
 
-        const audioBuffers: Buffer[] = []
-        for (const chunk of chunks) {
-            if (!chunk.trim()) continue
-            const buffer = await this.synthesize(chunk)
-            audioBuffers.push(buffer)
-        }
+        // Concurrent synthesis within a chapter (max 3 chunks at a time)
+        const limit = pLimit(3)
+        const tasks = chunks.map(chunk => limit(async () => {
+            if (!chunk.trim()) return Buffer.alloc(0)
+            return await this.synthesizeWithRetry(chunk)
+        }))
 
-        await Bun.write(outputFilePath, Buffer.concat(audioBuffers))
+        const audioBuffers = await Promise.all(tasks)
+        await fs.writeFile(outputFilePath, Buffer.concat(audioBuffers))
     }
 
     private escapeXml(unsafe: string): string {
@@ -52,6 +54,21 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
         ticks -= ticks % 300
         const strToHash = ticks + '0000000' + this.trustedClientToken
         return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase()
+    }
+
+    private async synthesizeWithRetry(text: string, maxRetries: number = 3): Promise<Buffer> {
+        let lastError: any
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await this.synthesize(text)
+            } catch (err) {
+                lastError = err
+                const delay = 1000 * (i + 1)
+                console.warn(`[TTS Retry] Attempt ${i + 1} failed. Retrying in ${delay}ms...`, err instanceof Error ? err.message : err)
+                await new Promise(resolve => setTimeout(resolve, delay))
+            }
+        }
+        throw new Error(`Failed to synthesize after ${maxRetries} attempts. Last error: ${lastError?.message || lastError}`)
     }
 
     private async synthesize(text: string): Promise<Buffer> {
@@ -73,6 +90,12 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
 
             const audioData: Buffer[] = []
             const timestamp = new Date().toString()
+
+            // Set a timeout for the entire synthesis process
+            const timeout = setTimeout(() => {
+                ws.close()
+                reject(new Error('Edge TTS synthesis timed out (30s)'))
+            }, 30000)
 
             ws.on('open', () => {
                 // 必須嚴格使用 \r\n
@@ -97,6 +120,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
                 } else {
                     const textMsg = data.toString()
                     if (textMsg.includes('Path:turn.end')) {
+                        clearTimeout(timeout)
                         ws.close()
                         resolve(Buffer.concat(audioData))
                     }
@@ -104,11 +128,13 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
             })
 
             ws.on('error', (err) => {
+                clearTimeout(timeout)
                 ws.close()
                 reject(new Error(`Edge TTS WebSocket error: ${err.message}`))
             })
 
             ws.on('close', (code, reason) => {
+                clearTimeout(timeout)
                 if (audioData.length === 0) {
                     reject(new Error(`Edge TTS connection closed without data. Code: ${code}`))
                 }
@@ -125,8 +151,9 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
             else {
                 const lookback = Math.floor(maxLength * 0.2)
                 const searchRange = text.slice(end - lookback, end)
-                const punctIndices = [...searchRange.matchAll(/[，。？！；、\n]/g)]
-                if (punctIndices.length > 0) {
+                const lastPunct = searchRange.search(/[，。？！；、\n]/)
+                if (lastPunct !== -1) {
+                    const punctIndices = [...searchRange.matchAll(/[，。？！；、\n]/g)]
                     const lastMatch = punctIndices[punctIndices.length - 1]
                     if (lastMatch && lastMatch.index !== undefined) {
                         end = (end - lookback) + lastMatch.index + 1

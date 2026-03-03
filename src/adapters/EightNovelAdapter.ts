@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
+import { ContentCleaner } from '../utils/ContentCleaner';
 
 export class EightNovelAdapter implements NovelSiteAdapter {
     siteName = '8novel';
@@ -49,7 +50,7 @@ export class EightNovelAdapter implements NovelSiteAdapter {
 
     async getChapterContent(chapterUrl: string): Promise<string> {
         const { data } = await axios.get(chapterUrl);
-        
+
         // Extract the magic string and IDs from the scripts
         // Example: var b9_1m_3="ID1,ID2,...,MAGIC_STRING".split(',');
         const arrayMatch = data.match(/var b9_1m_3\s*=\s*"([^"]+)"\.split\(','\);/);
@@ -78,20 +79,15 @@ export class EightNovelAdapter implements NovelSiteAdapter {
             throw new Error('Could not find book ID in URL');
         }
         const bookId = bookIdMatch[1];
-        
+
         const ajaxUrl = `https://www.8novel.com/txt/3/${bookId}/${chapterId}${suffix}.html`;
-        
+
         const { data: contentHtml } = await axios.get(ajaxUrl);
-        
-        // Clean the content
-        // The content is usually wrapped in <br> tags
+
+        // Clean the content using the utility
         const $ = cheerio.load(contentHtml);
         let text = $.root().text();
-        
-        // Remove common watermarks if any (handles various Unicode full-width/half-width characters)
-        const noiseRegex = /[8８⒏⑻⑧][\s]*[nｎＮ][\s]*[oｏＯσο][\s]*[vｖＶ][\s]*[eｅＥЁ][\s]*[lｌＬ┗└][\s]*[.．·。][\s]*[cｃＣС][\s]*[oｏＯοо][\s]*[mｍＭｍ]/ig;
-        text = text.replace(noiseRegex, '');
-        
-        return text.trim();
+
+        return ContentCleaner.clean('8novel', text);
     }
 }
