@@ -1,6 +1,7 @@
 export class ContentCleaner {
     private static watermarks: Record<string, string[]> = {
         '8novel': [
+            '小主，這個章節後面還有哦，請點擊下一頁繼續閱讀，後面更精彩！',
             '本小章還未完，請點擊下一頁繼續閱讀後面精彩內容！',
             '⑧NOνE┕。cОｍ',
             '8ｎσＶＥｌ．cоm'

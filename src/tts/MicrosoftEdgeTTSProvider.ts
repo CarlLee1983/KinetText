@@ -25,10 +25,10 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
             text = lines.slice(2).join('\n').trim()
         }
 
-        const chunks = this.splitText(text, 2000)
+        const chunks = this.splitText(text, 1500)
 
-        // Concurrent synthesis within a chapter (max 3 chunks at a time)
-        const limit = pLimit(3)
+        // Concurrent synthesis within a chapter (max 1 to avoid rate limiting)
+        const limit = pLimit(1)
         const tasks = chunks.map(chunk => limit(async () => {
             if (!chunk.trim()) return Buffer.alloc(0)
             return await this.synthesizeWithRetry(chunk)
@@ -56,7 +56,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
         return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase()
     }
 
-    private async synthesizeWithRetry(text: string, maxRetries: number = 3): Promise<Buffer> {
+    private async synthesizeWithRetry(text: string, maxRetries: number = 5): Promise<Buffer> {
         let lastError: any
         for (let i = 0; i < maxRetries; i++) {
             try {
@@ -91,11 +91,11 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
             const audioData: Buffer[] = []
             const timestamp = new Date().toString()
 
-            // Set a timeout for the entire synthesis process
+            // Set a timeout for the entire synthesis process (60s per chunk)
             const timeout = setTimeout(() => {
                 ws.close()
-                reject(new Error('Edge TTS synthesis timed out (30s)'))
-            }, 30000)
+                reject(new Error('Edge TTS synthesis timed out (60s)'))
+            }, 60000)
 
             ws.on('open', () => {
                 // 必須嚴格使用 \r\n

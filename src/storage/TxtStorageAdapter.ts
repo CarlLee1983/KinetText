@@ -28,6 +28,7 @@ export class TxtStorageAdapter implements StorageAdapter {
         const metaContent = `
 Title: ${book.title}
 Author: ${book.author}
+Source: ${book.siteId}
 Description:
 ${book.description}
     `.trim()

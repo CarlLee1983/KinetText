@@ -8,14 +8,16 @@ async function main() {
     const selectionArg = process.argv[3] // Optional limit or range/list (e.g., "5", "10-20", "2,4,10")
     const rateArg = process.argv[4] || '+0%' // Optional rate (e.g., '+20%', '-10%', '1.5')
     const concurrencyArg = process.argv[5] || '3' // Optional concurrency (default to 3)
+    const shouldMerge = process.argv[6] === 'true' // Optional merge flag (default to false)
 
     if (!bookTitle) {
-        console.log('Usage: bun run scripts/generate_audiobook.ts <BookTitle> [Selection] [Rate] [Concurrency]')
+        console.log('Usage: bun run scripts/generate_audiobook.ts <BookTitle> [Selection] [Rate] [Concurrency] [Merge]')
         console.log('Examples:')
         console.log('  bun run scripts/generate_audiobook.ts "Book" 5          # First 5 chapters')
         console.log('  bun run scripts/generate_audiobook.ts "Book" 10-20      # Chapters 10 to 20')
         console.log('  bun run scripts/generate_audiobook.ts "Book" 2,4,10     # Chapters 2, 4, 10')
         console.log('  bun run scripts/generate_audiobook.ts "Book" all +20% 5 # All chapters, 1.2x speed, 5 concurrent')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 1-100 +0% 3 true # Generate & merge chapters 1-100')
         process.exit(1)
     }
 
@@ -50,9 +52,8 @@ async function main() {
     }
 
     // Handle selection
+    const selectedIndices = new Set<number>()
     if (selectionArg && selectionArg !== 'all') {
-        const selectedIndices = new Set<number>()
-
         if (selectionArg.includes(',')) {
             // List: 2,4,10
             selectionArg.split(',').forEach(s => {
@@ -66,8 +67,7 @@ async function main() {
                 for (let i = start || 0; i <= (end || 0); i++) selectedIndices.add(i)
             }
         } else {
-            // Single number: if small, interpret as limit; if large or specific target index, interpret as limit up to that many chapters.
-            // For better UX, if it's just a number "5", we'll treat it as "up to index 5" 
+            // Single number: interpret as limit
             const limit = parseInt(selectionArg)
             if (!isNaN(limit)) {
                 txtFiles = txtFiles.slice(0, limit)
@@ -122,28 +122,41 @@ async function main() {
 
     await Promise.all(promises)
 
-    console.log('\nAll selected chapters processed. Merging into final audiobook...')
+    if (shouldMerge) {
+        // Selection name for filename (e.g. "1-100" or "all")
+        const selectionName = (selectionArg && selectionArg !== 'all') ? `_${selectionArg}` : '';
+        const finalOutputPath = path.join(outputDir, `${bookTitle}${selectionName}.mp3`);
 
-    try {
-        const audioFiles = (await fs.readdir(audioDir))
-            .filter(f => f.endsWith('.mp3'))
-            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+        console.log(`\nAll selected chapters processed. Merging into: ${path.basename(finalOutputPath)}`)
 
-        if (audioFiles.length > 0) {
-            const finalOutputPath = path.join(outputDir, `${bookTitle}.mp3`)
-            const buffers: Buffer[] = []
+        try {
+            // We only merge the files that were part of the current selection
+            const audioFilesToMerge = txtFiles.map(f => f.replace('.txt', '.mp3'))
+                .filter(f => fs.access(path.join(audioDir, f)).then(() => true).catch(() => false));
 
-            console.log(`[Merging] ${audioFiles.length} files...`)
-            for (const file of audioFiles) {
-                const buf = await fs.readFile(path.join(audioDir, file))
-                buffers.push(buf)
+            if (audioFilesToMerge.length > 0) {
+                const buffers: Buffer[] = []
+
+                console.log(`[Merging] ${audioFilesToMerge.length} files...`)
+                for (const file of audioFilesToMerge) {
+                    try {
+                        const buf = await fs.readFile(path.join(audioDir, file))
+                        buffers.push(buf)
+                    } catch (e) {
+                        console.warn(`[Warning] Could not read ${file} for merging, skipping.`)
+                    }
+                }
+
+                if (buffers.length > 0) {
+                    await fs.writeFile(finalOutputPath, Buffer.concat(buffers))
+                    console.log(`[Combined] Created final audiobook: ${finalOutputPath}`)
+                }
             }
-
-            await fs.writeFile(finalOutputPath, Buffer.concat(buffers))
-            console.log(`[Combined] Created final audiobook: ${finalOutputPath}`)
+        } catch (err) {
+            console.error('[Error] Failed to merge audio files:', err)
         }
-    } catch (err) {
-        console.error('[Error] Failed to merge audio files:', err)
+    } else {
+        console.log('\nSkipping merge step (use "true" as 6th argument to merge).')
     }
 
     console.log(`\nAudiobook generation complete for "${bookTitle}"!`)

@@ -2,6 +2,7 @@ export interface Book {
     title: string;
     author: string;
     description: string;
+    siteId: string;
     coverUrl?: string;
     chapters: Chapter[];
 }

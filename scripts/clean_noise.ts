@@ -1,50 +1,89 @@
-import * as fs from 'fs/promises';
+import { ContentCleaner } from '../src/utils/ContentCleaner';
+import { Glob } from "bun";
 import * as path from 'path';
+import * as fs from 'fs/promises';
 
-const OUTPUT_DIR = path.join(import.meta.dir, '..', 'output');
-const noiseRegex = /[8８⒏⑻⑧][\s]*[nｎＮ][\s]*[oｏＯσο][\s]*[vｖＶ][\s]*[eｅＥЁ][\s]*[lｌＬ┗└][\s]*[.．·。][\s]*[cｃＣС][\s]*[oｏＯοо][\s]*[mｍＭｍ]/ig;
-
-async function cleanFile(filePath: string) {
+async function getSiteIdFromMetadata(bookDirPath: string): Promise<string | null> {
     try {
-        const content = await fs.readFile(filePath, 'utf-8');
-        const cleanedContent = content.replace(noiseRegex, '');
-        
-        if (content !== cleanedContent) {
-            await fs.writeFile(filePath, cleanedContent, 'utf-8');
-            console.log(`Cleaned: ${filePath}`);
-            return 1;
-        }
-        return 0;
-    } catch (error) {
-        console.error(`Error processing file ${filePath}:`, error);
-        return 0;
-    }
-}
-
-async function traverseDirectory(dir: string): Promise<number> {
-    let cleanedCount = 0;
-    try {
-        const entries = await fs.readdir(dir, { withFileTypes: true });
-        
-        for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
-            
-            if (entry.isDirectory()) {
-                cleanedCount += await traverseDirectory(fullPath);
-            } else if (entry.isFile() && entry.name.endsWith('.txt')) {
-                cleanedCount += await cleanFile(fullPath);
+        const metadataPath = path.join(bookDirPath, 'metadata.txt');
+        const content = await Bun.file(metadataPath).text();
+        const lines = content.split('\n');
+        for (const line of lines) {
+            if (line.startsWith('Source:')) {
+                return line.replace('Source:', '').trim();
             }
         }
-    } catch (error) {
-        console.error(`Error traversing directory ${dir}:`, error);
+    } catch (e) {
+        // Metadata not found or readable
     }
-    return cleanedCount;
+    return null;
 }
 
 async function main() {
-    console.log(`Starting noise cleanup in ${OUTPUT_DIR}...`);
-    const totalCleaned = await traverseDirectory(OUTPUT_DIR);
-    console.log(`Cleanup complete. Total files cleaned: ${totalCleaned}`);
+    // 獲取參數: bun run clean [siteId_or_fallback] [bookTitle]
+    let siteIdArg = Bun.argv[2];
+    const targetBook = Bun.argv[3];
+
+    const outputDir = path.resolve(import.meta.dir, '..', 'output');
+
+    // 如果有指定書籍，則只搜尋該目錄
+    const searchPattern = targetBook
+        ? `${targetBook}/**/*.txt`
+        : "**/*.txt";
+
+    const glob = new Glob(searchPattern);
+    let totalFiles = 0;
+    let cleanedFiles = 0;
+
+    console.log(`--- 開始執行清理 ---`);
+    console.log(`目錄: ${outputDir}`);
+
+    // 快取各個書本目錄的 siteId，避免重複讀取 metadata.txt
+    const siteIdCache: Record<string, string | null> = {};
+
+    for await (const file of glob.scan(outputDir)) {
+        // 跳過 metadata 檔案
+        if (file.endsWith('metadata.txt')) continue;
+
+        const filePath = path.join(outputDir, file);
+
+        // 取得該檔案所在的書本根目錄
+        const relativePathParts = file.split(path.sep);
+        const bookFolderName = relativePathParts[0] || '';
+        const bookDirPath = path.join(outputDir, bookFolderName);
+
+        // 決定使用哪個 siteId
+        let currentSiteId = siteIdArg;
+
+        if (!currentSiteId) {
+            if (siteIdCache[bookFolderName] === undefined) {
+                siteIdCache[bookFolderName] = await getSiteIdFromMetadata(bookDirPath);
+            }
+            currentSiteId = siteIdCache[bookFolderName] || '8novel'; // 預設 8novel
+        }
+
+        const fileHandle = Bun.file(filePath);
+
+        try {
+            const content = await fileHandle.text();
+            const cleaned = ContentCleaner.clean(currentSiteId, content);
+
+            totalFiles++;
+
+            if (content !== cleaned) {
+                await Bun.write(filePath, cleaned);
+                console.log(`[已清理][來源:${currentSiteId}] ${file}`);
+                cleanedFiles++;
+            }
+        } catch (error) {
+            console.error(`處理檔案失敗 ${file}:`, error);
+        }
+    }
+
+    console.log(`-------------------`);
+    console.log(`清理完成！`);
+    console.log(`掃描檔案數: ${totalFiles}`);
+    console.log(`實際修正數: ${cleanedFiles}`);
 }
 
 main().catch(console.error);

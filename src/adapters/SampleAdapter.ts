@@ -16,6 +16,7 @@ export class SampleAdapter implements NovelSiteAdapter {
             title: 'Sample Novel Title',
             author: 'Sample Author',
             description: 'This is a sample description.',
+            siteId: 'sample',
         };
     }
 
