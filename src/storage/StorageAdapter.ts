@@ -1,4 +1,4 @@
-import { Book, Chapter } from '../core/types';
+import type { Book, Chapter } from '../core/types';
 
 export interface StorageAdapter {
     saveBookMetadata(book: Omit<Book, 'chapters'>): Promise<void>;

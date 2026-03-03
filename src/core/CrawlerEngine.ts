@@ -1,6 +1,6 @@
 import pLimit from 'p-limit';
-import { NovelSiteAdapter } from '../adapters/NovelSiteAdapter';
-import { StorageAdapter } from '../storage/StorageAdapter';
+import type { NovelSiteAdapter } from '../adapters/NovelSiteAdapter';
+import type { StorageAdapter } from '../storage/StorageAdapter';
 
 export class CrawlerEngine {
     private adapter: NovelSiteAdapter;

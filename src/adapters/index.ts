@@ -1,4 +1,4 @@
-import { NovelSiteAdapter } from './NovelSiteAdapter';
+import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import { EightNovelAdapter } from './EightNovelAdapter';
 import { SampleAdapter } from './SampleAdapter';
 

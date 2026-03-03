@@ -20,8 +20,6 @@
   "dependencies": {
     "axios": "^1.13.6",
     "cheerio": "^1.2.0",
-    "google-tts-api": "^2.0.2",
-    "iconv-lite": "^0.7.2",
     "p-limit": "^7.3.0",
     "uuid": "^13.0.0",
     "ws": "^8.19.0"

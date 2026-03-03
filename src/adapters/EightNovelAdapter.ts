@@ -61,10 +61,10 @@ export class EightNovelAdapter implements NovelSiteAdapter {
 
         // Extract chapter ID from URL
         const chapterIdMatch = chapterUrl.match(/\?([0-9]+)/);
-        if (!chapterIdMatch) {
+        if (!chapterIdMatch || !chapterIdMatch[1]) {
             throw new Error('Could not find chapter ID in URL');
         }
-        const chapterId = parseInt(chapterIdMatch[1]);
+        const chapterId = parseInt(chapterIdMatch[1], 10);
 
         // Suffix logic: b9_1m_3[0].substr(chapterId * 3 % 100, 5)
         // Note: hh5_l_4_2 = 3, u47ho9em_ = 100, q78sw24 = 5

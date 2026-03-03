@@ -1,7 +1,6 @@
-import * as fs from 'fs/promises';
 import * as path from 'path';
-import { StorageAdapter } from './StorageAdapter';
-import { Book, Chapter } from '../core/types';
+import type { StorageAdapter } from './StorageAdapter';
+import type { Book, Chapter } from '../core/types';
 
 export class TxtStorageAdapter implements StorageAdapter {
     private baseDir: string;
@@ -11,7 +10,15 @@ export class TxtStorageAdapter implements StorageAdapter {
     }
 
     private async ensureDir(dirPath: string) {
-        await fs.mkdir(dirPath, { recursive: true });
+        try {
+            const stat = await Bun.file(dirPath).stat();
+            if (!stat?.isDirectory()) {
+                throw new Error(`Path exists but is not a directory: ${dirPath}`);
+            }
+        } catch {
+            // Directory doesn't exist, create it
+            await Bun.$`mkdir -p ${dirPath}`;
+        }
     }
 
     async saveBookMetadata(book: Omit<Book, 'chapters'>): Promise<void> {
@@ -25,7 +32,7 @@ Description:
 ${book.description}
     `.trim();
 
-        await fs.writeFile(path.join(bookDir, 'metadata.txt'), metaContent, 'utf-8');
+        await Bun.write(path.join(bookDir, 'metadata.txt'), metaContent);
     }
 
     async saveChapter(bookTitle: string, chapter: Chapter): Promise<void> {
@@ -41,20 +48,15 @@ ${chapter.title}
 ${chapter.content || ''}
     `.trim();
 
-        await fs.writeFile(chapterPath, content, 'utf-8');
+        await Bun.write(chapterPath, content);
     }
 
     async chapterExists(bookTitle: string, chapter: Chapter): Promise<boolean> {
         const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle));
         const chapterFileName = this.getChapterFilename(chapter);
         const chapterPath = path.join(bookDir, chapterFileName);
-        
-        try {
-            await fs.access(chapterPath);
-            return true;
-        } catch {
-            return false;
-        }
+
+        return await Bun.file(chapterPath).exists();
     }
 
     private getChapterFilename(chapter: Chapter): string {

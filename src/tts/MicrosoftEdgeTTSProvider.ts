@@ -1,22 +1,22 @@
-import WebSocket from 'ws'
 import { v4 as uuidv4 } from 'uuid'
-import * as fs from 'fs/promises'
 import * as crypto from 'crypto'
+import WebSocket from 'ws'
 import type { TTSProvider } from './TTSProvider'
 
 export class MicrosoftEdgeTTSProvider implements TTSProvider {
     private voice: string
     private rate: string
     private endpoint: string = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
-    private trustedClientToken: string = '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
+    private trustedClientToken: string
 
     constructor(voice: string = 'zh-CN-YunxiNeural', rate: string = '+0%') {
         this.voice = voice
         this.rate = rate
+        this.trustedClientToken = process.env.MICROSOFT_TTS_TOKEN || '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
     }
 
     async generateAudioFromFile(inputFilePath: string, outputFilePath: string): Promise<void> {
-        let text = await fs.readFile(inputFilePath, 'utf-8')
+        let text = await Bun.file(inputFilePath).text()
 
         // Remove chapter title and separator lines to prevent TTS from reading them
         const lines = text.split('\n')
@@ -33,7 +33,17 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
             audioBuffers.push(buffer)
         }
 
-        await fs.writeFile(outputFilePath, Buffer.concat(audioBuffers))
+        await Bun.write(outputFilePath, Buffer.concat(audioBuffers))
+    }
+
+    private escapeXml(unsafe: string): string {
+        return unsafe.replace(/[<>&'"]/g, (c) => ({
+            '<': '&lt;',
+            '>': '&gt;',
+            '&': '&amp;',
+            "'": '&apos;',
+            '"': '&quot;'
+        }[c] || c))
     }
 
     private generateSecMsGec(): string {
@@ -69,7 +79,8 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
                 const configMsg = `X-Timestamp:${timestamp}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}`
                 ws.send(configMsg)
 
-                const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'><voice name='${this.voice}'><prosody rate='${this.rate}'>${text}</prosody></voice></speak>`
+                const escapedText = this.escapeXml(text)
+                const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'><voice name='${this.voice}'><prosody rate='${this.rate}'>${escapedText}</prosody></voice></speak>`
                 const requestMsg = `X-RequestId:${connectionId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${timestamp}\r\nPath:ssml\r\n\r\n${ssml}`
                 ws.send(requestMsg)
             })
@@ -114,9 +125,8 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
             else {
                 const lookback = Math.floor(maxLength * 0.2)
                 const searchRange = text.slice(end - lookback, end)
-                const lastPunct = searchRange.search(/[，。？！；、\n]/)
-                if (lastPunct !== -1) {
-                    const punctIndices = [...searchRange.matchAll(/[，。？！；、\n]/g)]
+                const punctIndices = [...searchRange.matchAll(/[，。？！；、\n]/g)]
+                if (punctIndices.length > 0) {
                     const lastMatch = punctIndices[punctIndices.length - 1]
                     if (lastMatch && lastMatch.index !== undefined) {
                         end = (end - lookback) + lastMatch.index + 1
