@@ -31,6 +31,7 @@ export class EightNovelAdapter implements NovelSiteAdapter {
             author,
             description,
             siteId: '8novel',
+            sourceUrl: url,
             coverUrl: coverUrl ? (coverUrl.startsWith('http') ? coverUrl : `https://www.8novel.com${coverUrl}`) : undefined
         };
     }

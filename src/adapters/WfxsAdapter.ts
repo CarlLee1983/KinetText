@@ -37,6 +37,7 @@ export class WfxsAdapter implements NovelSiteAdapter {
             title: title || 'Unknown',
             author: author || 'Unknown',
             siteId: 'wfxs',
+            sourceUrl: bookUrl,
             description: description || ''
         };
     }

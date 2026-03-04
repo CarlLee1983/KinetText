@@ -55,6 +55,19 @@ bun run audiobook "小說名稱" 1-100 +0% 5 true
 *   **是否合併**: 填入 `true` 才會執行合併。
 *   **分段合併**: 如果您指定了範圍（如 `1-100`）並開啟合併，檔名會自動加上後綴，例如 `小說名稱_1-100.mp3`。
 
+### 🎬 MP3 轉 MP4 (Video Conversion)
+將生成的 MP3 語音書結合預設封面 (`static/default_cover.png`) 轉換為 MP4 影片，方便上傳至影音平台。
+
+```bash
+# 基本用法 (自動輸出同檔名的 mp4)
+bun run to-mp4 "輸入的_mp3_檔案路徑"
+
+# 指定輸出檔名
+bun run to-mp4 "輸入的_mp3_檔案路徑" "輸出的_mp4_檔案路徑"
+```
+> [!NOTE]
+> 執行此指令前，系統必須先安裝 `ffmpeg`。
+
 ### ☁️ 雲端備份 (Cloud Backup)
 使用 `rclone` 將 `output/` 目錄同步至遠端儲存。
 

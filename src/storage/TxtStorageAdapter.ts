@@ -4,9 +4,11 @@ import type { Book, Chapter } from '../core/types'
 
 export class TxtStorageAdapter implements StorageAdapter {
     private baseDir: string
+    private minContentLength: number
 
-    constructor(baseDir: string = './output') {
+    constructor(baseDir: string = './output', minContentLength: number = 50) {
         this.baseDir = baseDir
+        this.minContentLength = minContentLength
     }
 
     private async ensureDir(dirPath: string) {
@@ -29,6 +31,7 @@ export class TxtStorageAdapter implements StorageAdapter {
 Title: ${book.title}
 Author: ${book.author}
 Source: ${book.siteId}
+URL: ${book.sourceUrl || ''}
 Description:
 ${book.description}
     `.trim()
@@ -46,6 +49,7 @@ ${book.description}
 
         const content = `
 ${chapter.title}
+Source: ${chapter.sourceUrl}
 --------------------------------------------------
 ${chapter.content || ''}
     `.trim()
@@ -60,6 +64,33 @@ ${chapter.content || ''}
         const chapterPath = path.join(txtDir, chapterFileName)
 
         return await Bun.file(chapterPath).exists()
+    }
+
+    async isValidChapter(bookTitle: string, chapter: Chapter): Promise<boolean> {
+        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle))
+        const txtDir = path.join(bookDir, 'txt')
+        const chapterFileName = this.getChapterFilename(chapter)
+        const chapterPath = path.join(txtDir, chapterFileName)
+
+        const file = Bun.file(chapterPath)
+        if (!(await file.exists())) return false
+
+        const text = await file.text()
+        const parts = text.split('--------------------------------------------------')
+        if (parts.length < 2) return false
+
+        let content = parts.slice(1).join('--------------------------------------------------').trim()
+
+        // Stricter check: remove noise that might artificially inflate length
+        content = content.replace(/>>章節報錯<</g, '');
+        content = content.replace(/上一章|下一章|目錄|回首頁|書架/g, '');
+        content = content.replace(/關燈|護眼|字體：|大|中|小/g, '');
+        content = content.replace(/\(adsbygoogle.*?;/g, '');
+        content = content.replace(/window\.mg_asy_a = .*?\}\)\(\);/gs, '');
+
+        const cleanLength = content.trim().length;
+        // Most real chapters are 1000+ chars. 300 is a safe threshold to filter out ad-only junk.
+        return cleanLength >= 300;
     }
 
     private getChapterFilename(chapter: Chapter): string {

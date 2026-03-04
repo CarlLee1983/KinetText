@@ -33,23 +33,56 @@ export class CrawlerEngine {
         const promises = chapters.map((chapter) =>
             limit(async () => {
                 try {
-                    // Check if chapter already exists
-                    if (await this.storage.chapterExists(metadata.title, chapter)) {
-                        console.log(`[CrawlerEngine] Skipping existing chapter ${chapter.index}: ${chapter.title}`);
+                    // Check if chapter already exists and is valid
+                    const exists = await this.storage.chapterExists(metadata.title, chapter);
+                    if (exists) {
+                        const isValid = await this.storage.isValidChapter(metadata.title, chapter);
+                        if (isValid) {
+                            console.log(`[CrawlerEngine] Skipping existing Valid chapter ${chapter.index}: ${chapter.title}`);
+                            return;
+                        }
+                        console.log(`[CrawlerEngine] Existing chapter ${chapter.index} is invalid, re-fetching...`);
+                    }
+
+                    let content = '';
+                    let attempts = 0;
+                    const maxRetries = 3;
+
+                    while (attempts < maxRetries) {
+                        attempts++;
+                        try {
+                            console.log(`[CrawlerEngine] Fetching chapter ${chapter.index} (Attempt ${attempts}): ${chapter.title}`);
+                            content = await this.adapter.getChapterContent(chapter.sourceUrl);
+
+                            // Simple validation
+                            if (content && content.trim().length > 50) {
+                                break;
+                            }
+                            console.warn(`[CrawlerEngine] Content too short for chapter ${chapter.index} (Length: ${content?.length || 0})`);
+                        } catch (error) {
+                            console.error(`[CrawlerEngine] Failed to fetch chapter ${chapter.index} on attempt ${attempts}`, error);
+                        }
+
+                        if (attempts < maxRetries) {
+                            const delay = 2000 * attempts + Math.random() * 1000;
+                            await new Promise(res => setTimeout(res, delay));
+                        }
+                    }
+
+                    if (!content || content.trim().length <= 50) {
+                        console.error(`[CrawlerEngine] Failed to get valid content for chapter ${chapter.index} after ${maxRetries} attempts. Skipping save.`);
                         return;
                     }
 
-                    console.log(`[CrawlerEngine] Fetching chapter ${chapter.index}: ${chapter.title}`);
-                    const content = await this.adapter.getChapterContent(chapter.sourceUrl);
                     chapter.content = content;
 
-                    // Process random delay to avoid rate-limiting
+                    // Process random delay to avoid rate-limiting between successful chapters
                     await new Promise(res => setTimeout(res, 500 + Math.random() * 1000));
 
                     await this.storage.saveChapter(metadata.title, chapter);
                     console.log(`[CrawlerEngine] Saved chapter ${chapter.index}: ${chapter.title}`);
                 } catch (error) {
-                    console.error(`[CrawlerEngine] Failed to fetch chapter ${chapter.index}: ${chapter.title}`, error);
+                    console.error(`[CrawlerEngine] Unexpected error processing chapter ${chapter.index}: ${chapter.title}`, error);
                 }
             })
         );
