@@ -9,7 +9,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
     private voice: string
     private rate: string
     private endpoint: string = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
-    private trustedClientToken: string = '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
+    private trustedClientToken: string = process.env.MICROSOFT_TTS_TOKEN || ''
 
     constructor(voice: string = 'zh-CN-YunxiNeural', rate: string = '+0%') {
         this.voice = voice

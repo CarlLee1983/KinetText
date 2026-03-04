@@ -3,15 +3,28 @@ export class ContentCleaner {
         '8novel': [
             '小主，這個章節後面還有哦，請點擊下一頁繼續閱讀，後面更精彩！',
             '本小章還未完，請點擊下一頁繼續閱讀後面精彩內容！',
-            '⑧NOνE┕。cОｍ',
-            '8ｎσＶＥｌ．cоm'
+            '無限輕小說',
+            '8novel.com',
+            'www.8novel.com'
+        ],
+        'wfxs': [
+            '網腐小說',
+            'wfxs.tw',
+            'www.wfxs.tw',
+            '本章完',
+            '上一章',
+            '下一章'
         ]
     }
 
     private static noiseRegexes: Record<string, RegExp[]> = {
         '8novel': [
-            // Original complex noise regex
-            /[8８⒏⑻⑧][\s]*[nｎＮ][\s]*[oｏＯσο][\s]*[vｖＶ][\s]*[eｅＥЁ][\s]*[lｌＬ┗└][\s]*[.．·。][\s]*[cｃＣС][\s]*[oｏＯοо][\s]*[mｍＭｍ]/ig
+            /[8８⒏⑻⑧][\s]*[nｎＮ][\s]*[oｏＯσο][\s]*[vｖＶν][\s]*[eｅＥЁ][\s]*[lｌＬ┗└][\s]*[.．·。][\s]*[cｃＣС][\s]*[oｏＯοо][\s]*[mｍＭｍ]/ig,
+            /無限輕小說/g
+        ],
+        'wfxs': [
+            /網腐小說/g,
+            /\[.*?首發\]/g
         ]
     }
 
