@@ -139,7 +139,7 @@ export class EightNovelAdapter implements NovelSiteAdapter {
         const bookIdMatch = chapterUrl.match(/novelbooks\/([0-9]+)/) || chapterUrl.match(/read\/([0-9]+)/);
         const bookId = bookIdMatch ? bookIdMatch[1] : '';
         const chapterIdMatch = chapterUrl.match(/\?([0-9]+)/);
-        const chapterId = chapterIdMatch ? parseInt(chapterIdMatch[1], 10) : 0;
+        const chapterId = chapterIdMatch ? parseInt(chapterIdMatch[1] || '0', 10) : 0;
         const startIndex = (chapterId * multiplier) % modulus;
         const suffix = magicString.substring(startIndex, startIndex + suffixLen);
 

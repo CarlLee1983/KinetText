@@ -9,11 +9,59 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
     private voice: string
     private rate: string
     private endpoint: string = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
-    private trustedClientToken: string = process.env.MICROSOFT_TTS_TOKEN || ''
+    private trustedClientToken: string = '' // Removed as per instruction
+    private tokenExpiresAt: number = 0 // Removed as per instruction
+    private tokenRefreshUrl: string = process.env.MICROSOFT_TOKEN_REFRESH_URL || '' // Removed as per instruction
 
     constructor(voice: string = 'zh-CN-YunxiNeural', rate: string = '+0%') {
         this.voice = voice
         this.rate = rate
+        this.trustedClientToken = process.env.MICROSOFT_TTS_TOKEN || ''
+        // 假設 Token 有效期為 10 分鐘
+        this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
+    }
+
+    private async ensureValidToken(): Promise<void> {
+        // 檢查 Token 是否過期（在過期前 1 分鐘時刷新）
+        if (Date.now() >= this.tokenExpiresAt - 60000) {
+            await this.refreshToken()
+        }
+    }
+
+    private async refreshToken(): Promise<void> {
+        try {
+            // 方案 1: 從遠程 API 刷新
+            if (this.tokenRefreshUrl) {
+                const response = await fetch(this.tokenRefreshUrl)
+                if (!response.ok) throw new Error(`Token refresh failed: ${response.status}`)
+                const data = await response.json() as { token: string; expiresIn?: number }
+                this.trustedClientToken = data.token
+                this.tokenExpiresAt = Date.now() + ((data.expiresIn || 600) * 1000)
+                console.log('[TTS] Token refreshed successfully from remote API')
+                return
+            }
+
+            // 方案 2: 從環境變數重新讀取
+            const newToken = process.env.MICROSOFT_TTS_TOKEN
+            if (newToken) {
+                this.trustedClientToken = newToken
+                this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
+                console.log('[TTS] Token reloaded from environment')
+                return
+            }
+
+            // 方案 3: 降級策略 - 延長當前 Token 的有效期
+            if (this.trustedClientToken) {
+                this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
+                console.warn('[TTS] No token refresh configured. Extending current token validity.')
+                return
+            }
+
+            throw new Error('No valid token available. Set MICROSOFT_TTS_TOKEN or MICROSOFT_TOKEN_REFRESH_URL')
+        } catch (err) {
+            console.error('[TTS] Token refresh failed:', err instanceof Error ? err.message : err)
+            throw err
+        }
     }
 
     async generateAudioFromFile(inputFilePath: string, outputFilePath: string): Promise<void> {
@@ -48,11 +96,11 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
         }[c] || c))
     }
 
-    private generateSecMsGec(): string {
+    private generateSecMsGec(clientToken: string): string {
         let ticks = Math.floor(Date.now() / 1000)
         ticks += 11644473600
         ticks -= ticks % 300
-        const strToHash = ticks + '0000000' + this.trustedClientToken
+        const strToHash = ticks + '0000000' + clientToken
         return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase()
     }
 
@@ -60,12 +108,27 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
         let lastError: any
         for (let i = 0; i < maxRetries; i++) {
             try {
+                await this.ensureValidToken()
                 return await this.synthesize(text)
             } catch (err) {
                 lastError = err
-                const delay = 1000 * (i + 1)
-                console.warn(`[TTS Retry] Attempt ${i + 1} failed. Retrying in ${delay}ms...`, err instanceof Error ? err.message : err)
-                await new Promise(resolve => setTimeout(resolve, delay))
+                const errorMsg = err instanceof Error ? err.message : String(err)
+
+                // 檢測 Token 相關的錯誤
+                if (errorMsg.includes('failed to connect') || errorMsg.includes('connection closed') || errorMsg.includes('timed out')) {
+                    console.warn(`[TTS] Connection error detected. Refreshing token...`)
+                    try {
+                        await this.refreshToken()
+                    } catch (refreshErr) {
+                        console.error('[TTS] Failed to refresh token:', refreshErr instanceof Error ? refreshErr.message : refreshErr)
+                    }
+                }
+
+                if (i < maxRetries - 1) {
+                    const delay = 1000 * (i + 1)
+                    console.warn(`[TTS Retry] Attempt ${i + 1}/${maxRetries} failed. Retrying in ${delay}ms...`, errorMsg)
+                    await new Promise(resolve => setTimeout(resolve, delay))
+                }
             }
         }
         throw new Error(`Failed to synthesize after ${maxRetries} attempts. Last error: ${lastError?.message || lastError}`)
@@ -74,7 +137,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
     private async synthesize(text: string): Promise<Buffer> {
         return new Promise((resolve, reject) => {
             const connectionId = uuidv4().replace(/-/g, '').toUpperCase()
-            const secMsGec = this.generateSecMsGec()
+            const secMsGec = this.generateSecMsGec(this.trustedClientToken)
             const url = `${this.endpoint}?TrustedClientToken=${this.trustedClientToken}&ConnectionId=${connectionId}&Sec-MS-GEC=${secMsGec}&Sec-MS-GEC-Version=1-143.0.3650.75`
 
             const ws = new WebSocket(url, {
@@ -140,6 +203,22 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
                 }
             })
         })
+    }
+
+    // 公開方法：手動更新 Token
+    public setToken(token: string, expiresInSeconds: number = 600): void {
+        this.trustedClientToken = token
+        this.tokenExpiresAt = Date.now() + (expiresInSeconds * 1000)
+        console.log('[TTS] Token updated manually')
+    }
+
+    // 公開方法：獲取當前 Token 狀態
+    public getTokenStatus(): { isValid: boolean; expiresIn: number } {
+        const expiresIn = Math.max(0, this.tokenExpiresAt - Date.now())
+        return {
+            isValid: expiresIn > 0,
+            expiresIn: Math.floor(expiresIn / 1000)
+        }
     }
 
     private splitText(text: string, maxLength: number): string[] {
