@@ -87,7 +87,14 @@ export class CrawlerEngine {
             })
         );
 
-        await Promise.all(promises);
-        console.log(`[CrawlerEngine] Scraping finished for ${metadata.title}.`);
+        try {
+            await Promise.all(promises);
+            console.log(`[CrawlerEngine] Scraping finished for ${metadata.title}.`);
+        } finally {
+            if (this.adapter.close) {
+                console.log(`[CrawlerEngine] Cleaning up adapter resources...`);
+                await this.adapter.close();
+            }
+        }
     }
 }

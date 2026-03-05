@@ -14,4 +14,7 @@ export interface NovelSiteAdapter {
 
     // Fetch the text content of a single chapter
     getChapterContent(chapterUrl: string): Promise<string>;
+
+    // Optional method to clean up resources (e.g. headless browser)
+    close?(): Promise<void>;
 }

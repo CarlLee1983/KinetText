@@ -24,6 +24,9 @@
     "axios": "^1.13.6",
     "cheerio": "^1.2.0",
     "p-limit": "^7.3.0",
+    "puppeteer": "^24.38.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "uuid": "^13.0.0",
     "ws": "^8.19.0"
   }
