@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "bun run src/index.ts",
+    "test": "bun test",
     "backup": "bun run scripts/backup.ts",
     "clean": "bun run scripts/clean_noise.ts",
     "audiobook": "bun run scripts/generate_audiobook.ts",

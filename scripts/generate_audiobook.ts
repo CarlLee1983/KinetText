@@ -2,6 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import pLimit from 'p-limit'
 import { MicrosoftEdgeTTSProvider } from '../src/tts/MicrosoftEdgeTTSProvider'
+import { listChapterTxtFiles, resolveBookDirectories } from '../src/workflows/chapterFiles'
 
 async function main() {
     const bookTitle = process.argv[2]
@@ -22,29 +23,23 @@ async function main() {
     }
 
     const concurrency = parseInt(concurrencyArg) || 3
-    const outputDir = path.join(import.meta.dir, '..', 'output', bookTitle)
-    const audioDir = path.join(outputDir, 'audio')
-    let txtSourceDir = path.join(outputDir, 'txt')
+    const outputRoot = path.join(import.meta.dir, '..', 'output')
+    let outputDir = ''
+    let audioDir = ''
+    let txtSourceDir = ''
 
     try {
-        await fs.access(outputDir)
-        try {
-            await fs.access(txtSourceDir)
-        } catch {
-            txtSourceDir = outputDir
-        }
+        const dirs = await resolveBookDirectories(outputRoot, bookTitle)
+        outputDir = dirs.bookDir
+        audioDir = dirs.audioDir
+        txtSourceDir = dirs.txtSourceDir
     } catch {
-        console.error(`Error: Book directory not found at ${outputDir}`)
+        console.error(`Error: Book directory not found at ${path.join(outputRoot, bookTitle)}`)
         process.exit(1)
     }
 
     await fs.mkdir(audioDir, { recursive: true })
-
-    const entries = await fs.readdir(txtSourceDir, { withFileTypes: true })
-    let txtFiles = entries
-        .filter(entry => entry.isFile() && entry.name.endsWith('.txt') && entry.name !== 'metadata.txt')
-        .map(entry => entry.name)
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+    let txtFiles = await listChapterTxtFiles(txtSourceDir)
 
     if (txtFiles.length === 0) {
         console.log(`No chapter text files found in ${txtSourceDir}`)

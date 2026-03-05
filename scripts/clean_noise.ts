@@ -1,23 +1,7 @@
 import { ContentCleaner } from '../src/utils/ContentCleaner';
+import { getSiteIdFromMetadata } from '../src/workflows/cleaning';
 import { Glob } from "bun";
 import * as path from 'path';
-import * as fs from 'fs/promises';
-
-async function getSiteIdFromMetadata(bookDirPath: string): Promise<string | null> {
-    try {
-        const metadataPath = path.join(bookDirPath, 'metadata.txt');
-        const content = await Bun.file(metadataPath).text();
-        const lines = content.split('\n');
-        for (const line of lines) {
-            if (line.startsWith('Source:')) {
-                return line.replace('Source:', '').trim();
-            }
-        }
-    } catch (e) {
-        // Metadata not found or readable
-    }
-    return null;
-}
 
 async function main() {
     // 獲取參數: bun run clean [siteId_or_fallback] [bookTitle]

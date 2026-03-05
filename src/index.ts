@@ -2,11 +2,24 @@ import { CrawlerEngine } from './core/CrawlerEngine';
 import { getAdapterForUrl } from './adapters';
 import { TxtStorageAdapter } from './storage/TxtStorageAdapter';
 
+function printUsage() {
+    console.log('Usage: bun run start <URL>');
+    console.log('Examples:');
+    console.log('  bun run start "https://www.8novel.com/novelbooks/12345/"');
+    console.log('  bun run start "https://www.wfxs.tw/booklist/9999.html"');
+}
+
 async function main() {
     const targetUrl = process.argv[2];
+    const isHelp = targetUrl === '--help' || targetUrl === '-h';
+
+    if (isHelp) {
+        printUsage();
+        process.exit(0);
+    }
 
     if (!targetUrl) {
-        console.log('Usage: bun src/index.ts <URL>');
+        printUsage();
         process.exit(1);
     }
 

@@ -2,6 +2,7 @@ import { $ } from "bun";
 import { parseArgs } from "util";
 import path from "path";
 import fs from "fs";
+import { resolveExistingPathWithOutputFallback } from "../src/workflows/pathUtils";
 
 // 解析命令列參數
 const { positionals, values } = parseArgs({
@@ -45,15 +46,11 @@ if (isNaN(batchSize) || batchSize <= 0) {
     process.exit(1);
 }
 
-// 智慧路徑：如果路徑不存在，試著去 output/ 找找看
-if (!fs.existsSync(inputDir)) {
-    const alternativePath = path.join("output", inputDir);
-    if (fs.existsSync(alternativePath)) {
-        inputDir = alternativePath;
-    } else {
-        console.error(`找不到路徑: ${inputDir}`);
-        process.exit(1);
-    }
+try {
+    inputDir = resolveExistingPathWithOutputFallback(inputDir);
+} catch (error) {
+    console.error(error instanceof Error ? error.message : `找不到路徑: ${inputDir}`);
+    process.exit(1);
 }
 
 if (!fs.statSync(inputDir).isDirectory()) {

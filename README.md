@@ -12,11 +12,11 @@ bun install
 ```
 
 ### 2. 開始爬取小說
-目前預設支援 8novel 站點。
+目前支援 8novel / wfxs / xsw / czbooks（依 URL 自動選擇 Adapter）。
 
 ```bash
-bun run start
-# 接著依照提示輸入小說 URL 即可
+bun run start "https://www.8novel.com/novelbooks/12345/"
+bun run start --help
 ```
 
 ---
@@ -29,7 +29,8 @@ bun run start
 核心爬取引擎，負責下載章節內容並存為純文字檔。
 
 ```bash
-bun run start
+bun run start <URL>
+bun run start --help
 ```
 
 ### 2. 🧹 智慧內容清理 (Noise Cleanup)
@@ -103,6 +104,15 @@ bun run backup
 > [!NOTE]
 > 需先完成 `rclone config` 設定。備份目的地需在 `scripts/backup.ts` 中配置。
 
+### 8. ✅ 測試 (Tests)
+
+```bash
+bun run test
+```
+
+> [!NOTE]
+> CI 會在 `push(master)` 與 `pull_request` 自動執行 `bun test` 與 `bun run start --help` smoke check（見 `.github/workflows/test.yml`）。
+
 ---
 
 ## 📂 目錄結構
@@ -111,8 +121,10 @@ bun run backup
 - `src/adapters/`: 站點適配器。
 - `src/utils/`: 工具類（含 `ContentCleaner.ts` 浮水印邏輯）。
 - `src/storage/`: 存檔邏輯。
+- `src/workflows/`: 跨腳本共用流程工具（路徑解析、章節檔案列舉、清理輔助）。
 - `output/`: 爬取結果與語音生成存放處。
 - `scripts/`: 所有的工具指令腳本。
+- `tests/`: Bun 測試（workflow helpers 與清理邏輯）。
 
 ---
 

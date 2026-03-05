@@ -1,6 +1,7 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ContentCleaner } from "../src/utils/ContentCleaner";
+import { splitKinetiTextDocument } from "../src/workflows/cleaning";
 
 // Usage: bun run scripts/clean_novels.ts <directory> [suffix] [siteId]
 const dirArg = Bun.argv[2];
@@ -38,17 +39,8 @@ async function run() {
         const filePath = path.join(dirPath, file);
         const content = await readFile(filePath, "utf-8");
 
-        let header = '';
-        let body = content;
-
-        // Check if it has the standard KinetiText header
-        const parts = content.split('--------------------------------------------------');
-        if (parts.length >= 2) {
-            header = parts[0] + '--------------------------------------------------\n';
-            body = parts.slice(1).join('--------------------------------------------------');
-        }
-
-        body = body.trim();
+        const { header, body: originalBody } = splitKinetiTextDocument(content);
+        let body = originalBody;
 
         // Apply basic fix for the pattern mentioned
         body = body.replace(/『PS:.*?』/ig, '');

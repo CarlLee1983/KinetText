@@ -2,6 +2,7 @@ import { $ } from "bun";
 import { parseArgs } from "util";
 import path from "path";
 import fs from "fs";
+import { resolveExistingPathWithOutputFallback } from "../src/workflows/pathUtils";
 
 // 解析命令列參數
 const { positionals, values } = parseArgs({
@@ -30,16 +31,11 @@ if (positionals.length === 0) {
 }
 
 let inputPath = positionals[0] as string;
-
-// 如果路徑不存在，試著去 output/ 找找看
-if (!fs.existsSync(inputPath)) {
-    const outputPath = path.join("output", inputPath);
-    if (fs.existsSync(outputPath)) {
-        inputPath = outputPath;
-    } else {
-        console.error(`找不到路徑: ${inputPath} 或 ${outputPath}`);
-        process.exit(1);
-    }
+try {
+    inputPath = resolveExistingPathWithOutputFallback(inputPath);
+} catch (error) {
+    console.error(error instanceof Error ? error.message : `找不到路徑: ${inputPath}`);
+    process.exit(1);
 }
 
 const defaultCover = path.join(process.cwd(), "static", "default_cover.png");
