@@ -8,6 +8,11 @@ import { resolveExistingPathWithOutputFallback } from "../src/workflows/pathUtil
 const { positionals, values } = parseArgs({
     args: Bun.argv.slice(2),
     options: {
+        help: {
+            type: "boolean",
+            short: "h",
+            default: false,
+        },
         size: {
             type: "string",
             short: "s",
@@ -21,10 +26,25 @@ const { positionals, values } = parseArgs({
             type: "boolean",
             short: "f",
             default: false,
+        },
+        dryRun: {
+            type: "boolean",
+            default: false,
         }
     },
     allowPositionals: true,
 });
+
+if (values.help) {
+    console.log("使用方式: bun run merge-mp3 <input_directory> [選項]");
+    console.log("選項:");
+    console.log("  -h, --help       顯示說明");
+    console.log("  -s, --size <n>   每 n 個檔案合併為一個 (預設: 20)");
+    console.log("  -o, --output <dir> 指定輸出資料夾 (預設: 與輸入資料夾相同)");
+    console.log("  -f, --force      強制覆蓋已存在的合併檔");
+    console.log("  --dry-run        僅顯示計畫，不執行 ffmpeg");
+    process.exit(0);
+}
 
 if (positionals.length === 0) {
     console.error("使用方式: bun run merge-mp3 <input_directory> [選項]");
@@ -40,6 +60,7 @@ if (positionals.length === 0) {
 let inputDir = positionals[0] as string;
 const batchSize = parseInt(values.size as string, 10);
 const force = values.force;
+const dryRun = values.dryRun;
 
 if (isNaN(batchSize) || batchSize <= 0) {
     console.error("錯誤: --size 必須是正整數");
@@ -77,11 +98,13 @@ if (files.length === 0) {
 console.log(`🎵 發現 ${files.length} 個 mp3 檔案，將每 ${batchSize} 個合併為一檔...`);
 
 // 檢查 ffmpeg
-try {
-    await $`ffmpeg -version`.quiet();
-} catch {
-    console.error("錯誤: 請確定系統已經安裝 'ffmpeg'");
-    process.exit(1);
+if (!dryRun) {
+    try {
+        await $`ffmpeg -version`.quiet();
+    } catch {
+        console.error("錯誤: 請確定系統已經安裝 'ffmpeg'");
+        process.exit(1);
+    }
 }
 
 const bookName = path.basename(path.dirname(inputDir)) || "book";
@@ -104,6 +127,11 @@ for (let i = 0; i < files.length; i += batchSize) {
     }
 
     console.log(`[${batchIndex}/${totalBatches}] 🔄 正在合併 ${batch.length} 個檔案 -> ${outputName}...`);
+
+    if (dryRun) {
+        console.log(`[${batchIndex}/${totalBatches}] [Dry-run] Would merge ${batch.length} files into ${outputPath}`);
+        continue;
+    }
 
     // 建立 ffmpeg concat 列表檔案
     const listFile = path.join(process.cwd(), "tmp", `concat_list_${Date.now()}.txt`);

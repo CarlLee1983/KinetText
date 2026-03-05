@@ -31,7 +31,12 @@ bun run start --help
 ```bash
 bun run start <URL>
 bun run start --help
+bun run start <URL> --dry-run
 ```
+
+執行完成後會額外輸出：
+- `run_report.json`: 結構化執行報告（成功/失敗/耗時/完整性檢查）。
+- `failed_chapters.json`: 抓取失敗章節清單（若有失敗時），可用於後續補抓。
 
 ### 2. 🧹 智慧內容清理 (Noise Cleanup)
 用於清除已存檔小說中的網站浮水印、廣告文字或干擾項。
@@ -42,6 +47,15 @@ bun run clean
 
 # 指令語法: bun run clean [siteId] [小說名稱]
 bun run clean 8novel "小說名稱"
+bun run clean --dry-run
+```
+
+### 2.5. 🔁 失敗章節補抓 (Retry Failed)
+依據 `output/<書名>/failed_chapters.json` 重試抓取失敗章節，成功後會覆寫章節檔，並更新失敗清單。
+
+```bash
+bun run retry-failed "小說名稱"
+bun run retry-failed "小說名稱" --dry-run
 ```
 
 ### 3. ✂️ 批次標題結尾清理 (File Cleanup)
@@ -50,6 +64,7 @@ bun run clean 8novel "小說名稱"
 ```bash
 # 指令語法: bun run clean-files <資料夾路徑> [自定義尾綴]
 bun run clean-files "output/小說名稱/txt" "自定義結尾文字"
+bun run clean-files "output/小說名稱/txt" --dry-run
 ```
 
 ### 4. 🎧 生成語音書 (Audiobook)
@@ -62,6 +77,7 @@ bun run audiobook "小說名稱"
 # 進階用法：指定範圍、語速、併發數以及「是否合併」
 # 語法: bun run audiobook <書名> [範圍] [語速] [併發數] [是否合併]
 bun run audiobook "小說名稱" 1-100 +0% 5 true
+bun run audiobook "小說名稱" 1-50 +0% 3 false --dry-run
 ```
 *   **範圍**: `all` (全部), `1-100` (區間), `2,4,10` (特定章節)。
 *   **語速**: 如 `+20%`, `-10%`。
@@ -78,6 +94,7 @@ bun run merge-mp3 "output/小說名稱/audio"
 # 進階用法
 # 語法: bun run merge-mp3 <目錄> --size <數量> [--force]
 bun run merge-mp3 "output/小說名稱/audio" --size 50 --force
+bun run merge-mp3 "output/小說名稱/audio" --size 50 --dry-run
 ```
 *   **--size**: 指定每幾個檔案合併一次。
 *   **--force**: 強制重新合併，即使輸出檔案已存在。
@@ -91,6 +108,7 @@ bun run to-mp4 "output/小說名稱"
 
 # 轉換特定的 mp3 檔案
 bun run to-mp4 "output/小說名稱/chapter1.mp3"
+bun run to-mp4 "output/小說名稱" --dry-run
 ```
 > [!NOTE]
 > 此功能需要系統預先安裝 `ffmpeg`。
@@ -100,6 +118,7 @@ bun run to-mp4 "output/小說名稱/chapter1.mp3"
 
 ```bash
 bun run backup
+bun run backup --dry-run
 ```
 > [!NOTE]
 > 需先完成 `rclone config` 設定。備份目的地需在 `scripts/backup.ts` 中配置。
@@ -122,6 +141,8 @@ bun run test
 - `src/utils/`: 工具類（含 `ContentCleaner.ts` 浮水印邏輯）。
 - `src/storage/`: 存檔邏輯。
 - `src/workflows/`: 跨腳本共用流程工具（路徑解析、章節檔案列舉、清理輔助）。
+- `src/cli/`: 共用 CLI 旗標與錯誤格式工具。
+- `rules/`: 外部化清理規則（`content-cleaner.json`）。
 - `output/`: 爬取結果與語音生成存放處。
 - `scripts/`: 所有的工具指令腳本。
 - `tests/`: Bun 測試（workflow helpers 與清理邏輯）。
@@ -131,7 +152,12 @@ bun run test
 ## 🛠 開發者手冊
 
 ### 如何增加新的浮水印過濾？
-請直接修改 `src/utils/ContentCleaner.ts` 中的 `watermarks` 或 `noiseRegexes` 配置。
+請修改 `rules/content-cleaner.json`。
+
+- `watermarks`: 字串替換規則
+- `noisePatterns`: 正則規則（`pattern` + `flags`）
+
+`src/utils/ContentCleaner.ts` 會在執行時載入此規則檔（若讀取失敗會 fallback 到內建預設規則）。
 
 ### 如何支援新站點？
 1. 實作 `src/adapters/NovelSiteAdapter.ts` 介面。

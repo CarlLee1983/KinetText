@@ -1,12 +1,22 @@
 import { ContentCleaner } from '../src/utils/ContentCleaner';
 import { getSiteIdFromMetadata } from '../src/workflows/cleaning';
+import { formatCliError, parseCommonCliFlags } from '../src/cli/common';
 import { Glob } from "bun";
 import * as path from 'path';
 
 async function main() {
-    // 獲取參數: bun run clean [siteId_or_fallback] [bookTitle]
-    let siteIdArg = Bun.argv[2];
-    const targetBook = Bun.argv[3];
+    const { help, dryRun, positional } = parseCommonCliFlags(Bun.argv.slice(2));
+    if (help) {
+        console.log('Usage: bun run clean [siteId] [bookTitle] [--dry-run]');
+        console.log('Options:');
+        console.log('  --help, -h     Show help');
+        console.log('  --dry-run      Scan and report only, do not modify files');
+        process.exit(0);
+    }
+
+    // bun run clean [siteId_or_fallback] [bookTitle]
+    let siteIdArg = positional[0];
+    const targetBook = positional[1];
 
     const outputDir = path.resolve(import.meta.dir, '..', 'output');
 
@@ -55,8 +65,12 @@ async function main() {
             totalFiles++;
 
             if (content !== cleaned) {
-                await Bun.write(filePath, cleaned);
-                console.log(`[已清理][來源:${currentSiteId}] ${file}`);
+                if (!dryRun) {
+                    await Bun.write(filePath, cleaned);
+                    console.log(`[已清理][來源:${currentSiteId}] ${file}`);
+                } else {
+                    console.log(`[Dry-run][可清理][來源:${currentSiteId}] ${file}`);
+                }
                 cleanedFiles++;
             }
         } catch (error) {
@@ -70,4 +84,7 @@ async function main() {
     console.log(`實際修正數: ${cleanedFiles}`);
 }
 
-main().catch(console.error);
+main().catch((error) => {
+    console.error(`[Error] ${formatCliError(error)}`);
+    process.exit(1);
+});

@@ -3,13 +3,23 @@ import * as path from 'path'
 import pLimit from 'p-limit'
 import { MicrosoftEdgeTTSProvider } from '../src/tts/MicrosoftEdgeTTSProvider'
 import { listChapterTxtFiles, resolveBookDirectories } from '../src/workflows/chapterFiles'
+import { formatCliError, parseCommonCliFlags } from '../src/cli/common'
 
 async function main() {
-    const bookTitle = process.argv[2]
-    const selectionArg = process.argv[3] // Optional limit or range/list (e.g., "5", "10-20", "2,4,10")
-    const rateArg = process.argv[4] || '+0%' // Optional rate (e.g., '+20%', '-10%', '1.5')
-    const concurrencyArg = process.argv[5] || '3' // Optional concurrency (default to 3)
-    const shouldMerge = process.argv[6] === 'true' // Optional merge flag (default to false)
+    const { help, dryRun, positional } = parseCommonCliFlags(process.argv.slice(2))
+    const bookTitle = positional[0]
+    const selectionArg = positional[1] // Optional limit or range/list (e.g., "5", "10-20", "2,4,10")
+    const rateArg = positional[2] || '+0%' // Optional rate (e.g., '+20%', '-10%', '1.5')
+    const concurrencyArg = positional[3] || '3' // Optional concurrency (default to 3)
+    const shouldMerge = positional[4] === 'true' // Optional merge flag (default to false)
+
+    if (help) {
+        console.log('Usage: bun run audiobook <BookTitle> [Selection] [Rate] [Concurrency] [Merge] [--dry-run]')
+        console.log('Options:')
+        console.log('  --help, -h     Show help')
+        console.log('  --dry-run      Show selected chapters and outputs without TTS/merge')
+        process.exit(0)
+    }
 
     if (!bookTitle) {
         console.log('Usage: bun run scripts/generate_audiobook.ts <BookTitle> [Selection] [Rate] [Concurrency] [Merge]')
@@ -86,6 +96,15 @@ async function main() {
         return
     }
 
+    if (dryRun) {
+        console.log(`[Dry-run] Book: ${bookTitle}`)
+        console.log(`[Dry-run] Chapters selected: ${txtFiles.length}`)
+        console.log(`[Dry-run] Output directory: ${audioDir}`)
+        console.log(`[Dry-run] Merge: ${shouldMerge ? 'enabled' : 'disabled'}`)
+        console.log(`[Dry-run] Sample files: ${txtFiles.slice(0, 10).join(', ')}`)
+        return
+    }
+
     console.log(`Processing ${txtFiles.length} chapters. Concurrency: ${concurrency}, Rate: ${rateArg}`)
 
     const ttsProvider = new MicrosoftEdgeTTSProvider('zh-CN-YunxiNeural', rateArg)
@@ -157,4 +176,7 @@ async function main() {
     console.log(`\nAudiobook generation complete for "${bookTitle}"!`)
 }
 
-main().catch(console.error)
+main().catch((error) => {
+    console.error(`[Error] ${formatCliError(error)}`)
+    process.exit(1)
+})

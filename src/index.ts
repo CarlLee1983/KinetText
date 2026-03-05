@@ -1,19 +1,23 @@
 import { CrawlerEngine } from './core/CrawlerEngine';
 import { getAdapterForUrl } from './adapters';
 import { TxtStorageAdapter } from './storage/TxtStorageAdapter';
+import { formatCliError, parseCommonCliFlags } from './cli/common';
 
 function printUsage() {
     console.log('Usage: bun run start <URL>');
+    console.log('Options:');
+    console.log('  --help, -h     Show help');
+    console.log('  --dry-run      Fetch metadata/chapter list only (no chapter download)');
     console.log('Examples:');
     console.log('  bun run start "https://www.8novel.com/novelbooks/12345/"');
     console.log('  bun run start "https://www.wfxs.tw/booklist/9999.html"');
 }
 
 async function main() {
-    const targetUrl = process.argv[2];
-    const isHelp = targetUrl === '--help' || targetUrl === '-h';
+    const { help, dryRun, positional } = parseCommonCliFlags(process.argv.slice(2));
+    const targetUrl = positional[0];
 
-    if (isHelp) {
+    if (help) {
         printUsage();
         process.exit(0);
     }
@@ -33,7 +37,10 @@ async function main() {
     const storage = new TxtStorageAdapter('./output');
     const engine = new CrawlerEngine(adapter, storage, 5);
 
-    await engine.run(targetUrl);
+    await engine.run(targetUrl, { dryRun });
 }
 
-main().catch(console.error);
+main().catch((error) => {
+    console.error(`[Error] ${formatCliError(error)}`);
+    process.exit(1);
+});

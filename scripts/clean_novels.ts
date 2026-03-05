@@ -1,16 +1,23 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ContentCleaner } from "../src/utils/ContentCleaner";
+import { formatCliError, parseCommonCliFlags } from "../src/cli/common";
 import { splitKinetiTextDocument } from "../src/workflows/cleaning";
 
 // Usage: bun run scripts/clean_novels.ts <directory> [suffix] [siteId]
-const dirArg = Bun.argv[2];
-const suffixArg = Bun.argv[3] || "首頁 電腦版 說全 熱門說";
-const siteId = Bun.argv[4] || "czbooks";
+const { help, dryRun, positional } = parseCommonCliFlags(Bun.argv.slice(2));
+const dirArg = positional[0];
+const suffixArg = positional[1] || "首頁 電腦版 說全 熱門說";
+const siteId = positional[2] || "czbooks";
+
+if (help) {
+    console.log("使用方式: bun run clean-files <directory> [suffix] [siteId] [--dry-run]");
+    console.log("範例: bun run clean-files \"output/撈屍人/txt\" --dry-run");
+    process.exit(0);
+}
 
 if (!dirArg) {
-    console.error("使用方式: bun run scripts/clean_novels.ts <directory> [suffix] [siteId]");
-    console.error("範例: bun run scripts/clean_novels.ts \"output/撈屍人/txt\"");
+    console.error("使用方式: bun run clean-files <directory> [suffix] [siteId]");
     process.exit(1);
 }
 
@@ -57,10 +64,17 @@ async function run() {
         }
 
         // Overwrite file
-        await writeFile(filePath, header + body + "\n", "utf-8");
+        if (!dryRun) {
+            await writeFile(filePath, header + body + "\n", "utf-8");
+        } else {
+            console.log(`[Dry-run] Would clean ${file}`);
+        }
         processedCount++;
     }
     console.log(`Successfully processed ${processedCount} files.`);
 }
 
-run().catch(console.error);
+run().catch((error) => {
+    console.error(`[Error] ${formatCliError(error)}`);
+    process.exit(1);
+});

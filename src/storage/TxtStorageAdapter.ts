@@ -24,7 +24,7 @@ export class TxtStorageAdapter implements StorageAdapter {
     }
 
     async saveBookMetadata(book: Omit<Book, 'chapters'>): Promise<void> {
-        const bookDir = path.join(this.baseDir, this.sanitizeFilename(book.title))
+        const bookDir = this.getBookDir(book.title)
         await this.ensureDir(bookDir)
 
         const metaContent = `
@@ -40,7 +40,7 @@ ${book.description}
     }
 
     async saveChapter(bookTitle: string, chapter: Chapter): Promise<void> {
-        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle))
+        const bookDir = this.getBookDir(bookTitle)
         const txtDir = path.join(bookDir, 'txt')
         await this.ensureDir(txtDir)
 
@@ -58,7 +58,7 @@ ${chapter.content || ''}
     }
 
     async chapterExists(bookTitle: string, chapter: Chapter): Promise<boolean> {
-        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle))
+        const bookDir = this.getBookDir(bookTitle)
         const txtDir = path.join(bookDir, 'txt')
         const chapterFileName = this.getChapterFilename(chapter)
         const chapterPath = path.join(txtDir, chapterFileName)
@@ -67,7 +67,7 @@ ${chapter.content || ''}
     }
 
     async isValidChapter(bookTitle: string, chapter: Chapter): Promise<boolean> {
-        const bookDir = path.join(this.baseDir, this.sanitizeFilename(bookTitle))
+        const bookDir = this.getBookDir(bookTitle)
         const txtDir = path.join(bookDir, 'txt')
         const chapterFileName = this.getChapterFilename(chapter)
         const chapterPath = path.join(txtDir, chapterFileName)
@@ -93,8 +93,19 @@ ${chapter.content || ''}
         return cleanLength >= 300;
     }
 
+    async saveRunArtifact(bookTitle: string, filename: string, data: unknown): Promise<void> {
+        const bookDir = this.getBookDir(bookTitle);
+        await this.ensureDir(bookDir);
+        const artifactPath = path.join(bookDir, filename);
+        await Bun.write(artifactPath, JSON.stringify(data, null, 2));
+    }
+
     private getChapterFilename(chapter: Chapter): string {
         return `${String(chapter.index).padStart(4, '0')} - ${this.sanitizeFilename(chapter.title)}.txt`
+    }
+
+    private getBookDir(bookTitle: string): string {
+        return path.join(this.baseDir, this.sanitizeFilename(bookTitle))
     }
 
     private sanitizeFilename(name: string): string {

@@ -8,9 +8,18 @@ import { resolveExistingPathWithOutputFallback } from "../src/workflows/pathUtil
 const { positionals, values } = parseArgs({
     args: Bun.argv.slice(2),
     options: {
+        help: {
+            type: "boolean",
+            short: "h",
+            default: false,
+        },
         force: {
             type: "boolean",
             short: "f",
+            default: false,
+        },
+        dryRun: {
+            type: "boolean",
             default: false,
         },
     },
@@ -18,6 +27,16 @@ const { positionals, values } = parseArgs({
 });
 
 const force = values.force;
+const dryRun = values.dryRun;
+
+if (values.help) {
+    console.log("使用方式: bun run to-mp4 <input_path_or_file> [output.mp4] [選項]");
+    console.log("選項:");
+    console.log("  -h, --help     顯示說明");
+    console.log("  -f, --force    強制覆蓋已存在的檔案");
+    console.log("  --dry-run      僅顯示轉換計畫，不執行 ffmpeg");
+    process.exit(0);
+}
 
 if (positionals.length === 0) {
     console.error("使用方式: bun run to-mp4 <input_path_or_file> [output.mp4] [選項]");
@@ -44,15 +63,17 @@ if (!fs.existsSync(defaultCover)) {
     process.exit(1);
 }
 
-try {
-    // 檢查是否安裝了 ffmpeg
-    const check = await $`ffmpeg -version`.quiet();
-    if (check.exitCode !== 0) {
-        throw new Error('ffmpeg check failed');
+if (!dryRun) {
+    try {
+        // 檢查是否安裝了 ffmpeg
+        const check = await $`ffmpeg -version`.quiet();
+        if (check.exitCode !== 0) {
+            throw new Error('ffmpeg check failed');
+        }
+    } catch {
+        console.error("錯誤: 請確定系統已經安裝 'ffmpeg'");
+        process.exit(1);
     }
-} catch {
-    console.error("錯誤: 請確定系統已經安裝 'ffmpeg'");
-    process.exit(1);
 }
 
 async function convertFile(inputMp3: string, outputMp4?: string, forceOverwrite: boolean = false) {
@@ -72,6 +93,11 @@ async function convertFile(inputMp3: string, outputMp4?: string, forceOverwrite:
     }
 
     console.log(`🎬 正在轉換: ${path.basename(inputMp3)} -> ${path.basename(outputMp4)}`);
+
+    if (dryRun) {
+        console.log(`[Dry-run] Would convert ${inputMp3} -> ${outputMp4}`);
+        return true;
+    }
 
     try {
         const result = await $`ffmpeg -y -loop 1 -framerate 1 -i ${defaultCover} -i ${inputMp3} -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest ${outputMp4}`.quiet();
