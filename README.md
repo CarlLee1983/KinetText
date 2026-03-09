@@ -89,14 +89,14 @@ bun run audiobook "小說名稱" 1-50 +0% +0% 3 false --dry-run
 將大量的小說章節 MP3 檔案按指定數量進行分批合併。例如：每 20 章合併為一個大檔案。
 
 ```bash
-# 基本用法 (預設每 20 個檔案合併為一檔)
-bun run merge-mp3 "output/小說名稱/audio"
+# 基本用法 (預設每 20 個檔案合併為一檔，合併輸出至小說主目錄)
+bun run merge-mp3 "output/小說名稱"
 
 # 進階用法
 # 語法: bun run merge-mp3 <目錄> [--size <數量>] [--start <索引>] [--end <索引>] [--force]
-bun run merge-mp3 "output/小說名稱/audio" --size 50 --force
-bun run merge-mp3 "output/小說名稱/audio" --start 21 --end 100
-bun run merge-mp3 "output/小說名稱/audio" --size 50 --dry-run
+bun run merge-mp3 "output/小說名稱" --size 50 --force
+bun run merge-mp3 "output/小說名稱" --start 21 --end 100
+bun run merge-mp3 "output/小說名稱" --size 50 --dry-run
 ```
 *   **--size**: 指定每幾個檔案合併一次。
 *   **--start**: 開始的檔案索引 (預設: 1，即第一個檔案)。

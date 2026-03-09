@@ -55,20 +55,20 @@ if (values.help) {
 }
 
 if (positionals.length === 0) {
-    console.error("使用方式: bun run merge-mp3 <input_directory> [選項]");
+    console.error("使用方式: bun run merge-mp3 <book_directory> [選項]");
     console.error("選項:");
     console.error("  -s, --size <n>    每 n 個檔案合併為一個 (預設: 20)");
-    console.error("  -o, --output <dir> 指定輸出資料夾 (預設: 與輸入資料夾相同)");
+    console.error("  -o, --output <dir> 指定輸出資料夾 (預設: 與書籍資料夾相同)");
     console.error("  -f, --force      強制覆蓋已存在的合併檔");
     console.error("  --start <n>      開始的檔案索引 (預設: 1)");
     console.error("  --end <n>        結束的檔案索引 (預設: 最後一個檔案)");
     console.error("\n範例:");
-    console.error("  bun run merge-mp3 \"output/撈屍人/audio\" --size 50");
-    console.error("  bun run merge-mp3 \"output/撈屍人/audio\" --start 21 --end 100");
+    console.error("  bun run merge-mp3 \"output/撈屍人\" --size 50");
+    console.error("  bun run merge-mp3 \"output/撈屍人\" --start 21 --end 100");
     process.exit(1);
 }
 
-let inputDir = positionals[0] as string;
+let baseDir = positionals[0] as string;
 const batchSize = parseInt(values.size as string, 10);
 const force = values.force;
 const dryRun = values.dryRun;
@@ -81,18 +81,20 @@ if (isNaN(batchSize) || batchSize <= 0) {
 }
 
 try {
-    inputDir = resolveExistingPathWithOutputFallback(inputDir);
+    baseDir = resolveExistingPathWithOutputFallback(baseDir);
 } catch (error) {
-    console.error(error instanceof Error ? error.message : `找不到路徑: ${inputDir}`);
+    console.error(error instanceof Error ? error.message : `找不到路徑: ${baseDir}`);
     process.exit(1);
 }
 
-if (!fs.statSync(inputDir).isDirectory()) {
-    console.error(`錯誤: ${inputDir} 不是一個資料夾`);
+const inputDir = path.join(baseDir, 'audio');
+
+if (!fs.existsSync(inputDir) || !fs.statSync(inputDir).isDirectory()) {
+    console.error(`錯誤: 找不到音檔資料夾 ${inputDir}，請確認是否已生成音檔`);
     process.exit(1);
 }
 
-const outputDir = (values.output as string) || inputDir;
+const outputDir = (values.output as string) || baseDir;
 if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
 }
@@ -124,7 +126,7 @@ if (!dryRun) {
     }
 }
 
-const bookName = path.basename(path.dirname(inputDir)) || "book";
+const bookName = path.basename(baseDir) || "book";
 
 // 分批處理
 for (let i = 0; i < files.length; i += batchSize) {
