@@ -6,4 +6,5 @@ export interface StorageAdapter {
     chapterExists(bookTitle: string, chapter: Chapter): Promise<boolean>;
     isValidChapter(bookTitle: string, chapter: Chapter): Promise<boolean>;
     saveRunArtifact?(bookTitle: string, filename: string, data: unknown): Promise<void>;
+    readRunArtifact?<T>(bookTitle: string, filename: string): Promise<T | null>;
 }

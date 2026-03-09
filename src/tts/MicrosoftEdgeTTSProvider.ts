@@ -69,8 +69,9 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
 
         // Remove chapter title and separator lines to prevent TTS from reading them
         const lines = text.split('\n')
-        if (lines.length >= 2 && lines[1]?.startsWith('---')) {
-            text = lines.slice(2).join('\n').trim()
+        const separatorIndex = lines.findIndex((line, index) => index < 5 && line.startsWith('---'))
+        if (separatorIndex !== -1) {
+            text = lines.slice(separatorIndex + 1).join('\n').trim()
         }
 
         const chunks = this.splitText(text, 1500)
@@ -79,6 +80,11 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
         const limit = pLimit(1)
         const tasks = chunks.map(chunk => limit(async () => {
             if (!chunk.trim()) return Buffer.alloc(0)
+            // Skip chunks that are only punctuation/symbols/whitespace
+            if (/^[\p{P}\p{S}\s]+$/u.test(chunk)) {
+                console.log(`[TTS] Skipping punctuation-only chunk...`)
+                return Buffer.alloc(0)
+            }
             return await this.synthesizeWithRetry(chunk)
         }))
 

@@ -30,6 +30,12 @@ const { positionals, values } = parseArgs({
         dryRun: {
             type: "boolean",
             default: false,
+        },
+        start: {
+            type: "string",
+        },
+        end: {
+            type: "string",
         }
     },
     allowPositionals: true,
@@ -42,6 +48,8 @@ if (values.help) {
     console.log("  -s, --size <n>   每 n 個檔案合併為一個 (預設: 20)");
     console.log("  -o, --output <dir> 指定輸出資料夾 (預設: 與輸入資料夾相同)");
     console.log("  -f, --force      強制覆蓋已存在的合併檔");
+    console.log("  --start <n>      開始的檔案索引 (預設: 1，即第一個檔案)");
+    console.log("  --end <n>        結束的檔案索引 (預設: 最後一個檔案)");
     console.log("  --dry-run        僅顯示計畫，不執行 ffmpeg");
     process.exit(0);
 }
@@ -52,8 +60,11 @@ if (positionals.length === 0) {
     console.error("  -s, --size <n>    每 n 個檔案合併為一個 (預設: 20)");
     console.error("  -o, --output <dir> 指定輸出資料夾 (預設: 與輸入資料夾相同)");
     console.error("  -f, --force      強制覆蓋已存在的合併檔");
+    console.error("  --start <n>      開始的檔案索引 (預設: 1)");
+    console.error("  --end <n>        結束的檔案索引 (預設: 最後一個檔案)");
     console.error("\n範例:");
     console.error("  bun run merge-mp3 \"output/撈屍人/audio\" --size 50");
+    console.error("  bun run merge-mp3 \"output/撈屍人/audio\" --start 21 --end 100");
     process.exit(1);
 }
 
@@ -61,6 +72,8 @@ let inputDir = positionals[0] as string;
 const batchSize = parseInt(values.size as string, 10);
 const force = values.force;
 const dryRun = values.dryRun;
+const startIdx = values.start ? parseInt(values.start as string, 10) : 1;
+const endIdx = values.end ? parseInt(values.end as string, 10) : undefined;
 
 if (isNaN(batchSize) || batchSize <= 0) {
     console.error("錯誤: --size 必須是正整數");
@@ -85,10 +98,14 @@ if (!fs.existsSync(outputDir)) {
 }
 
 // 取得所有 mp3 檔案並排序
-const files = fs.readdirSync(inputDir)
+let files = fs.readdirSync(inputDir)
     .filter(f => f.toLowerCase().endsWith(".mp3"))
     .filter(f => !f.includes("_merged_")) // 避免重複合併已合併的檔案
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+const startIndex = Math.max(0, startIdx - 1);
+const endIndex = endIdx !== undefined ? Math.min(files.length, endIdx) : files.length;
+files = files.slice(startIndex, endIndex);
 
 if (files.length === 0) {
     console.log("ℹ️ 資料夾內沒發現任何待合併的 .mp3 檔案。");
@@ -116,8 +133,9 @@ for (let i = 0; i < files.length; i += batchSize) {
     const totalBatches = Math.ceil(files.length / batchSize);
 
     // 取得這一批的範圍標籤 (例如 001-020)
-    const startNum = i + 1;
-    const endNum = Math.min(i + batch.length, files.length);
+    // 需要加上 startIndex 以反映完整清單的真實檔案索引，而非擷取後的區間。
+    const startNum = startIndex + i + 1;
+    const endNum = startIndex + i + batch.length;
     const outputName = `${bookName}_${startNum.toString().padStart(3, '0')}-${endNum.toString().padStart(3, '0')}_merged.mp3`;
     const outputPath = path.join(outputDir, outputName);
 

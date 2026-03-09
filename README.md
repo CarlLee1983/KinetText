@@ -92,11 +92,14 @@ bun run audiobook "小說名稱" 1-50 +0% 3 false --dry-run
 bun run merge-mp3 "output/小說名稱/audio"
 
 # 進階用法
-# 語法: bun run merge-mp3 <目錄> --size <數量> [--force]
+# 語法: bun run merge-mp3 <目錄> [--size <數量>] [--start <索引>] [--end <索引>] [--force]
 bun run merge-mp3 "output/小說名稱/audio" --size 50 --force
+bun run merge-mp3 "output/小說名稱/audio" --start 21 --end 100
 bun run merge-mp3 "output/小說名稱/audio" --size 50 --dry-run
 ```
 *   **--size**: 指定每幾個檔案合併一次。
+*   **--start**: 開始的檔案索引 (預設: 1，即第一個檔案)。
+*   **--end**: 結束的檔案索引 (預設: 全部)。
 *   **--force**: 強制重新合併，即使輸出檔案已存在。
 
 ### 6. 🎬 MP3 轉 MP4 (Video Conversion)

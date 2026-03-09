@@ -5,11 +5,13 @@ import type { Chapter } from './types';
 
 interface CrawlerRunOptions {
     dryRun?: boolean;
+    ignoreChapters?: number[];
 }
 
 type ChapterStatus =
     | 'saved'
     | 'skipped_valid'
+    | 'skipped_manual'
     | 'failed_short_content'
     | 'failed_error';
 
@@ -57,6 +59,24 @@ export class CrawlerEngine {
             console.log(`[CrawlerEngine] Dry-run: metadata fetched (${metadata.title} by ${metadata.author})`);
         }
 
+        // 1.5. Read previous run artifact for manual ignores
+        let prevManualIgnores: number[] = [];
+        if (this.storage.readRunArtifact) {
+            const prevReport = await this.storage.readRunArtifact<{ manualIgnoreIndices?: number[] }>(metadata.title, 'run_report.json');
+            if (prevReport?.manualIgnoreIndices) {
+                prevManualIgnores = prevReport.manualIgnoreIndices;
+            }
+        }
+
+        // Merge with CLI ignored chapters
+        if (!options.ignoreChapters) options.ignoreChapters = [];
+        const mergedIgnores = new Set([...options.ignoreChapters, ...prevManualIgnores]);
+        options.ignoreChapters = Array.from(mergedIgnores);
+
+        if (options.ignoreChapters.length > 0) {
+            console.log(`[CrawlerEngine] Active manual ignores: ${options.ignoreChapters.length} chapters.`);
+        }
+
         // 2. Fetch chapter list
         console.log(`[CrawlerEngine] Fetching chapter list...`);
         const chapters = await this.adapter.getChapterList(url);
@@ -82,6 +102,14 @@ export class CrawlerEngine {
                     attempts: 0,
                     contentLength: 0
                 };
+
+                if (options.ignoreChapters?.includes(chapter.index)) {
+                    console.log(`[CrawlerEngine] Manually ignoring chapter ${chapter.index}: ${chapter.title}`);
+                    result.status = 'skipped_manual';
+                    chapterResults.push(result);
+                    return;
+                }
+
                 try {
                     // Check if chapter already exists and is valid
                     const exists = await this.storage.chapterExists(metadata.title, chapter);
@@ -171,12 +199,14 @@ export class CrawlerEngine {
                 summary: {
                     saved: chapterResults.filter((r) => r.status === 'saved').length,
                     skippedValid: chapterResults.filter((r) => r.status === 'skipped_valid').length,
+                    skippedManual: chapterResults.filter((r) => r.status === 'skipped_manual').length,
                     failed: failedChapters.length
                 },
                 failuresTopReasons: Object.entries(reasonCounts)
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 5)
                     .map(([reason, count]) => ({ reason, count })),
+                manualIgnoreIndices: options.ignoreChapters,
                 integrity,
                 failedChaptersFile: failedChapters.length > 0 ? 'failed_chapters.json' : null
             };
@@ -188,7 +218,7 @@ export class CrawlerEngine {
                 await this.storage.saveRunArtifact(metadata.title, 'run_report.json', runReport);
             }
 
-            console.log(`[CrawlerEngine] Run summary: saved=${runReport.summary.saved}, skipped=${runReport.summary.skippedValid}, failed=${runReport.summary.failed}, duration=${runReport.durationMs}ms`);
+            console.log(`[CrawlerEngine] Run summary: saved=${runReport.summary.saved}, skipped=${runReport.summary.skippedValid}, skipped(manual)=${runReport.summary.skippedManual}, failed=${runReport.summary.failed}, duration=${runReport.durationMs}ms`);
             if (integrity.missingIndices.length > 0 || integrity.duplicateIndices.length > 0 || integrity.emptyOrInvalidIndices.length > 0) {
                 console.warn(`[CrawlerEngine] Integrity warnings: missing=${integrity.missingIndices.length}, duplicate=${integrity.duplicateIndices.length}, emptyOrInvalid=${integrity.emptyOrInvalidIndices.length}`);
             }

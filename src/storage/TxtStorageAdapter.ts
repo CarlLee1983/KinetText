@@ -100,6 +100,18 @@ ${chapter.content || ''}
         await Bun.write(artifactPath, JSON.stringify(data, null, 2));
     }
 
+    async readRunArtifact<T>(bookTitle: string, filename: string): Promise<T | null> {
+        const bookDir = this.getBookDir(bookTitle);
+        const artifactPath = path.join(bookDir, filename);
+        const file = Bun.file(artifactPath);
+        if (!(await file.exists())) return null;
+        try {
+            return await file.json() as T;
+        } catch {
+            return null;
+        }
+    }
+
     private getChapterFilename(chapter: Chapter): string {
         return `${String(chapter.index).padStart(4, '0')} - ${this.sanitizeFilename(chapter.title)}.txt`
     }
