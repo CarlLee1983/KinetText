@@ -74,13 +74,14 @@ bun run clean-files "output/小說名稱/txt" --dry-run
 # 基本用法 (預設為前 50 章，不合併)
 bun run audiobook "小說名稱"
 
-# 進階用法：指定範圍、語速、併發數以及「是否合併」
-# 語法: bun run audiobook <書名> [範圍] [語速] [併發數] [是否合併]
-bun run audiobook "小說名稱" 1-100 +0% 5 true
-bun run audiobook "小說名稱" 1-50 +0% 3 false --dry-run
+# 進階用法：指定範圍、語速、音量、併發數以及「是否合併」
+# 語法: bun run audiobook <書名> [範圍] [語速] [音量] [併發數] [是否合併]
+bun run audiobook "小說名稱" 1-100 +0% +50% 5 true
+bun run audiobook "小說名稱" 1-50 +0% +0% 3 false --dry-run
 ```
 *   **範圍**: `all` (全部), `1-100` (區間), `2,4,10` (特定章節)。
 *   **語速**: 如 `+20%`, `-10%`。
+*   **音量**: 如 `+50%`, `-20%`。
 *   **併發數**: 建議設定在 `5-10` 之間。
 *   **是否合併**: 填入 `true` 則會將該次生成的章節合併為單個 MP3。
 

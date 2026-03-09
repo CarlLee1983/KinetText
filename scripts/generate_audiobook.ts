@@ -10,11 +10,12 @@ async function main() {
     const bookTitle = positional[0]
     const selectionArg = positional[1] // Optional limit or range/list (e.g., "5", "10-20", "2,4,10")
     const rateArg = positional[2] || '+0%' // Optional rate (e.g., '+20%', '-10%', '1.5')
-    const concurrencyArg = positional[3] || '3' // Optional concurrency (default to 3)
-    const shouldMerge = positional[4] === 'true' // Optional merge flag (default to false)
+    const volArg = positional[3] || '+0%'  // Optional volume (e.g., '+50%', '-20%')
+    const concurrencyArg = positional[4] || '3' // Optional concurrency (default to 3)
+    const shouldMerge = positional[5] === 'true' // Optional merge flag (default to false)
 
     if (help) {
-        console.log('Usage: bun run audiobook <BookTitle> [Selection] [Rate] [Concurrency] [Merge] [--dry-run]')
+        console.log('Usage: bun run audiobook <BookTitle> [Selection] [Rate] [Volume] [Concurrency] [Merge] [--dry-run]')
         console.log('Options:')
         console.log('  --help, -h     Show help')
         console.log('  --dry-run      Show selected chapters and outputs without TTS/merge')
@@ -22,13 +23,13 @@ async function main() {
     }
 
     if (!bookTitle) {
-        console.log('Usage: bun run scripts/generate_audiobook.ts <BookTitle> [Selection] [Rate] [Concurrency] [Merge]')
+        console.log('Usage: bun run scripts/generate_audiobook.ts <BookTitle> [Selection] [Rate] [Volume] [Concurrency] [Merge]')
         console.log('Examples:')
-        console.log('  bun run scripts/generate_audiobook.ts "Book" 5          # First 5 chapters')
-        console.log('  bun run scripts/generate_audiobook.ts "Book" 10-20      # Chapters 10 to 20')
-        console.log('  bun run scripts/generate_audiobook.ts "Book" 2,4,10     # Chapters 2, 4, 10')
-        console.log('  bun run scripts/generate_audiobook.ts "Book" all +20% 5 # All chapters, 1.2x speed, 5 concurrent')
-        console.log('  bun run scripts/generate_audiobook.ts "Book" 1-100 +0% 3 true # Generate & merge chapters 1-100')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 5              # First 5 chapters')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 10-20          # Chapters 10 to 20')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 2,4,10         # Chapters 2, 4, 10')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" all +20% +0% 5 # All chapters, 1.2x speed, default vol, 5 concurrent')
+        console.log('  bun run scripts/generate_audiobook.ts "Book" 1-100 +0% +50% 3 true # Chaps 1-100, normal speed, +50% vol, merge in end')
         process.exit(1)
     }
 
@@ -105,9 +106,9 @@ async function main() {
         return
     }
 
-    console.log(`Processing ${txtFiles.length} chapters. Concurrency: ${concurrency}, Rate: ${rateArg}`)
+    console.log(`Processing ${txtFiles.length} chapters. Concurrency: ${concurrency}, Rate: ${rateArg}, Volume: ${volArg}`)
 
-    const ttsProvider = new MicrosoftEdgeTTSProvider('zh-CN-YunxiNeural', rateArg)
+    const ttsProvider = new MicrosoftEdgeTTSProvider('zh-CN-YunxiNeural', rateArg, volArg)
     const limit = pLimit(concurrency)
     let completedCount = 0
 

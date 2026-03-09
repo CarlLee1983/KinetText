@@ -8,14 +8,16 @@ import type { TTSProvider } from './TTSProvider'
 export class MicrosoftEdgeTTSProvider implements TTSProvider {
     private voice: string
     private rate: string
+    private volume: string
     private endpoint: string = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
     private trustedClientToken: string = '' // Removed as per instruction
     private tokenExpiresAt: number = 0 // Removed as per instruction
     private tokenRefreshUrl: string = process.env.MICROSOFT_TOKEN_REFRESH_URL || '' // Removed as per instruction
 
-    constructor(voice: string = 'zh-CN-YunxiNeural', rate: string = '+0%') {
+    constructor(voice: string = 'zh-CN-YunxiNeural', rate: string = '+0%', volume: string = '+0%') {
         this.voice = voice
         this.rate = rate
+        this.volume = volume
         this.trustedClientToken = process.env.MICROSOFT_TTS_TOKEN || ''
         // 假設 Token 有效期為 10 分鐘
         this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
@@ -172,7 +174,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
                 ws.send(configMsg)
 
                 const escapedText = this.escapeXml(text)
-                const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'><voice name='${this.voice}'><prosody rate='${this.rate}'>${escapedText}</prosody></voice></speak>`
+                const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='zh-CN'><voice name='${this.voice}'><prosody rate='${this.rate}' volume='${this.volume}'>${escapedText}</prosody></voice></speak>`
                 const requestMsg = `X-RequestId:${connectionId}\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:${timestamp}\r\nPath:ssml\r\n\r\n${ssml}`
                 ws.send(requestMsg)
             })
