@@ -96,9 +96,8 @@ export class UukanshuAdapter implements NovelSiteAdapter {
             await page.goto(chapterUrl, { waitUntil: 'networkidle2', timeout: 30000 });
 
             try {
-                // Wait for some text to load
-                // @ts-ignore
-                await page.waitForFunction(() => document.body.innerText.length > 100, { timeout: 10000 });
+                // Wait for the actual content element to appear (bypasses Cloudflare challenge load time)
+                await page.waitForSelector('.book.read, .content, #content, article', { timeout: 20000 });
             } catch (e) {
                 console.warn(`[UukanshuAdapter] Timeout waiting for content text in ${chapterUrl}`);
             }
@@ -113,6 +112,10 @@ export class UukanshuAdapter implements NovelSiteAdapter {
             });
 
             if (!rawText) return '';
+
+            if (rawText.includes('Performing security verification') || rawText.includes('Just a moment...') || rawText.includes('Cloudflare')) {
+                throw new Error('Cloudflare challenge detected, failing to trigger retry');
+            }
 
             let lines = rawText.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
             // Clean up navigation text

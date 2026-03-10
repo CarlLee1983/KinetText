@@ -39,6 +39,11 @@ async function main() {
     const engine = new CrawlerEngine(adapter, storage, 5);
 
     await engine.run(targetUrl, { dryRun, ignoreChapters });
+
+    if (adapter.close) {
+        await adapter.close();
+    }
+    process.exit(0);
 }
 
 main().catch((error) => {

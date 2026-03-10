@@ -37,6 +37,7 @@ async function main() {
     const bookDir = path.join(outputRoot, bookTitle);
     const failedPath = path.join(bookDir, 'failed_chapters.json');
     const reportPath = path.join(bookDir, 'retry_report.json');
+    const runReportPath = path.join(bookDir, 'run_report.json');
 
     const raw = await fs.readFile(failedPath, 'utf-8');
     const failed = JSON.parse(raw) as FailedChapterEntry[];
@@ -57,6 +58,7 @@ async function main() {
     const limit = pLimit(3);
     const maxRetries = 3;
     const stillFailed: FailedChapterEntry[] = [];
+    const recoveredIndices: number[] = [];
     let recovered = 0;
     let retried = 0;
     const usedAdapters = new Set<{ close?: () => Promise<void> }>();
@@ -102,6 +104,7 @@ async function main() {
                 };
                 await storage.saveChapter(bookTitle, chapter);
                 recovered++;
+                recoveredIndices.push(entry.index);
                 console.log(`[Retry] Recovered chapter ${entry.index}: ${entry.title}`);
             })
         )
@@ -124,6 +127,20 @@ async function main() {
         'utf-8'
     );
 
+    // Also update run_report.json to remove successfully recovered chapters from emptyOrInvalidIndices
+    try {
+        const runReportRaw = await fs.readFile(runReportPath, 'utf-8');
+        const runReport = JSON.parse(runReportRaw);
+        if (runReport.emptyOrInvalidIndices && Array.isArray(runReport.emptyOrInvalidIndices)) {
+            runReport.emptyOrInvalidIndices = runReport.emptyOrInvalidIndices.filter(
+                (idx: number) => !recoveredIndices.includes(idx)
+            );
+            await fs.writeFile(runReportPath, JSON.stringify(runReport, null, 2), 'utf-8');
+        }
+    } catch (e) {
+        // Ignore if run_report.json doesn't exist or is invalid
+    }
+
     for (const adapter of usedAdapters) {
         if (adapter.close) {
             await adapter.close();
@@ -133,6 +150,9 @@ async function main() {
     console.log(`[Retry] Done. retried=${retried}, recovered=${recovered}, stillFailed=${stillFailed.length}`);
     console.log(`[Retry] Updated: ${failedPath}`);
     console.log(`[Retry] Report: ${reportPath}`);
+
+    // Explicitly exit to prevent hanging from puppeteer/stealth-plugin leftover handles
+    process.exit(0);
 }
 
 main().catch((error) => {

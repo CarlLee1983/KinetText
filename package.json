@@ -12,7 +12,8 @@
     "audiobook": "bun run scripts/generate_audiobook.ts",
     "to-mp4": "bun run scripts/mp3_to_mp4.ts",
     "merge-mp3": "bun run scripts/merge_mp3.ts",
-    "clean-files": "bun run scripts/clean_novels.ts"
+    "clean-files": "bun run scripts/clean_novels.ts",
+    "verify": "bun run scripts/verify_chapters.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
