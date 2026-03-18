@@ -5,6 +5,8 @@ import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
 import type { Browser } from 'puppeteer';
+import { hostnameMatches } from './urlUtils';
+import { assertNoAntiBotText, gotoWithAntiBotRetries } from './antiBot';
 
 puppeteer.use(StealthPlugin());
 
@@ -13,7 +15,7 @@ export class UukanshuAdapter implements NovelSiteAdapter {
     private browser: Browser | null = null;
 
     matchUrl(url: string): boolean {
-        return url.includes('uukanshu.cc');
+        return hostnameMatches(url, ['uukanshu.cc', 'www.uukanshu.cc']);
     }
 
     private async getBrowser(): Promise<Browser> {
@@ -37,8 +39,10 @@ export class UukanshuAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(bookUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-            const html = await page.content();
+            const html = await gotoWithAntiBotRetries(page, bookUrl, 'uukanshu metadata', [
+                '.booktitle h1',
+                'meta[property="og:title"]'
+            ]);
             const $ = cheerio.load(html);
 
             const title = $('.booktitle h1').text().trim() || $('h1.booktitle').text().trim() || $('h1').text().trim() || $('meta[property="og:title"]').attr('content') || 'Unknown';
@@ -63,8 +67,11 @@ export class UukanshuAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(bookUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-            const html = await page.content();
+            const html = await gotoWithAntiBotRetries(page, bookUrl, 'uukanshu chapter list', [
+                '.booklist dl dd a',
+                '.chapterlist a',
+                '.book-chapter-list a'
+            ]);
             const $ = cheerio.load(html);
 
             const chapters: Chapter[] = [];
@@ -93,7 +100,12 @@ export class UukanshuAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(chapterUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            await gotoWithAntiBotRetries(page, chapterUrl, 'uukanshu chapter content', [
+                '.book.read',
+                '.content',
+                '#content',
+                'article'
+            ]);
 
             try {
                 // Wait for the actual content element to appear (bypasses Cloudflare challenge load time)
@@ -113,9 +125,7 @@ export class UukanshuAdapter implements NovelSiteAdapter {
 
             if (!rawText) return '';
 
-            if (rawText.includes('Performing security verification') || rawText.includes('Just a moment...') || rawText.includes('Cloudflare')) {
-                throw new Error('Cloudflare challenge detected, failing to trigger retry');
-            }
+            assertNoAntiBotText(rawText, 'uukanshu chapter content');
 
             let lines = rawText.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
             // Clean up navigation text
@@ -146,7 +156,9 @@ export class UukanshuAdapter implements NovelSiteAdapter {
 
     async close(): Promise<void> {
         if (this.browser) {
-            await this.browser.close();
+            if (this.browser.isConnected()) {
+                await this.browser.close();
+            }
             this.browser = null;
         }
     }

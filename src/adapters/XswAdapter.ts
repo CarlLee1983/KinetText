@@ -3,6 +3,8 @@ import * as cheerio from 'cheerio';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
+import { hostnameMatches } from './urlUtils';
+import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
 
 const client = axios.create({
     headers: {
@@ -14,7 +16,12 @@ export class XswAdapter implements NovelSiteAdapter {
     siteName = 'xsw';
 
     matchUrl(url: string): boolean {
-        return url.includes('xsw.tw');
+        return hostnameMatches(url, ['m.xsw.tw', 'www.xsw.tw', 'xsw.tw']);
+    }
+
+    private extractBookId(url: string): string {
+        const match = url.match(/https?:\/\/(?:m|www)\.xsw\.tw\/(\d+)(?:\/|$)/);
+        return match?.[1] || '';
     }
 
     async getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>> {
@@ -25,7 +32,11 @@ export class XswAdapter implements NovelSiteAdapter {
             bookUrl = match[1];
         }
 
-        const { data } = await client.get(bookUrl);
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(bookUrl),
+            'xsw metadata'
+        );
+        assertNoAntiBotText(data, 'xsw metadata');
         const $ = cheerio.load(data);
 
         // m.xsw.tw parsing
@@ -48,8 +59,7 @@ export class XswAdapter implements NovelSiteAdapter {
     async getChapterList(url: string): Promise<Chapter[]> {
         // Derive the base book URL (ID)
         // Example: https://m.xsw.tw/1730108/251856158.html -> 1730108
-        const idMatch = url.match(/\/(?:m|www)\.xsw\.tw\/(\d+)\//);
-        const bookId = idMatch ? idMatch[1] : '';
+        const bookId = this.extractBookId(url);
 
         if (!bookId) {
             console.warn(`[XswAdapter] Could not derive book ID from ${url}, falling back to sequential.`);
@@ -66,7 +76,11 @@ export class XswAdapter implements NovelSiteAdapter {
         while (currentPage <= totalPages) {
             const pageUrl = `https://m.xsw.tw/${bookId}/page-${currentPage}.html`;
             try {
-                const { data } = await client.get(pageUrl);
+                const { data } = await withAntiBotRetries(
+                    () => client.get<string>(pageUrl),
+                    'xsw paginated chapter list'
+                );
+                assertNoAntiBotText(data, 'xsw paginated chapter list');
                 const $ = cheerio.load(data);
 
                 // Specific selectors for the actual chronological chapter list
@@ -138,7 +152,11 @@ export class XswAdapter implements NovelSiteAdapter {
 
         while (currentUrl && currentUrl.endsWith('.html')) {
             try {
-                const { data: pageData } = await client.get(currentUrl);
+                const { data: pageData } = await withAntiBotRetries(
+                    () => client.get<string>(currentUrl),
+                    'xsw sequential chapter discovery'
+                );
+                assertNoAntiBotText(pageData, 'xsw sequential chapter discovery');
                 const $page = cheerio.load(pageData);
                 const title = $page('.nr_title').text().trim() || `Chapter ${index}`;
 
@@ -167,11 +185,15 @@ export class XswAdapter implements NovelSiteAdapter {
 
     async getChapterContent(chapterUrl: string): Promise<string> {
         // Some sites check Referer to prevent direct hotlinking of content
-        const { data } = await client.get(chapterUrl, {
-            headers: {
-                'Referer': chapterUrl.split('/').slice(0, -1).join('/') + '/'
-            }
-        });
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(chapterUrl, {
+                headers: {
+                    'Referer': chapterUrl.split('/').slice(0, -1).join('/') + '/'
+                }
+            }),
+            'xsw chapter content'
+        );
+        assertNoAntiBotText(data, 'xsw chapter content');
         const $ = cheerio.load(data);
 
         // Try multiple selectors and pick the one with the longest text

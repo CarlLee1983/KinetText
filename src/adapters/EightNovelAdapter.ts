@@ -3,6 +3,8 @@ import * as cheerio from 'cheerio';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
+import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
+import { hostnameMatches } from './urlUtils';
 
 const client = axios.create({
     headers: {
@@ -14,11 +16,15 @@ export class EightNovelAdapter implements NovelSiteAdapter {
     siteName = '8novel';
 
     matchUrl(url: string): boolean {
-        return url.includes('8novel.com');
+        return hostnameMatches(url, ['8novel.com', 'www.8novel.com', 'article.8novel.com']);
     }
 
     async getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>> {
-        const { data } = await client.get(url);
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(url),
+            '8novel metadata'
+        );
+        assertNoAntiBotText(data, '8novel metadata');
         const $ = cheerio.load(data);
 
         const title = $('meta[property="og:title"]').attr('content') || $('h1').text().trim();
@@ -37,7 +43,11 @@ export class EightNovelAdapter implements NovelSiteAdapter {
     }
 
     async getChapterList(url: string): Promise<Chapter[]> {
-        const { data } = await client.get(url);
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(url),
+            '8novel chapter list'
+        );
+        assertNoAntiBotText(data, '8novel chapter list');
         const $ = cheerio.load(data);
         const chapters: Chapter[] = [];
 
@@ -58,7 +68,11 @@ export class EightNovelAdapter implements NovelSiteAdapter {
     }
 
     async getChapterContent(chapterUrl: string): Promise<string> {
-        const { data } = await client.get(chapterUrl);
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(chapterUrl),
+            '8novel chapter shell'
+        );
+        assertNoAntiBotText(data, '8novel chapter shell');
 
         const $ = cheerio.load(data);
         // Combine content from all inline script tags to ensure all variables 
@@ -188,7 +202,11 @@ export class EightNovelAdapter implements NovelSiteAdapter {
         const ajaxUrl = ajaxUrlPath.startsWith('http') ? ajaxUrlPath : `https://article.8novel.com${ajaxUrlPath.startsWith('/') ? '' : '/'}${ajaxUrlPath}`;
         console.log(`[8novel] Fetching AJAX content from: ${ajaxUrl}`);
 
-        const { data: contentHtml } = await client.get(ajaxUrl);
+        const { data: contentHtml } = await withAntiBotRetries(
+            () => client.get<string>(ajaxUrl),
+            '8novel ajax content'
+        );
+        assertNoAntiBotText(contentHtml, '8novel ajax content');
 
         // Clean the content
         const c = cheerio.load(contentHtml);

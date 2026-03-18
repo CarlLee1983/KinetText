@@ -40,9 +40,6 @@ async function main() {
 
     await engine.run(targetUrl, { dryRun, ignoreChapters });
 
-    if (adapter.close) {
-        await adapter.close();
-    }
     process.exit(0);
 }
 

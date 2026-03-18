@@ -3,6 +3,8 @@ import * as cheerio from 'cheerio';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
+import { hostnameMatches } from './urlUtils';
+import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
 
 const client = axios.create({
     headers: {
@@ -14,7 +16,43 @@ export class WfxsAdapter implements NovelSiteAdapter {
     siteName = 'wfxs';
 
     matchUrl(url: string): boolean {
-        return url.includes('wfxs.tw');
+        return hostnameMatches(url, ['wfxs.tw', 'www.wfxs.tw']);
+    }
+
+    private isChapterListUrl(url: string): boolean {
+        return /https?:\/\/(?:www\.)?wfxs\.tw\/booklist\/\d+\.html/.test(url);
+    }
+
+    private isChapterPageUrl(url: string): boolean {
+        return /https?:\/\/(?:www\.)?wfxs\.tw\/xiaoshuo\/\d+\/\d+\/?$/.test(url);
+    }
+
+    private isBookHomeUrl(url: string): boolean {
+        return /https?:\/\/(?:www\.)?wfxs\.tw\/xiaoshuo\/\d+\/?$/.test(url);
+    }
+
+    private async resolveChapterListUrl(url: string): Promise<string | null> {
+        if (this.isChapterListUrl(url)) {
+            return url;
+        }
+
+        if (!this.isBookHomeUrl(url)) {
+            return null;
+        }
+
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(url),
+            'wfxs chapter list resolve'
+        );
+        assertNoAntiBotText(data, 'wfxs chapter list resolve');
+        const $ = cheerio.load(data);
+        const href = $('a[href*="/booklist/"]').first().attr('href');
+
+        if (!href) {
+            return null;
+        }
+
+        return href.startsWith('http') ? href : `https://www.wfxs.tw${href}`;
     }
 
     async getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>> {
@@ -24,7 +62,11 @@ export class WfxsAdapter implements NovelSiteAdapter {
             bookUrl = url.replace(/\/xiaoshuo\/(\d+)\/\d+\//, '/xiaoshuo/$1/');
         }
 
-        const { data } = await client.get(bookUrl);
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(bookUrl),
+            'wfxs metadata'
+        );
+        assertNoAntiBotText(data, 'wfxs metadata');
         const $ = cheerio.load(data);
 
         // Based on my debug_wfxs inspection
@@ -48,8 +90,13 @@ export class WfxsAdapter implements NovelSiteAdapter {
         // But let's support both. If it's a list page /booklist/ID.html, parse all.
         // If it's a chapter page, follow next links until the end.
 
-        if (url.includes('/booklist/')) {
-            const { data } = await client.get(url);
+        const chapterListUrl = await this.resolveChapterListUrl(url);
+        if (chapterListUrl) {
+            const { data } = await withAntiBotRetries(
+                () => client.get<string>(chapterListUrl),
+                'wfxs chapter list'
+            );
+            assertNoAntiBotText(data, 'wfxs chapter list');
             const $ = cheerio.load(data);
             const chapters: Chapter[] = [];
             $('#readerlists li a').each((i, el) => {
@@ -66,6 +113,11 @@ export class WfxsAdapter implements NovelSiteAdapter {
             return chapters;
         }
 
+        if (!this.isChapterPageUrl(url)) {
+            console.warn(`[WfxsAdapter] Unsupported chapter list source URL, returning empty list: ${url}`);
+            return [];
+        }
+
         // If it's a chapter page, we follow "next" links as requested
         const chapters: Chapter[] = [];
         let currentUrl = url;
@@ -75,7 +127,11 @@ export class WfxsAdapter implements NovelSiteAdapter {
 
         while (currentUrl) {
             try {
-                const { data } = await client.get(currentUrl);
+                const { data } = await withAntiBotRetries(
+                    () => client.get<string>(currentUrl),
+                    'wfxs sequential chapter discovery'
+                );
+                assertNoAntiBotText(data, 'wfxs sequential chapter discovery');
                 const $ = cheerio.load(data);
 
                 // Chapter title
@@ -111,7 +167,11 @@ export class WfxsAdapter implements NovelSiteAdapter {
     }
 
     async getChapterContent(chapterUrl: string): Promise<string> {
-        const { data } = await client.get(chapterUrl);
+        const { data } = await withAntiBotRetries(
+            () => client.get<string>(chapterUrl),
+            'wfxs chapter content'
+        );
+        assertNoAntiBotText(data, 'wfxs chapter content');
         const $ = cheerio.load(data);
 
         // Remove scripts, styles, and ads

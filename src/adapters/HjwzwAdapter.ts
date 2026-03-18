@@ -4,6 +4,8 @@ import * as iconv from 'iconv-lite';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
+import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
+import { hostnameMatches } from './urlUtils';
 
 const client = axios.create({
     headers: {
@@ -18,7 +20,7 @@ export class HjwzwAdapter implements NovelSiteAdapter {
     siteName = 'hjwzw';
 
     matchUrl(url: string): boolean {
-        return url.includes('tw.hjwzw.com');
+        return hostnameMatches(url, ['tw.hjwzw.com']);
     }
 
     private getBookId(url: string): string {
@@ -34,8 +36,12 @@ export class HjwzwAdapter implements NovelSiteAdapter {
         }
 
         const bookUrl = `https://tw.hjwzw.com/Book/${bookId}`;
-        const { data } = await client.get(bookUrl, { responseType: 'arraybuffer' });
-        const html = iconv.decode(data, 'utf-8');
+        const { data } = await withAntiBotRetries(
+            () => client.get<ArrayBuffer>(bookUrl, { responseType: 'arraybuffer' }),
+            'hjwzw metadata'
+        );
+        const html = iconv.decode(Buffer.from(data), 'utf-8');
+        assertNoAntiBotText(html, 'hjwzw metadata');
         const $ = cheerio.load(html);
 
         const title = $('h1').text().trim() || 'Unknown';
@@ -72,8 +78,12 @@ export class HjwzwAdapter implements NovelSiteAdapter {
         }
 
         const chapterListUrl = `https://tw.hjwzw.com/Book/Chapter/${bookId}`;
-        const { data } = await client.get(chapterListUrl, { responseType: 'arraybuffer' });
-        const html = iconv.decode(data, 'utf-8');
+        const { data } = await withAntiBotRetries(
+            () => client.get<ArrayBuffer>(chapterListUrl, { responseType: 'arraybuffer' }),
+            'hjwzw chapter list'
+        );
+        const html = iconv.decode(Buffer.from(data), 'utf-8');
+        assertNoAntiBotText(html, 'hjwzw chapter list');
         const $ = cheerio.load(html);
 
         const chapters: Chapter[] = [];
@@ -118,8 +128,12 @@ export class HjwzwAdapter implements NovelSiteAdapter {
         let retries = 3;
         while (retries > 0) {
             try {
-                const { data } = await client.get(chapterUrl, { responseType: 'arraybuffer' });
-                const html = iconv.decode(data, 'utf-8');
+                const { data } = await withAntiBotRetries(
+                    () => client.get<ArrayBuffer>(chapterUrl, { responseType: 'arraybuffer' }),
+                    'hjwzw chapter content'
+                );
+                const html = iconv.decode(Buffer.from(data), 'utf-8');
+                assertNoAntiBotText(html, 'hjwzw chapter content');
                 const $ = cheerio.load(html);
 
                 let targetHtml = '';

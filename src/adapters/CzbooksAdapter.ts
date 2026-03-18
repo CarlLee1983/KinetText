@@ -5,6 +5,8 @@ import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
 import type { Browser } from 'puppeteer';
+import { hostnameMatches } from './urlUtils';
+import { gotoWithAntiBotRetries } from './antiBot';
 
 puppeteer.use(StealthPlugin());
 
@@ -13,7 +15,7 @@ export class CzbooksAdapter implements NovelSiteAdapter {
     private browser: Browser | null = null;
 
     matchUrl(url: string): boolean {
-        return url.includes('czbooks.net');
+        return hostnameMatches(url, ['czbooks.net', 'm.czbooks.net', 'www.czbooks.net']);
     }
 
     private async getBrowser(): Promise<Browser> {
@@ -37,8 +39,11 @@ export class CzbooksAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(bookUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-            const html = await page.content();
+            const html = await gotoWithAntiBotRetries(page, bookUrl, 'czbooks metadata', [
+                'span.title',
+                '.novel-detail-header h1',
+                'h1.title'
+            ]);
             const $ = cheerio.load(html);
 
             const title = $('span.title').text().trim() || $('.novel-detail-header h1').text().trim() || $('h1.title').text().trim() || 'Unknown';
@@ -64,8 +69,11 @@ export class CzbooksAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(bookUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-            const html = await page.content();
+            const html = await gotoWithAntiBotRetries(page, bookUrl, 'czbooks chapter list', [
+                '#chapter-list a',
+                '.chapter-list a',
+                'ul.chapter-list li a'
+            ]);
             const $ = cheerio.load(html);
 
             const chapters: Chapter[] = [];
@@ -94,7 +102,11 @@ export class CzbooksAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(chapterUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            const html = await gotoWithAntiBotRetries(page, chapterUrl, 'czbooks chapter content', [
+                '.content',
+                '#content',
+                '.chapter-content'
+            ]);
 
             // Wait for content container to appear, with a short timeout to handle variations
             try {
@@ -102,8 +114,6 @@ export class CzbooksAdapter implements NovelSiteAdapter {
             } catch (e) {
                 console.warn(`[CzbooksAdapter] Selector timeout for ${chapterUrl}`);
             }
-
-            const html = await page.content();
             const $ = cheerio.load(html);
 
             // Remove scripts, styles, and ads
@@ -134,7 +144,9 @@ export class CzbooksAdapter implements NovelSiteAdapter {
 
     async close(): Promise<void> {
         if (this.browser) {
-            await this.browser.close();
+            if (this.browser.isConnected()) {
+                await this.browser.close();
+            }
             this.browser = null;
         }
     }

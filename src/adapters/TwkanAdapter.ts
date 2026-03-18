@@ -5,6 +5,8 @@ import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
 import type { Browser } from 'puppeteer';
+import { hostnameMatches } from './urlUtils';
+import { assertNoAntiBotText, gotoWithAntiBotRetries } from './antiBot';
 
 puppeteer.use(StealthPlugin());
 
@@ -13,14 +15,20 @@ export class TwkanAdapter implements NovelSiteAdapter {
     private browser: Browser | null = null;
 
     matchUrl(url: string): boolean {
-        return url.includes('twkan.com');
+        return hostnameMatches(url, ['twkan.com', 'www.twkan.com']);
     }
 
     private async getBrowser(): Promise<Browser> {
-        if (!this.browser) {
+        if (!this.browser || !this.browser.isConnected()) {
             this.browser = await puppeteer.launch({
                 headless: true, // Use headless mode
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
+                args: [
+                    '--no-sandbox', 
+                    '--disable-setuid-sandbox', 
+                    '--disable-dev-shm-usage', // Prevent shared memory issues
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu'
+                ]
             });
         }
         return this.browser;
@@ -37,15 +45,10 @@ export class TwkanAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(bookUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            await new Promise(r => setTimeout(r, 2000)); // wait for cloudflare challenge to settle if any
-            let html = await page.content();
-
-            // simple retry if still in cloudflare check
-            if (html.includes('Just a moment')) {
-                await new Promise(r => setTimeout(r, 5000));
-                html = await page.content();
-            }
+            const html = await gotoWithAntiBotRetries(page, bookUrl, 'twkan metadata', [
+                'meta[property="og:title"]',
+                'title'
+            ]);
             const $ = cheerio.load(html);
 
             const titleMatch = html.match(/articlename:\s*'([^']+)'/);
@@ -68,7 +71,13 @@ export class TwkanAdapter implements NovelSiteAdapter {
                 description
             };
         } finally {
-            await page.close();
+            try {
+                if (!page.isClosed()) {
+                    await page.close();
+                }
+            } catch (e) {
+                // Ignore errors during close
+            }
         }
     }
 
@@ -85,15 +94,7 @@ export class TwkanAdapter implements NovelSiteAdapter {
         const page = await browser.newPage();
 
         try {
-            await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            await new Promise(r => setTimeout(r, 2000));
-
-            let html = await page.content();
-            if (html.includes('Just a moment')) {
-                await new Promise(r => setTimeout(r, 5000));
-                html = await page.content();
-            }
-
+            const html = await gotoWithAntiBotRetries(page, targetUrl, 'twkan chapter list', ['li a']);
             const $ = cheerio.load(html);
 
             const chapters: Chapter[] = [];
@@ -118,23 +119,30 @@ export class TwkanAdapter implements NovelSiteAdapter {
 
             return uniqueChapters;
         } finally {
-            await page.close();
+            try {
+                if (!page.isClosed()) {
+                    await page.close();
+                }
+            } catch (e) {
+                // Ignore errors during close
+            }
         }
     }
 
     async getChapterContent(chapterUrl: string): Promise<string> {
         const browser = await this.getBrowser();
         const page = await browser.newPage();
+        
+        // Increase timeout for individual chapters
+        page.setDefaultNavigationTimeout(60000);
 
         try {
-            await page.goto(chapterUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-            await new Promise(r => setTimeout(r, 2000));
-
-            let html = await page.content();
-            if (html.includes('Just a moment')) {
-                await new Promise(r => setTimeout(r, 5000));
-                html = await page.content();
-            }
+            const html = await gotoWithAntiBotRetries(page, chapterUrl, 'twkan chapter content', [
+                'div[id^="txtcontent"]',
+                '#content',
+                '#chaptercontent'
+            ]);
+            assertNoAntiBotText(html, 'twkan chapter content');
             const $ = cheerio.load(html);
 
             $('script').remove();
@@ -163,13 +171,25 @@ export class TwkanAdapter implements NovelSiteAdapter {
 
             return ContentCleaner.clean('twkan', content);
         } finally {
-            await page.close();
+            try {
+                if (!page.isClosed()) {
+                    await page.close();
+                }
+            } catch (e) {
+                // Ignore errors during close
+            }
         }
     }
 
     async close(): Promise<void> {
         if (this.browser) {
-            await this.browser.close();
+            try {
+                if (this.browser.isConnected()) {
+                    await this.browser.close();
+                }
+            } catch (e) {
+                // Ignore errors during close
+            }
             this.browser = null;
         }
     }

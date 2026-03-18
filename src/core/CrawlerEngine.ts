@@ -37,6 +37,7 @@ export class CrawlerEngine {
     private adapter: NovelSiteAdapter;
     private storage: StorageAdapter;
     private concurrency: number;
+    private nextRequestSlotAt = 0;
 
     constructor(adapter: NovelSiteAdapter, storage: StorageAdapter, concurrency: number = 5) {
         this.adapter = adapter;
@@ -132,6 +133,7 @@ export class CrawlerEngine {
                         attempts++;
                         result.attempts = attempts;
                         try {
+                            await this.waitForRequestSlot();
                             console.log(`[CrawlerEngine] Fetching chapter ${chapter.index} (Attempt ${attempts}): ${chapter.title}`);
                             content = await this.adapter.getChapterContent(chapter.sourceUrl);
                             result.contentLength = content?.length || 0;
@@ -280,5 +282,17 @@ export class CrawlerEngine {
             counts[key] = (counts[key] || 0) + 1;
         }
         return counts;
+    }
+
+    private async waitForRequestSlot(): Promise<void> {
+        const baseGapMs = 450;
+        const jitterMs = Math.floor(Math.random() * 450);
+        const now = Date.now();
+        const scheduledAt = Math.max(now, this.nextRequestSlotAt);
+        this.nextRequestSlotAt = scheduledAt + baseGapMs + jitterMs;
+
+        if (scheduledAt > now) {
+            await new Promise(resolve => setTimeout(resolve, scheduledAt - now));
+        }
     }
 }
