@@ -1,7 +1,15 @@
 import type { Book, Chapter } from '../core/types';
 
+export interface AdapterResourceProfile {
+    maxConcurrency?: number;
+    requestIntervalMs?: number;
+    postSuccessDelayMs?: number;
+    runFullIntegrityCheck?: boolean;
+}
+
 export interface NovelSiteAdapter {
     siteName: string;
+    resourceProfile?: AdapterResourceProfile;
 
     // Check if this adapter can handle the given URL
     matchUrl(url: string): boolean;

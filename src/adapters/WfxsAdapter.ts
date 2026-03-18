@@ -1,19 +1,19 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
 import { hostnameMatches } from './urlUtils';
 import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
-
-const client = axios.create({
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
-});
+import { createDefaultAdapterHttpClient } from './httpClient';
 
 export class WfxsAdapter implements NovelSiteAdapter {
     siteName = 'wfxs';
+    resourceProfile = {
+        maxConcurrency: 4,
+        requestIntervalMs: 350,
+        postSuccessDelayMs: 0
+    };
+    private client = createDefaultAdapterHttpClient(this.resourceProfile.requestIntervalMs);
 
     matchUrl(url: string): boolean {
         return hostnameMatches(url, ['wfxs.tw', 'www.wfxs.tw']);
@@ -41,7 +41,7 @@ export class WfxsAdapter implements NovelSiteAdapter {
         }
 
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(url),
+            () => this.client.get<string>(url),
             'wfxs chapter list resolve'
         );
         assertNoAntiBotText(data, 'wfxs chapter list resolve');
@@ -63,7 +63,7 @@ export class WfxsAdapter implements NovelSiteAdapter {
         }
 
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(bookUrl),
+            () => this.client.get<string>(bookUrl),
             'wfxs metadata'
         );
         assertNoAntiBotText(data, 'wfxs metadata');
@@ -93,7 +93,7 @@ export class WfxsAdapter implements NovelSiteAdapter {
         const chapterListUrl = await this.resolveChapterListUrl(url);
         if (chapterListUrl) {
             const { data } = await withAntiBotRetries(
-                () => client.get<string>(chapterListUrl),
+                () => this.client.get<string>(chapterListUrl),
                 'wfxs chapter list'
             );
             assertNoAntiBotText(data, 'wfxs chapter list');
@@ -128,7 +128,7 @@ export class WfxsAdapter implements NovelSiteAdapter {
         while (currentUrl) {
             try {
                 const { data } = await withAntiBotRetries(
-                    () => client.get<string>(currentUrl),
+                    () => this.client.get<string>(currentUrl),
                     'wfxs sequential chapter discovery'
                 );
                 assertNoAntiBotText(data, 'wfxs sequential chapter discovery');
@@ -168,7 +168,7 @@ export class WfxsAdapter implements NovelSiteAdapter {
 
     async getChapterContent(chapterUrl: string): Promise<string> {
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(chapterUrl),
+            () => this.client.get<string>(chapterUrl),
             'wfxs chapter content'
         );
         assertNoAntiBotText(data, 'wfxs chapter content');

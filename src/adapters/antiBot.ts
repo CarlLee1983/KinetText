@@ -1,5 +1,5 @@
 import type { AxiosError } from 'axios';
-import type { Page } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer';
 
 const ANTI_BOT_PATTERNS = [
     /just a moment/i,
@@ -110,4 +110,58 @@ export async function gotoWithAntiBotRetries(
         assertNoAntiBotText(html, context);
         return html;
     }, context, retries);
+}
+
+export class PuppeteerPagePool {
+    private idlePages: Page[] = [];
+    private waiters: Array<(page: Page) => void> = [];
+    private createdPages = 0;
+
+    constructor(
+        private readonly getBrowser: () => Promise<Browser>,
+        private readonly maxPages: number
+    ) {}
+
+    async acquire(): Promise<Page> {
+        while (this.idlePages.length > 0) {
+            const page = this.idlePages.pop();
+            if (page && !page.isClosed()) {
+                return page;
+            }
+            this.createdPages = Math.max(0, this.createdPages - 1);
+        }
+
+        if (this.createdPages < this.maxPages) {
+            this.createdPages++;
+            const browser = await this.getBrowser();
+            const page = await browser.newPage();
+            await preparePage(page);
+            return page;
+        }
+
+        return new Promise(resolve => {
+            this.waiters.push(resolve);
+        });
+    }
+
+    async release(page: Page): Promise<void> {
+        if (page.isClosed()) {
+            this.createdPages = Math.max(0, this.createdPages - 1);
+            return;
+        }
+
+        const waiter = this.waiters.shift();
+        if (waiter) {
+            waiter(page);
+            return;
+        }
+
+        this.idlePages.push(page);
+    }
+
+    reset(): void {
+        this.idlePages = [];
+        this.waiters = [];
+        this.createdPages = 0;
+    }
 }

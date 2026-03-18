@@ -89,7 +89,8 @@ export class CrawlerEngine {
         }
 
         // 3. Fetch chapters with concurrency control
-        const limit = pLimit(this.concurrency);
+        const effectiveConcurrency = this.getEffectiveConcurrency();
+        const limit = pLimit(effectiveConcurrency);
         const chapterResults: ChapterResult[] = [];
         const failedChapters: ChapterResult[] = [];
 
@@ -164,8 +165,10 @@ export class CrawlerEngine {
 
                     chapter.content = content;
 
-                    // Process random delay to avoid rate-limiting between successful chapters
-                    await new Promise(res => setTimeout(res, 500 + Math.random() * 1000));
+                    const postSuccessDelayMs = this.adapter.resourceProfile?.postSuccessDelayMs ?? 0;
+                    if (postSuccessDelayMs > 0) {
+                        await new Promise(res => setTimeout(res, postSuccessDelayMs));
+                    }
 
                     await this.storage.saveChapter(metadata.title, chapter);
                     console.log(`[CrawlerEngine] Saved chapter ${chapter.index}: ${chapter.title}`);
@@ -184,7 +187,7 @@ export class CrawlerEngine {
 
         try {
             await Promise.all(promises);
-            const integrity = await this.buildIntegrityReport(metadata.title, chapters);
+            const integrity = await this.buildIntegrityReport(chapters, chapterResults);
             const finishedAt = Date.now();
             const reasonCounts = this.countFailureReasons(failedChapters);
             const runReport = {
@@ -233,7 +236,7 @@ export class CrawlerEngine {
         }
     }
 
-    private async buildIntegrityReport(bookTitle: string, chapters: Chapter[]): Promise<IntegrityReport> {
+    private async buildIntegrityReport(chapters: Chapter[], chapterResults: ChapterResult[]): Promise<IntegrityReport> {
         const indices = chapters.map((c) => c.index).sort((a, b) => a - b);
         const indexCounts = new Map<number, number>();
         for (const idx of indices) {
@@ -248,23 +251,13 @@ export class CrawlerEngine {
             if (!present.has(i)) missingIndices.push(i);
         }
 
-        const emptyOrInvalidIndices: number[] = [];
-        const validateLimit = pLimit(Math.max(1, Math.min(10, this.concurrency)));
-        await Promise.all(
-            chapters.map((chapter) =>
-                validateLimit(async () => {
-                    const exists = await this.storage.chapterExists(bookTitle, chapter);
-                    if (!exists) {
-                        emptyOrInvalidIndices.push(chapter.index);
-                        return;
-                    }
-                    const valid = await this.storage.isValidChapter(bookTitle, chapter);
-                    if (!valid) {
-                        emptyOrInvalidIndices.push(chapter.index);
-                    }
-                })
+        const emptyOrInvalidIndices = chapterResults
+            .filter((result) =>
+                result.status === 'failed_error' ||
+                result.status === 'failed_short_content' ||
+                result.status === 'skipped_manual'
             )
-        );
+            .map((result) => result.index);
 
         return {
             expectedCount: chapters.length,
@@ -285,8 +278,12 @@ export class CrawlerEngine {
     }
 
     private async waitForRequestSlot(): Promise<void> {
-        const baseGapMs = 450;
-        const jitterMs = Math.floor(Math.random() * 450);
+        const baseGapMs = this.adapter.resourceProfile?.requestIntervalMs ?? 0;
+        if (baseGapMs <= 0) {
+            return;
+        }
+
+        const jitterMs = Math.floor(Math.random() * Math.max(25, Math.floor(baseGapMs * 0.35)));
         const now = Date.now();
         const scheduledAt = Math.max(now, this.nextRequestSlotAt);
         this.nextRequestSlotAt = scheduledAt + baseGapMs + jitterMs;
@@ -294,5 +291,13 @@ export class CrawlerEngine {
         if (scheduledAt > now) {
             await new Promise(resolve => setTimeout(resolve, scheduledAt - now));
         }
+    }
+
+    private getEffectiveConcurrency(): number {
+        const adapterMaxConcurrency = this.adapter.resourceProfile?.maxConcurrency;
+        if (typeof adapterMaxConcurrency === 'number' && adapterMaxConcurrency > 0) {
+            return Math.max(1, Math.min(this.concurrency, adapterMaxConcurrency));
+        }
+        return this.concurrency;
     }
 }

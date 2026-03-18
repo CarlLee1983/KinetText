@@ -4,15 +4,21 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
-import type { Browser } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer';
 import { hostnameMatches } from './urlUtils';
-import { assertNoAntiBotText, gotoWithAntiBotRetries } from './antiBot';
+import { assertNoAntiBotText, gotoWithAntiBotRetries, PuppeteerPagePool } from './antiBot';
 
 puppeteer.use(StealthPlugin());
 
 export class UukanshuAdapter implements NovelSiteAdapter {
     siteName = 'uukanshu';
+    resourceProfile = {
+        maxConcurrency: 2,
+        requestIntervalMs: 900,
+        postSuccessDelayMs: 0
+    };
     private browser: Browser | null = null;
+    private pagePool: PuppeteerPagePool | null = null;
 
     matchUrl(url: string): boolean {
         return hostnameMatches(url, ['uukanshu.cc', 'www.uukanshu.cc']);
@@ -28,6 +34,24 @@ export class UukanshuAdapter implements NovelSiteAdapter {
         return this.browser;
     }
 
+    private getPagePool(): PuppeteerPagePool {
+        if (!this.pagePool) {
+            this.pagePool = new PuppeteerPagePool(() => this.getBrowser(), this.resourceProfile.maxConcurrency);
+        }
+        return this.pagePool;
+    }
+
+    private async withPage<T>(task: (page: Page) => Promise<T>): Promise<T> {
+        const page = await this.getPagePool().acquire();
+        page.setDefaultNavigationTimeout(60000);
+
+        try {
+            return await task(page);
+        } finally {
+            await this.getPagePool().release(page);
+        }
+    }
+
     private getBaseUrl(url: string): string {
         const match = url.match(/(https?:\/\/(?:www\.)?uukanshu\.cc\/book\/\d+)/);
         return match ? (match[1] || url) : url;
@@ -35,10 +59,7 @@ export class UukanshuAdapter implements NovelSiteAdapter {
 
     async getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>> {
         const bookUrl = this.getBaseUrl(url);
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, bookUrl, 'uukanshu metadata', [
                 '.booktitle h1',
                 'meta[property="og:title"]'
@@ -56,17 +77,12 @@ export class UukanshuAdapter implements NovelSiteAdapter {
                 sourceUrl: bookUrl,
                 description
             };
-        } finally {
-            await page.close();
-        }
+        });
     }
 
     async getChapterList(url: string): Promise<Chapter[]> {
         const bookUrl = this.getBaseUrl(url);
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, bookUrl, 'uukanshu chapter list', [
                 '.booklist dl dd a',
                 '.chapterlist a',
@@ -90,16 +106,11 @@ export class UukanshuAdapter implements NovelSiteAdapter {
             });
 
             return chapters;
-        } finally {
-            await page.close();
-        }
+        });
     }
 
     async getChapterContent(chapterUrl: string): Promise<string> {
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             await gotoWithAntiBotRetries(page, chapterUrl, 'uukanshu chapter content', [
                 '.book.read',
                 '.content',
@@ -149,9 +160,7 @@ export class UukanshuAdapter implements NovelSiteAdapter {
             content = content.replace(/UU看書/g, ''); // maybe remove site names
 
             return ContentCleaner.clean('uukanshu', content);
-        } finally {
-            await page.close();
-        }
+        });
     }
 
     async close(): Promise<void> {
@@ -161,5 +170,7 @@ export class UukanshuAdapter implements NovelSiteAdapter {
             }
             this.browser = null;
         }
+        this.pagePool?.reset();
+        this.pagePool = null;
     }
 }

@@ -4,15 +4,21 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
-import type { Browser } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer';
 import { hostnameMatches } from './urlUtils';
-import { assertNoAntiBotText, gotoWithAntiBotRetries } from './antiBot';
+import { assertNoAntiBotText, gotoWithAntiBotRetries, PuppeteerPagePool } from './antiBot';
 
 puppeteer.use(StealthPlugin());
 
 export class TwkanAdapter implements NovelSiteAdapter {
     siteName = 'twkan';
+    resourceProfile = {
+        maxConcurrency: 2,
+        requestIntervalMs: 900,
+        postSuccessDelayMs: 0
+    };
     private browser: Browser | null = null;
+    private pagePool: PuppeteerPagePool | null = null;
 
     matchUrl(url: string): boolean {
         return hostnameMatches(url, ['twkan.com', 'www.twkan.com']);
@@ -34,6 +40,24 @@ export class TwkanAdapter implements NovelSiteAdapter {
         return this.browser;
     }
 
+    private getPagePool(): PuppeteerPagePool {
+        if (!this.pagePool) {
+            this.pagePool = new PuppeteerPagePool(() => this.getBrowser(), this.resourceProfile.maxConcurrency);
+        }
+        return this.pagePool;
+    }
+
+    private async withPage<T>(task: (page: Page) => Promise<T>): Promise<T> {
+        const page = await this.getPagePool().acquire();
+        page.setDefaultNavigationTimeout(60000);
+
+        try {
+            return await task(page);
+        } finally {
+            await this.getPagePool().release(page);
+        }
+    }
+
     private getBaseUrl(url: string): string {
         const match = url.match(/(?:txt|book)\/(\d+)/);
         return match ? `https://twkan.com/book/${match[1]}.html` : url;
@@ -41,10 +65,7 @@ export class TwkanAdapter implements NovelSiteAdapter {
 
     async getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>> {
         const bookUrl = this.getBaseUrl(url);
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, bookUrl, 'twkan metadata', [
                 'meta[property="og:title"]',
                 'title'
@@ -70,15 +91,7 @@ export class TwkanAdapter implements NovelSiteAdapter {
                 sourceUrl: bookUrl,
                 description
             };
-        } finally {
-            try {
-                if (!page.isClosed()) {
-                    await page.close();
-                }
-            } catch (e) {
-                // Ignore errors during close
-            }
-        }
+        });
     }
 
     async getChapterList(url: string): Promise<Chapter[]> {
@@ -90,53 +103,35 @@ export class TwkanAdapter implements NovelSiteAdapter {
             targetUrl = `https://twkan.com/ajax_novels/chapterlist/${articleId}.html`;
         }
 
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, targetUrl, 'twkan chapter list', ['li a']);
             const $ = cheerio.load(html);
 
             const chapters: Chapter[] = [];
+            const seenUrls = new Set<string>();
             $('li a').each((i, el) => {
                 let href = $(el).attr('href');
                 let title = $(el).text().trim();
 
                 if (href) {
                     const fullUrl = href.startsWith('http') ? href : `https://twkan.com${href.startsWith('/') ? href : `/${href}`}`;
+                    if (seenUrls.has(fullUrl)) {
+                        return;
+                    }
+                    seenUrls.add(fullUrl);
                     chapters.push({
-                        index: i + 1,
+                        index: chapters.length + 1,
                         title,
                         sourceUrl: fullUrl
                     });
                 }
             });
-
-            // unique chapters based on sourceUrl
-            const uniqueChapters = chapters.filter((v, i, a) => a.findIndex(t => (t.sourceUrl === v.sourceUrl)) === i);
-
-            uniqueChapters.forEach((ch, idx) => { ch.index = idx + 1; });
-
-            return uniqueChapters;
-        } finally {
-            try {
-                if (!page.isClosed()) {
-                    await page.close();
-                }
-            } catch (e) {
-                // Ignore errors during close
-            }
-        }
+            return chapters;
+        });
     }
 
     async getChapterContent(chapterUrl: string): Promise<string> {
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-        
-        // Increase timeout for individual chapters
-        page.setDefaultNavigationTimeout(60000);
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, chapterUrl, 'twkan chapter content', [
                 'div[id^="txtcontent"]',
                 '#content',
@@ -170,15 +165,7 @@ export class TwkanAdapter implements NovelSiteAdapter {
             }
 
             return ContentCleaner.clean('twkan', content);
-        } finally {
-            try {
-                if (!page.isClosed()) {
-                    await page.close();
-                }
-            } catch (e) {
-                // Ignore errors during close
-            }
-        }
+        });
     }
 
     async close(): Promise<void> {
@@ -192,5 +179,7 @@ export class TwkanAdapter implements NovelSiteAdapter {
             }
             this.browser = null;
         }
+        this.pagePool?.reset();
+        this.pagePool = null;
     }
 }

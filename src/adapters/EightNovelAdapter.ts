@@ -1,19 +1,19 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
 import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
 import { hostnameMatches } from './urlUtils';
-
-const client = axios.create({
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
-});
+import { createDefaultAdapterHttpClient } from './httpClient';
 
 export class EightNovelAdapter implements NovelSiteAdapter {
     siteName = '8novel';
+    resourceProfile = {
+        maxConcurrency: 4,
+        requestIntervalMs: 300,
+        postSuccessDelayMs: 0
+    };
+    private client = createDefaultAdapterHttpClient(this.resourceProfile.requestIntervalMs);
 
     matchUrl(url: string): boolean {
         return hostnameMatches(url, ['8novel.com', 'www.8novel.com', 'article.8novel.com']);
@@ -21,7 +21,7 @@ export class EightNovelAdapter implements NovelSiteAdapter {
 
     async getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>> {
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(url),
+            () => this.client.get<string>(url),
             '8novel metadata'
         );
         assertNoAntiBotText(data, '8novel metadata');
@@ -44,7 +44,7 @@ export class EightNovelAdapter implements NovelSiteAdapter {
 
     async getChapterList(url: string): Promise<Chapter[]> {
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(url),
+            () => this.client.get<string>(url),
             '8novel chapter list'
         );
         assertNoAntiBotText(data, '8novel chapter list');
@@ -69,7 +69,7 @@ export class EightNovelAdapter implements NovelSiteAdapter {
 
     async getChapterContent(chapterUrl: string): Promise<string> {
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(chapterUrl),
+            () => this.client.get<string>(chapterUrl),
             '8novel chapter shell'
         );
         assertNoAntiBotText(data, '8novel chapter shell');
@@ -203,7 +203,7 @@ export class EightNovelAdapter implements NovelSiteAdapter {
         console.log(`[8novel] Fetching AJAX content from: ${ajaxUrl}`);
 
         const { data: contentHtml } = await withAntiBotRetries(
-            () => client.get<string>(ajaxUrl),
+            () => this.client.get<string>(ajaxUrl),
             '8novel ajax content'
         );
         assertNoAntiBotText(contentHtml, '8novel ajax content');

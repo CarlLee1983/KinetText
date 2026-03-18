@@ -4,15 +4,21 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
-import type { Browser } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer';
 import { hostnameMatches } from './urlUtils';
-import { gotoWithAntiBotRetries } from './antiBot';
+import { gotoWithAntiBotRetries, PuppeteerPagePool } from './antiBot';
 
 puppeteer.use(StealthPlugin());
 
 export class CzbooksAdapter implements NovelSiteAdapter {
     siteName = 'czbooks';
+    resourceProfile = {
+        maxConcurrency: 2,
+        requestIntervalMs: 900,
+        postSuccessDelayMs: 0
+    };
     private browser: Browser | null = null;
+    private pagePool: PuppeteerPagePool | null = null;
 
     matchUrl(url: string): boolean {
         return hostnameMatches(url, ['czbooks.net', 'm.czbooks.net', 'www.czbooks.net']);
@@ -28,6 +34,24 @@ export class CzbooksAdapter implements NovelSiteAdapter {
         return this.browser;
     }
 
+    private getPagePool(): PuppeteerPagePool {
+        if (!this.pagePool) {
+            this.pagePool = new PuppeteerPagePool(() => this.getBrowser(), this.resourceProfile.maxConcurrency);
+        }
+        return this.pagePool;
+    }
+
+    private async withPage<T>(task: (page: Page) => Promise<T>): Promise<T> {
+        const page = await this.getPagePool().acquire();
+        page.setDefaultNavigationTimeout(60000);
+
+        try {
+            return await task(page);
+        } finally {
+            await this.getPagePool().release(page);
+        }
+    }
+
     private getBaseUrl(url: string): string {
         const match = url.match(/(https?:\/\/(?:m\.)?czbooks\.net\/n\/[a-zA-Z0-9]+)/);
         return match ? (match[1] || url) : url;
@@ -35,10 +59,7 @@ export class CzbooksAdapter implements NovelSiteAdapter {
 
     async getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>> {
         const bookUrl = this.getBaseUrl(url);
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, bookUrl, 'czbooks metadata', [
                 'span.title',
                 '.novel-detail-header h1',
@@ -58,17 +79,12 @@ export class CzbooksAdapter implements NovelSiteAdapter {
                 sourceUrl: bookUrl,
                 description: description || ''
             };
-        } finally {
-            await page.close();
-        }
+        });
     }
 
     async getChapterList(url: string): Promise<Chapter[]> {
         const bookUrl = this.getBaseUrl(url);
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, bookUrl, 'czbooks chapter list', [
                 '#chapter-list a',
                 '.chapter-list a',
@@ -92,16 +108,11 @@ export class CzbooksAdapter implements NovelSiteAdapter {
             });
 
             return chapters;
-        } finally {
-            await page.close();
-        }
+        });
     }
 
     async getChapterContent(chapterUrl: string): Promise<string> {
-        const browser = await this.getBrowser();
-        const page = await browser.newPage();
-
-        try {
+        return this.withPage(async (page) => {
             const html = await gotoWithAntiBotRetries(page, chapterUrl, 'czbooks chapter content', [
                 '.content',
                 '#content',
@@ -137,9 +148,7 @@ export class CzbooksAdapter implements NovelSiteAdapter {
             content = content.replace(/<.*?>/g, ''); // just in case
 
             return ContentCleaner.clean('czbooks', content);
-        } finally {
-            await page.close();
-        }
+        });
     }
 
     async close(): Promise<void> {
@@ -149,5 +158,7 @@ export class CzbooksAdapter implements NovelSiteAdapter {
             }
             this.browser = null;
         }
+        this.pagePool?.reset();
+        this.pagePool = null;
     }
 }

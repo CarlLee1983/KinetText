@@ -1,4 +1,3 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import * as iconv from 'iconv-lite';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
@@ -6,18 +5,24 @@ import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
 import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
 import { hostnameMatches } from './urlUtils';
-
-const client = axios.create({
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-    },
-    timeout: 30000
-});
+import { AdapterHttpClient } from './httpClient';
 
 export class HjwzwAdapter implements NovelSiteAdapter {
     siteName = 'hjwzw';
+    resourceProfile = {
+        maxConcurrency: 3,
+        requestIntervalMs: 500,
+        postSuccessDelayMs: 0
+    };
+    private client = new AdapterHttpClient({
+        timeoutMs: 30000,
+        requestIntervalMs: this.resourceProfile.requestIntervalMs,
+        defaultHeaders: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+        }
+    });
 
     matchUrl(url: string): boolean {
         return hostnameMatches(url, ['tw.hjwzw.com']);
@@ -37,7 +42,7 @@ export class HjwzwAdapter implements NovelSiteAdapter {
 
         const bookUrl = `https://tw.hjwzw.com/Book/${bookId}`;
         const { data } = await withAntiBotRetries(
-            () => client.get<ArrayBuffer>(bookUrl, { responseType: 'arraybuffer' }),
+            () => this.client.get<ArrayBuffer>(bookUrl, { responseType: 'arraybuffer' }),
             'hjwzw metadata'
         );
         const html = iconv.decode(Buffer.from(data), 'utf-8');
@@ -79,7 +84,7 @@ export class HjwzwAdapter implements NovelSiteAdapter {
 
         const chapterListUrl = `https://tw.hjwzw.com/Book/Chapter/${bookId}`;
         const { data } = await withAntiBotRetries(
-            () => client.get<ArrayBuffer>(chapterListUrl, { responseType: 'arraybuffer' }),
+            () => this.client.get<ArrayBuffer>(chapterListUrl, { responseType: 'arraybuffer' }),
             'hjwzw chapter list'
         );
         const html = iconv.decode(Buffer.from(data), 'utf-8');
@@ -87,6 +92,7 @@ export class HjwzwAdapter implements NovelSiteAdapter {
         const $ = cheerio.load(html);
 
         const chapters: Chapter[] = [];
+        const seenUrls = new Set<string>();
 
         // table id tbchapterlist or just all td.css elements inside table
         $('#tbchapterlist a, .td a').each((i, el) => {
@@ -94,6 +100,10 @@ export class HjwzwAdapter implements NovelSiteAdapter {
             const href = $(el).attr('href');
             if (href && href.includes('/Book/Read/')) {
                 const fullUrl = href.startsWith('http') ? href : `https://tw.hjwzw.com${href}`;
+                if (seenUrls.has(fullUrl)) {
+                    return;
+                }
+                seenUrls.add(fullUrl);
                 chapters.push({
                     index: chapters.length + 1,
                     title,
@@ -109,14 +119,15 @@ export class HjwzwAdapter implements NovelSiteAdapter {
                 const href = $(el).attr('href');
                 if (href && !href.includes(',0') && title) {
                     const fullUrl = href.startsWith('http') ? href : `https://tw.hjwzw.com${href}`;
-                    // Avoid duplicates
-                    if (!chapters.find(c => c.sourceUrl === fullUrl)) {
-                        chapters.push({
-                            index: chapters.length + 1,
-                            title,
-                            sourceUrl: fullUrl
-                        });
+                    if (seenUrls.has(fullUrl)) {
+                        return;
                     }
+                    seenUrls.add(fullUrl);
+                    chapters.push({
+                        index: chapters.length + 1,
+                        title,
+                        sourceUrl: fullUrl
+                    });
                 }
             });
         }
@@ -125,58 +136,45 @@ export class HjwzwAdapter implements NovelSiteAdapter {
     }
 
     async getChapterContent(chapterUrl: string): Promise<string> {
-        let retries = 3;
-        while (retries > 0) {
-            try {
-                const { data } = await withAntiBotRetries(
-                    () => client.get<ArrayBuffer>(chapterUrl, { responseType: 'arraybuffer' }),
-                    'hjwzw chapter content'
-                );
-                const html = iconv.decode(Buffer.from(data), 'utf-8');
-                assertNoAntiBotText(html, 'hjwzw chapter content');
-                const $ = cheerio.load(html);
+        const { data } = await withAntiBotRetries(
+            () => this.client.get<ArrayBuffer>(chapterUrl, { responseType: 'arraybuffer' }),
+            'hjwzw chapter content'
+        );
+        const html = iconv.decode(Buffer.from(data), 'utf-8');
+        assertNoAntiBotText(html, 'hjwzw chapter content');
+        const $ = cheerio.load(html);
 
-                let targetHtml = '';
-                let largestLength = 0;
+        let targetHtml = '';
+        let largestLength = 0;
 
-                // Find the content div
-                $('div[style*="font-size"]').each((i, el) => {
-                    const h = $(el).html() || '';
-                    if (h.length > largestLength) {
-                        largestLength = h.length;
-                        targetHtml = h;
-                    }
-                });
-
-                if (!targetHtml) {
-                    console.warn(`[HjwzwAdapter] Content container not found for ${chapterUrl}`);
-                    return '';
-                }
-
-                // 1. Remove the standard opening watermark:
-                // e.g. 請記住本站域名: <b>黃金屋</b><p /> <a ...>title</a>&nbsp;[ChapterTitle]<p/>
-                targetHtml = targetHtml.replace(/[\s\S]*?<a[^>]*>[^<]*<\/a>&nbsp;.*?<p\s*\/?>/i, '');
-
-                // 2. Remove the custom end marker the user mentioned:
-                // e.g. ——弘潤文德殿亂賦<br/><p />
-                targetHtml = targetHtml.replace(/——[^<]*<br\s*\/?>[\s\S]*$/i, '');
-
-                const contentText = cheerio.load(targetHtml)('body').text().trim();
-
-                if (!contentText) {
-                    return '';
-                }
-
-                return ContentCleaner.clean('hjwzw', contentText);
-            } catch (err: any) {
-                retries--;
-                if (retries === 0) {
-                    console.error(`[HjwzwAdapter] Failed to fetch content for ${chapterUrl}: ${err.message}`);
-                    throw err;
-                }
-                await new Promise(r => setTimeout(r, 1500));
+        // Find the content div
+        $('div[style*="font-size"]').each((i, el) => {
+            const h = $(el).html() || '';
+            if (h.length > largestLength) {
+                largestLength = h.length;
+                targetHtml = h;
             }
+        });
+
+        if (!targetHtml) {
+            console.warn(`[HjwzwAdapter] Content container not found for ${chapterUrl}`);
+            return '';
         }
-        return '';
+
+        // 1. Remove the standard opening watermark:
+        // e.g. 請記住本站域名: <b>黃金屋</b><p /> <a ...>title</a>&nbsp;[ChapterTitle]<p/>
+        targetHtml = targetHtml.replace(/[\s\S]*?<a[^>]*>[^<]*<\/a>&nbsp;.*?<p\s*\/?>/i, '');
+
+        // 2. Remove the custom end marker the user mentioned:
+        // e.g. ——弘潤文德殿亂賦<br/><p />
+        targetHtml = targetHtml.replace(/——[^<]*<br\s*\/?>[\s\S]*$/i, '');
+
+        const contentText = cheerio.load(targetHtml)('body').text().trim();
+
+        if (!contentText) {
+            return '';
+        }
+
+        return ContentCleaner.clean('hjwzw', contentText);
     }
 }

@@ -1,19 +1,19 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
 import { hostnameMatches } from './urlUtils';
 import { assertNoAntiBotText, withAntiBotRetries } from './antiBot';
-
-const client = axios.create({
-    headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
-});
+import { createDefaultAdapterHttpClient } from './httpClient';
 
 export class XswAdapter implements NovelSiteAdapter {
     siteName = 'xsw';
+    resourceProfile = {
+        maxConcurrency: 4,
+        requestIntervalMs: 350,
+        postSuccessDelayMs: 0
+    };
+    private client = createDefaultAdapterHttpClient(this.resourceProfile.requestIntervalMs);
 
     matchUrl(url: string): boolean {
         return hostnameMatches(url, ['m.xsw.tw', 'www.xsw.tw', 'xsw.tw']);
@@ -33,7 +33,7 @@ export class XswAdapter implements NovelSiteAdapter {
         }
 
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(bookUrl),
+            () => this.client.get<string>(bookUrl),
             'xsw metadata'
         );
         assertNoAntiBotText(data, 'xsw metadata');
@@ -77,7 +77,7 @@ export class XswAdapter implements NovelSiteAdapter {
             const pageUrl = `https://m.xsw.tw/${bookId}/page-${currentPage}.html`;
             try {
                 const { data } = await withAntiBotRetries(
-                    () => client.get<string>(pageUrl),
+                    () => this.client.get<string>(pageUrl),
                     'xsw paginated chapter list'
                 );
                 assertNoAntiBotText(data, 'xsw paginated chapter list');
@@ -153,7 +153,7 @@ export class XswAdapter implements NovelSiteAdapter {
         while (currentUrl && currentUrl.endsWith('.html')) {
             try {
                 const { data: pageData } = await withAntiBotRetries(
-                    () => client.get<string>(currentUrl),
+                    () => this.client.get<string>(currentUrl),
                     'xsw sequential chapter discovery'
                 );
                 assertNoAntiBotText(pageData, 'xsw sequential chapter discovery');
@@ -186,7 +186,7 @@ export class XswAdapter implements NovelSiteAdapter {
     async getChapterContent(chapterUrl: string): Promise<string> {
         // Some sites check Referer to prevent direct hotlinking of content
         const { data } = await withAntiBotRetries(
-            () => client.get<string>(chapterUrl, {
+            () => this.client.get<string>(chapterUrl, {
                 headers: {
                     'Referer': chapterUrl.split('/').slice(0, -1).join('/') + '/'
                 }
