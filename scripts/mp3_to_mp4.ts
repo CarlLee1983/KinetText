@@ -22,18 +22,24 @@ const { positionals, values } = parseArgs({
             type: "boolean",
             default: false,
         },
+        volume: {
+            type: "string",
+            short: "v",
+        },
     },
     allowPositionals: true,
 });
 
 const force = values.force;
 const dryRun = values.dryRun;
+const volume = values.volume;
 
 if (values.help) {
     console.log("使用方式: bun run to-mp4 <input_path_or_file> [output.mp4] [選項]");
     console.log("選項:");
     console.log("  -h, --help     顯示說明");
     console.log("  -f, --force    強制覆蓋已存在的檔案");
+    console.log("  -v, --volume   調整音量 (例如: 1.5 代表 1.5 倍, 5dB 代表增加 5dB)");
     console.log("  --dry-run      僅顯示轉換計畫，不執行 ffmpeg");
     process.exit(0);
 }
@@ -42,10 +48,12 @@ if (positionals.length === 0) {
     console.error("使用方式: bun run to-mp4 <input_path_or_file> [output.mp4] [選項]");
     console.error("選項:");
     console.error("  -f, --force    強制覆蓋已存在的檔案");
+    console.error("  -v, --volume   調整音量 (例如: 1.5 代表 1.5 倍, 5dB 代表增加 5dB)");
     console.error("\n範例:");
     console.error("  bun run to-mp4 \"output/書名\"                 (轉換資料夾下所有 mp3，跳過已轉換者)");
     console.error("  bun run to-mp4 \"output/書名\" --force         (強制重新轉換所有檔案)");
     console.error("  bun run to-mp4 \"output/書名/章節.mp3\"");
+    console.error("  bun run to-mp4 \"output/書名\" -v 1.5          (將音量放大1.5倍轉換)");
     process.exit(1);
 }
 
@@ -76,7 +84,7 @@ if (!dryRun) {
     }
 }
 
-async function convertFile(inputMp3: string, outputMp4?: string, forceOverwrite: boolean = false) {
+async function convertFile(inputMp3: string, outputMp4?: string, forceOverwrite: boolean = false, targetVolume?: string) {
     if (!outputMp4) {
         const ext = path.extname(inputMp3);
         outputMp4 = inputMp3.slice(0, -ext.length) + ".mp4";
@@ -100,7 +108,12 @@ async function convertFile(inputMp3: string, outputMp4?: string, forceOverwrite:
     }
 
     try {
-        const result = await $`ffmpeg -y -loop 1 -framerate 1 -i ${defaultCover} -i ${inputMp3} -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest ${outputMp4}`.quiet();
+        let result;
+        if (targetVolume) {
+            result = await $`ffmpeg -y -loop 1 -framerate 1 -i ${defaultCover} -i ${inputMp3} -c:v libx264 -tune stillimage -c:a aac -b:a 192k -filter:a volume=${targetVolume} -pix_fmt yuv420p -shortest ${outputMp4}`.quiet();
+        } else {
+            result = await $`ffmpeg -y -loop 1 -framerate 1 -i ${defaultCover} -i ${inputMp3} -c:v libx264 -tune stillimage -c:a aac -b:a 192k -pix_fmt yuv420p -shortest ${outputMp4}`.quiet();
+        }
 
         if (result.exitCode === 0) {
             console.log(`✅ 轉換成功: ${path.basename(outputMp4)}`);
@@ -132,14 +145,15 @@ if (stats.isDirectory()) {
         for (const file of files) {
             const fullPath = path.join(inputPath, file);
             console.log(`[${++i}/${files.length}]`);
-            const success = await convertFile(fullPath, undefined, force);
+            const success = await convertFile(fullPath, undefined, force, volume);
             if (success) successCount++;
         }
         console.log(`\n✨ 批次處理完成！成功: ${successCount} / 總計: ${files.length}`);
     }
 } else {
-    const success = await convertFile(inputPath, positionals[1] as string | undefined, force);
+    const success = await convertFile(inputPath, positionals[1] as string | undefined, force, volume);
     if (success) {
         console.log("🎉 任務完成！");
     }
 }
+

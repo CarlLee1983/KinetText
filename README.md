@@ -112,7 +112,13 @@ bun run to-mp4 "output/小說名稱"
 
 # 轉換特定的 mp3 檔案
 bun run to-mp4 "output/小說名稱/chapter1.mp3"
-bun run to-mp4 "output/小說名稱" --dry-run
+
+# 進階用法：調整音量與強制覆蓋
+# 語法: bun run to-mp4 <輸入路徑> [輸出名稱] [-v <音量>] [-f]
+bun run to-mp4 "output/小說名稱" -v 1.5           # 所有 mp3 音量放大 1.5 倍
+bun run to-mp4 "output/小說名稱/chapter1.mp3" -v 5dB   # 單一檔案音量增加 5dB
+bun run to-mp4 "output/小說名稱" --force               # 強制重新轉換所有檔案
+bun run to-mp4 "output/小說名稱" --dry-run             # 僅預覽轉換計畫
 ```
 > [!NOTE]
 > 此功能需要系統預先安裝 `ffmpeg`。
