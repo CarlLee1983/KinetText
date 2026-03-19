@@ -12,7 +12,7 @@ bun install
 ```
 
 ### 2. 開始爬取小說
-目前支援 8novel / wfxs / xsw / czbooks（依 URL 自動選擇 Adapter）。
+目前支援 8novel / wfxs / xsw / czbooks / hjwzw / twkan / uukanshu（依 URL 自動選擇 Adapter）。
 
 ```bash
 bun run start "https://www.8novel.com/novelbooks/12345/"
@@ -37,6 +37,24 @@ bun run start <URL> --dry-run
 執行完成後會額外輸出：
 - `run_report.json`: 結構化執行報告（成功/失敗/耗時/完整性檢查）。
 - `failed_chapters.json`: 抓取失敗章節清單（若有失敗時），可用於後續補抓。
+
+目前 crawler 已內建：
+- 站點級資源配置（不同 adapter 可限制自己的併發與請求間隔）。
+- anti-bot / challenge 頁偵測與重試。
+- Puppeteer page pool 與 axios session/cookie 重用，以降低長篇抓取成本。
+
+### 1.5. ⏱ Adapter 效能分析 (Profile)
+快速量測單一站點 adapter 的 metadata、章節列表，以及抽樣章節抓取耗時。
+
+```bash
+bun run profile "https://www.8novel.com/novelbooks/12345/"
+bun run profile "https://twkan.com/book/123.html" --samples=5
+bun run profile "https://twkan.com/book/123.html" --samples=5 --json
+```
+
+參數說明：
+- `--samples=N`: 抽樣抓取的章節數量，預設為 `3`。
+- `--json`: 以 JSON 輸出 profiling 結果，方便後續分析或存檔。
 
 ### 2. 🧹 智慧內容清理 (Noise Cleanup)
 用於清除已存檔小說中的網站浮水印、廣告文字或干擾項。
@@ -137,6 +155,7 @@ bun run backup --dry-run
 
 ```bash
 bun run test
+bun run profile --help
 ```
 
 > [!NOTE]
@@ -148,6 +167,7 @@ bun run test
 
 - `src/core/`: 核心引擎與類型定義。
 - `src/adapters/`: 站點適配器。
+- `src/profiling/`: adapter profiling 與效能量測工具。
 - `src/utils/`: 工具類（含 `ContentCleaner.ts` 浮水印邏輯）。
 - `src/storage/`: 存檔邏輯。
 - `src/workflows/`: 跨腳本共用流程工具（路徑解析、章節檔案列舉、清理輔助）。
@@ -171,4 +191,9 @@ bun run test
 
 ### 如何支援新站點？
 1. 實作 `src/adapters/NovelSiteAdapter.ts` 介面。
-2. 在 `src/index.ts` 中註冊新的 Adapter。
+2. 在 `src/adapters/index.ts` 中註冊新的 Adapter。
+
+若站點有特殊資源需求，建議同時設定：
+- `resourceProfile.maxConcurrency`
+- `resourceProfile.requestIntervalMs`
+- `resourceProfile.postSuccessDelayMs`
