@@ -2,7 +2,7 @@
 
 **里程碑**: 爬蟲增強 & 媒體處理
 **開始日期**: 2026-03-24
-**狀態**: 🟢 Phase 2 完成，Phase 3 準備開始
+**狀態**: 🟡 Phase 3 進行中 (Plan 01 完成，Plan 02 進行中)
 
 ---
 
@@ -17,7 +17,7 @@
 執行階段
   ├─ Phase 1: 重試機制        [████████████] 100% ✅
   ├─ Phase 2: MP3 轉換        [████████████] 100% ✅
-  ├─ Phase 3: 音頻合併        [          ] 0%
+  ├─ Phase 3: 音頻合併        [██████     ] 50% (1/2 Plans)
   ├─ Phase 4: MP4 轉換        [          ] 0%
   └─ Phase 5: 測試與發佈      [          ] 0%
 ```
@@ -176,8 +176,28 @@
 - ✅ AudioConvertService 與 AudioMergeService 均注入 AudioErrorClassifier
 - ✅ 223 個測試全部通過
 
+### Phase 3 進行中
+
+**03-01 完成** ✅ (commit: 0e0135d, 8c85fd7)
+- ✅ GroupSummary / GroupingReport 介面（readonly，含 actualDuration、oversizedSingleFile）
+- ✅ MergeBatchOptions 介面
+- ✅ mergeBatch() 方法：p-limit 並行讀取 → 分組 → 序列合併 → 後驗證 → 報告
+- ✅ 11 個 mergeBatch 單元測試全部通過
+- ✅ 6 個批次整合測試（10 個真實 FFmpeg 檔案）全部通過
+- ✅ 全套 300 個測試通過
+
+**03-02 進行中** ⏳
+- [ ] formatReport() 人類可讀報告
+- [ ] CLI --mode=duration 升級
+- [ ] 檢查點：手動驗證
+
+### 決策記錄 (Phase 3)
+- mergeBatch() 採序列合併（非並行）以避免大型音頻 I/O 競爭
+- GroupSummary.mergeResult 使用內聯 readonly 型別以避免循環導入
+- 後驗證使用 music-metadata（非 FFprobe），與 Phase 2 方案一致
+
 ### 即將開始
-- [ ] Phase 3: 音頻合併與分組 (MP3 分組合並管道)
+- [ ] Phase 3 Plan 02: CLI --mode=duration 升級 + formatReport()
 
 ---
 
