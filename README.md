@@ -197,3 +197,189 @@ bun run profile --help
 - `resourceProfile.maxConcurrency`
 - `resourceProfile.requestIntervalMs`
 - `resourceProfile.postSuccessDelayMs`
+
+---
+
+## 🎧 媒體處理功能 (Phase 2-4)
+
+### Phase 2: MP3 轉換
+
+#### 功能概述
+- 支援多格式轉換：WAV, AAC, OGG, FLAC → MP3
+- 可配置比特率（預設 128kbps，支援 64k-320k）
+- 自動重試失敗的轉換（指數退避）
+- 結構化日誌記錄（Pino）
+
+#### 使用範例
+```bash
+# 生成語音書 MP3
+bun run audiobook "小說名稱" 1-50
+
+# 指定比特率（高品質）
+AUDIO_BITRATE=192k bun run audiobook "小說名稱"
+```
+
+#### 配置選項
+| 環境變數 | 預設值 | 說明 |
+|---------|--------|------|
+| `AUDIO_BITRATE` | 128k | MP3 比特率 (64k-320k) |
+| `AUDIO_SAMPLE_RATE` | 44100 | 採樣率 (Hz) |
+| `AUDIO_CHANNELS` | 2 | 聲道數 |
+| `AUDIO_CONVERT_MAX_CONCURRENCY` | 2 | 並行轉換數 |
+
+---
+
+### Phase 3: 音頻合併與分組
+
+#### 功能概述
+- 自動合併多個 MP3 檔案
+- 根據目標時長分組（預設 11 小時）
+- 時長計算精度 < 1% 誤差
+- 支援乾跑預覽（dry-run）
+- 中文分組結果報告
+
+#### 使用範例
+```bash
+# 按時長分組合併（推薦：音頻書）
+bun run merge-mp3 \
+  --input=/path/to/mp3 \
+  --output=/path/to/merged \
+  --target=39600 \
+  --mode=duration
+
+# 預覽分組結果（不實際執行）
+bun run merge-mp3 --input=/path/to/mp3 --dry-run
+
+# 輸出人類可讀報告
+bun run merge-mp3 --input=/path/to/mp3 --report=human
+```
+
+#### 配置選項
+| 環境變數 / 參數 | 預設值 | 說明 |
+|----------------|--------|------|
+| `--target` | 39600 | 目標時長（秒，或 11h / 660m 格式） |
+| `--tolerance` | 10 | 容差百分比 |
+| `--mode` | count | `count`（按數量）或 `duration`（按時長） |
+| `--report` | - | 報告格式：`json` 或 `human` |
+| `--dry-run` | - | 預覽模式，不實際執行 |
+| `AUDIO_MERGE_TARGET_DURATION` | 39600 | 環境變數：目標時長（秒） |
+| `AUDIO_MERGE_TOLERANCE_PERCENT` | 10 | 環境變數：容差百分比 |
+
+---
+
+### Phase 4: MP4（M4A）轉換
+
+#### 功能概述
+- 將 MP3 轉換為 M4A（AAC 音頻 MP4 容器）
+- 支援元資料嵌入（title, artist, album）
+- AAC 編碼，比 MP3 更高效
+- 批量轉換支援
+
+#### 使用範例
+```bash
+# 批量轉換 MP3 → M4A
+bun run to-mp4 \
+  --input=/path/to/merged_mp3 \
+  --output=/path/to/m4a \
+  --metadata=/path/to/metadata.json \
+  --dry-run
+
+# 高品質轉換
+MP4_BITRATE=320k bun run to-mp4 --input=... --output=...
+```
+
+#### 元資料 JSON 格式
+```json
+{
+  "merged_001.mp3": {
+    "title": "第一部分",
+    "artist": "作者名",
+    "album": "書籍名"
+  },
+  "merged_002.mp3": {
+    "title": "第二部分",
+    "artist": "作者名",
+    "album": "書籍名"
+  }
+}
+```
+
+#### 配置選項
+| 環境變數 | 預設值 | 說明 |
+|---------|--------|------|
+| `MP4_BITRATE` | 256k | AAC 比特率 (96k-320k) |
+| `MP4_FORMAT` | m4a | 輸出格式 |
+| `MP4_MAX_CONCURRENCY` | 2 | 並行轉換數 |
+| `MP4_INCLUDE_METADATA` | true | 嵌入元資料 |
+
+---
+
+## 🔄 完整工作流程：從小說到音頻書
+
+```bash
+# 步驟 1: 爬取小說
+bun run start "https://www.8novel.com/novelbooks/12345/"
+
+# 步驟 2: 生成 MP3 章節（使用 Edge TTS）
+bun run audiobook "小說名稱" 1-200
+
+# 步驟 3: 按 11 小時分組合併
+bun run merge-mp3 \
+  --input=output/小說名稱/mp3 \
+  --output=output/小說名稱/merged \
+  --target=39600 \
+  --mode=duration
+
+# 步驟 4: 轉換為 M4A（附元資料）
+bun run to-mp4 \
+  --input=output/小說名稱/merged \
+  --output=output/小說名稱/m4a \
+  --metadata=output/小說名稱/metadata.json
+
+# 步驟 5: 上傳到雲端
+bun run backup
+```
+
+---
+
+## 🔧 完整指令列表
+
+| 指令 | 功能 | Phase |
+|------|------|-------|
+| `bun run start <URL>` | 爬取小說 | 核心 |
+| `bun run profile <URL>` | 效能分析 | 核心 |
+| `bun run clean` | 清理浮水印 | 核心 |
+| `bun run retry-failed <書名>` | 重試失敗章節 | Phase 1 |
+| `bun run clean-files <目錄>` | 批次清理檔案 | 核心 |
+| `bun run audiobook <書名>` | 生成 MP3 語音書 | Phase 2 |
+| `bun run merge-mp3 --input=<目錄>` | 合併 MP3（按數量） | Phase 3 |
+| `bun run merge-mp3 --input=<目錄> --mode=duration` | 合併 MP3（按時長） | Phase 3 |
+| `bun run to-mp4 --input=<目錄>` | 轉換為 M4A | Phase 4 |
+| `bun run backup` | 雲端備份 | 核心 |
+| `bun run test` | 執行測試 | 開發 |
+
+---
+
+## 📚 完整文檔導覽
+
+- [API 參考](docs/API.md) - 所有服務類的完整 API 說明
+- [配置指南](docs/CONFIGURATION.md) - 環境變數與配置選項
+- [故障排查](docs/TROUBLESHOOTING.md) - 常見問題與解決方案
+
+## 📦 需求
+
+- [Bun](https://bun.sh) >= 1.0
+- [FFmpeg](https://ffmpeg.org) (Phase 2-4 需要)
+- Node.js 相容環境（Bun 支援）
+
+### 安裝 FFmpeg
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt-get install ffmpeg
+
+# Windows
+choco install ffmpeg
+```
