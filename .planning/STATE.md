@@ -2,7 +2,7 @@
 
 **里程碑**: 爬蟲增強 & 媒體處理
 **開始日期**: 2026-03-24
-**狀態**: 🟡 Phase 3 進行中 (Plan 02 等待手動驗證檢查點)
+**狀態**: 🟢 Phase 4 完成 (MP4ConversionService + MP4Pipeline + CLI)
 
 ---
 
@@ -17,8 +17,8 @@
 執行階段
   ├─ Phase 1: 重試機制        [████████████] 100% ✅
   ├─ Phase 2: MP3 轉換        [████████████] 100% ✅
-  ├─ Phase 3: 音頻合併        [████████   ] 80% (1.5/2 Plans, 等待驗證)
-  ├─ Phase 4: MP4 轉換        [          ] 0%
+  ├─ Phase 3: 音頻合併        [████████████] 100% ✅
+  ├─ Phase 4: MP4 轉換        [████████████] 100% ✅
   └─ Phase 5: 測試與發佈      [          ] 0%
 ```
 
@@ -198,13 +198,31 @@
 - GroupSummary.mergeResult 使用內聯 readonly 型別以避免循環導入
 - 後驗證使用 music-metadata（非 FFprobe），與 Phase 2 方案一致
 
+### Phase 4 完成 ✅
+
+**04-01 完成** ✅ (commit: 323b980)
+- ✅ MP4ConversionConfig: Zod 配置架構 (bitrate, maxConcurrency, outputFormat)
+- ✅ FFmpegCommands: buildM4ACommand(), buildMP4WithVideoCommand()
+- ✅ MP4ConversionService: convert(), convertBatch() with RetryService
+- ✅ 68 個單元測試全部通過
+- ✅ 配置驗證: 位速率 96-320 kbps, 並行度 1-8
+
+**04-02 完成** ✅ (commit: 727c61a)
+- ✅ MP4Pipeline: execute() orchestrator with dry-run support
+- ✅ CLI scripts/mp3_to_mp4.ts: 完整使用者介面
+- ✅ 元資料對應支援 (JSON file)
+- ✅ 6 個整合測試通過
+- ✅ 中文報告格式化
+
 ### 即將開始
-- [ ] Phase 3 Plan 02: CLI --mode=duration 升級 + formatReport()
+- [ ] Phase 5: 測試與發佈 (E2E tests, documentation, publishing)
 
 ---
 
-**最後更新**: 2026-03-24 (Phase 2 完成)
-**Phase 1 完成時間**: 約 2-3 小時 (規劃 + 實現 + 測試 + 驗證)
-**Phase 2 完成時間**: 約 1 小時 (3 個 Wave 執行完成)
+**最後更新**: 2026-03-24 (Phase 4 完成)
+**Phase 1 完成時間**: 約 2-3 小時
+**Phase 2 完成時間**: 約 1 小時
+**Phase 3 完成時間**: 約 2 小時
+**Phase 4 完成時間**: 約 6-7 分鐘 (Wave 1+2 串行執行)
 **維護者**: Carl
 **聯絡**: carl@kinetitext.dev (如有)
