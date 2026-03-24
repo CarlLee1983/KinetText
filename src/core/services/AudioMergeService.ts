@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DurationService } from './DurationService'
 import { RetryService } from './RetryService'
+import { AudioErrorClassifier } from './AudioErrorClassifier'
 import { AudioConvertConfig } from '../../config/AudioConvertConfig'
 import { RetryConfig } from '../../config/RetryConfig'
 import { createLogger } from '../utils/logger'
@@ -118,7 +119,7 @@ export class AudioMergeService {
       timeoutMs: config.ffmpegTimeoutMs,
       operationTimeoutMs: config.ffmpegTimeoutMs * 2,
     })
-    this.retryService = deps.retryService ?? new RetryService(retryConfig)
+    this.retryService = deps.retryService ?? new RetryService(retryConfig, new AudioErrorClassifier())
     this.shellExecutor = deps.shellExecutor ?? defaultMergeShellExecutor
   }
 
