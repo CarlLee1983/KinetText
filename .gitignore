@@ -42,3 +42,4 @@ bun.lockb
 
 # Temporary files and scratchpads
 tmp/
+merge-input-*/
