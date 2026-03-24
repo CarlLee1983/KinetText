@@ -3,11 +3,15 @@
  * Uses dependency injection for shell executor, duration service, and retry service
  */
 
-import { describe, test, expect, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { AudioMergeService } from '../../core/services/AudioMergeService'
 import { DurationService } from '../../core/services/DurationService'
 import { AudioConvertConfig } from '../../config/AudioConvertConfig'
-import type { MergeShellExecutor } from '../../core/services/AudioMergeService'
+import type { MergeShellExecutor, MergeBatchOptions } from '../../core/services/AudioMergeService'
+import type { DurationMetadataReader } from '../../core/services/DurationService'
 
 /** Helper: create a success merge shell executor */
 const makeSuccessMergeShell = (): { executor: MergeShellExecutor; calls: Array<{ listContent: string; outputPath: string }> } => {
@@ -245,6 +249,250 @@ describe('AudioMergeService', () => {
       await service.mergeFiles(["/test/it's a file.mp3"], '/output/merged.mp3')
       // Verify that single quote is properly escaped in the concat list
       expect(callCapture[0]).toContain("'\\''")
+    })
+  })
+
+  describe('mergeBatch()', () => {
+    let tmpDir: string
+    let durationMap: Map<string, number>
+    let shellCalls: Array<{ list: string; output: string }>
+    let mockShell: MergeShellExecutor
+    let mockReader: DurationMetadataReader
+    let durationService: DurationService
+
+    /** Build service with controlled durations and a shell that sets output durations */
+    const buildService = (overrideDurationMap?: Map<string, number>) => {
+      const dm = overrideDurationMap ?? durationMap
+      const reader: DurationMetadataReader = async (fp) => dm.get(fp) ?? 0
+      const ds = new DurationService({ metadataReader: reader })
+      const shell: MergeShellExecutor = async (list, output) => {
+        shellCalls.push({ list, output })
+        // Simulate: output file duration = sum of input file durations
+        const inputPaths = list
+          .split('\n')
+          .map(line => line.match(/file '(.+)'/)?.[1] ?? '')
+          .filter(Boolean)
+        const sumDuration = inputPaths.reduce((s, p) => s + (dm.get(p) ?? 0), 0)
+        dm.set(output, sumDuration)
+      }
+      return new AudioMergeService(config, { durationService: ds, shellExecutor: shell })
+    }
+
+    beforeEach(async () => {
+      tmpDir = await mkdtemp(join(tmpdir(), 'kinetitext-mergebatch-test-'))
+      durationMap = new Map()
+      shellCalls = []
+      mockReader = async (fp) => durationMap.get(fp) ?? 0
+      durationService = new DurationService({ metadataReader: mockReader })
+      mockShell = async (list, output) => {
+        shellCalls.push({ list, output })
+        const inputPaths = list
+          .split('\n')
+          .map(line => line.match(/file '(.+)'/)?.[1] ?? '')
+          .filter(Boolean)
+        const sumDuration = inputPaths.reduce((s, p) => s + (durationMap.get(p) ?? 0), 0)
+        durationMap.set(output, sumDuration)
+      }
+    })
+
+    afterEach(async () => {
+      await rm(tmpDir, { recursive: true, force: true })
+    })
+
+    test('returns empty GroupingReport for empty input', async () => {
+      const service = new AudioMergeService(config, {
+        durationService,
+        shellExecutor: mockShell,
+      })
+      const report = await service.mergeBatch([], tmpDir)
+
+      expect(report.totalInputFiles).toBe(0)
+      expect(report.totalGroups).toBe(0)
+      expect(report.groups).toHaveLength(0)
+      expect(report.succeeded).toBe(0)
+      expect(report.failed).toBe(0)
+    })
+
+    test('report has correct totalInputFiles and totalGroups for 3x4h files', async () => {
+      // 3 files at 4h each = 14400s
+      // Target 11h (39600), upper = 43560
+      // First two: 28800 < 43560, third: 43200 < 43560, so all 3 fit in 1 group
+      const files = ['/test/f1.mp3', '/test/f2.mp3', '/test/f3.mp3']
+      files.forEach(f => durationMap.set(f, 14400))
+
+      const service = new AudioMergeService(config, {
+        durationService,
+        shellExecutor: mockShell,
+      })
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600, tolerancePercent: 10 })
+
+      // All 3 fit within upper bound of 43560 (43200 < 43560)
+      expect(report.totalInputFiles).toBe(3)
+      expect(report.totalGroups).toBe(1)
+      expect(report.groups[0].inputFiles).toHaveLength(3)
+    })
+
+    test('produces 2 groups for 3x5h files (third exceeds upper bound)', async () => {
+      // 3 files at 5h (18000s) each
+      // Target 11h (39600), upper = 43560
+      // Two: 36000 < 43560, adding 3rd: 54000 > 43560 → split
+      const files = ['/test/g1.mp3', '/test/g2.mp3', '/test/g3.mp3']
+      files.forEach(f => durationMap.set(f, 18000))
+
+      const service = buildService()
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600, tolerancePercent: 10 })
+
+      expect(report.totalGroups).toBe(2)
+      expect(report.groups[0].inputFiles).toHaveLength(2)
+      expect(report.groups[1].inputFiles).toHaveLength(1)
+    })
+
+    test('GroupingReport.generatedAt is a valid ISO 8601 string', async () => {
+      const service = new AudioMergeService(config, {
+        durationService,
+        shellExecutor: mockShell,
+      })
+      const report = await service.mergeBatch([], tmpDir)
+
+      expect(() => new Date(report.generatedAt)).not.toThrow()
+      expect(new Date(report.generatedAt).toISOString()).toBe(report.generatedAt)
+    })
+
+    test('GroupSummary.actualDuration comes from getDuration post-merge (not estimatedDuration)', async () => {
+      const files = ['/test/h1.mp3', '/test/h2.mp3']
+      // Set estimated durations
+      durationMap.set('/test/h1.mp3', 3600)
+      durationMap.set('/test/h2.mp3', 3600)
+
+      const service = buildService()
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600 })
+
+      // actualDuration should be populated from re-reading merged output
+      expect(report.groups[0].actualDuration).toBeGreaterThan(0)
+      // The mock sets output = sum of inputs = 7200
+      expect(report.groups[0].actualDuration).toBe(7200)
+    })
+
+    test('GroupSummary.withinTolerance is computed from actualDuration vs targetSeconds', async () => {
+      // 2 files at 5h each = 36000s actual
+      // Target 11h (39600), lower = 35640, upper = 43560 → within tolerance
+      const files = ['/test/i1.mp3', '/test/i2.mp3']
+      durationMap.set('/test/i1.mp3', 18000)
+      durationMap.set('/test/i2.mp3', 18000)
+
+      const service = buildService()
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600, tolerancePercent: 10 })
+
+      // 36000 is within [35640, 43560]
+      expect(report.groups[0].withinTolerance).toBe(true)
+    })
+
+    test('mergeBatch() calls shellExecutor sequentially (groups merged one by one)', async () => {
+      // 4 files at 5h each = groups of 2 + 2
+      const files = ['/test/s1.mp3', '/test/s2.mp3', '/test/s3.mp3', '/test/s4.mp3']
+      files.forEach(f => durationMap.set(f, 18000))
+
+      const callTimestamps: number[] = []
+      const trackingShell: MergeShellExecutor = async (list, output) => {
+        callTimestamps.push(Date.now())
+        shellCalls.push({ list, output })
+        const inputPaths = list
+          .split('\n')
+          .map(line => line.match(/file '(.+)'/)?.[1] ?? '')
+          .filter(Boolean)
+        const sumDuration = inputPaths.reduce((s, p) => s + (durationMap.get(p) ?? 0), 0)
+        durationMap.set(output, sumDuration)
+        // Tiny async delay to ensure timestamps are distinct
+        await new Promise(resolve => setTimeout(resolve, 1))
+      }
+      const trackingService = new AudioMergeService(config, {
+        durationService,
+        shellExecutor: trackingShell,
+      })
+      const report = await trackingService.mergeBatch(files, tmpDir, { targetSeconds: 39600, tolerancePercent: 10 })
+
+      // Should have merged 2 groups sequentially
+      expect(report.totalGroups).toBe(2)
+      expect(callTimestamps).toHaveLength(2)
+      // Second call happened after first (sequential)
+      expect(callTimestamps[1]).toBeGreaterThanOrEqual(callTimestamps[0])
+    })
+
+    test('GroupSummary.oversizedSingleFile is true when single file exceeds upper bound', async () => {
+      // Single file at 15h (54000s), target 11h (39600), upper = 43560 → oversized
+      const files = ['/test/oversized.mp3']
+      durationMap.set('/test/oversized.mp3', 54000)
+
+      const service = buildService()
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600, tolerancePercent: 10 })
+
+      expect(report.groups[0].oversizedSingleFile).toBe(true)
+    })
+
+    test('GroupSummary.oversizedSingleFile is false for normal multi-file group', async () => {
+      const files = ['/test/n1.mp3', '/test/n2.mp3']
+      files.forEach(f => durationMap.set(f, 3600))
+
+      const service = buildService()
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600 })
+
+      expect(report.groups[0].oversizedSingleFile).toBe(false)
+    })
+
+    test('output file naming follows mergeGroup pattern: {namePrefix}_{001}.mp3', async () => {
+      const files = ['/test/p1.mp3', '/test/p2.mp3']
+      files.forEach(f => durationMap.set(f, 3600))
+
+      const service = buildService()
+      const report = await service.mergeBatch(files, tmpDir, { namePrefix: 'mybook' })
+
+      expect(report.groups[0].outputPath).toContain('mybook_001.mp3')
+    })
+
+    test('succeeded and failed counts are correct when all groups succeed', async () => {
+      const files = ['/test/q1.mp3', '/test/q2.mp3', '/test/q3.mp3', '/test/q4.mp3']
+      files.forEach(f => durationMap.set(f, 18000))
+
+      const service = buildService()
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600, tolerancePercent: 10 })
+
+      expect(report.succeeded).toBe(report.totalGroups)
+      expect(report.failed).toBe(0)
+    })
+
+    test('failed count increments when a group merge throws', async () => {
+      const files = ['/test/r1.mp3', '/test/r2.mp3', '/test/r3.mp3', '/test/r4.mp3']
+      files.forEach(f => durationMap.set(f, 18000))
+
+      // Track which output paths have been attempted; fail permanently on the second group
+      const failedOutputs = new Set<string>()
+      let firstOutputSeen: string | null = null
+      const failSecondGroup: MergeShellExecutor = async (list, output) => {
+        if (firstOutputSeen === null) {
+          // First group output — record and succeed
+          firstOutputSeen = output
+          shellCalls.push({ list, output })
+          const inputPaths = list
+            .split('\n')
+            .map(line => line.match(/file '(.+)'/)?.[1] ?? '')
+            .filter(Boolean)
+          const sumDuration = inputPaths.reduce((s, p) => s + (durationMap.get(p) ?? 0), 0)
+          durationMap.set(output, sumDuration)
+        } else {
+          // All subsequent outputs (second group + any retries) always fail
+          failedOutputs.add(output)
+          throw new Error('Permanent merge failure')
+        }
+      }
+      const service = new AudioMergeService(config, {
+        durationService,
+        shellExecutor: failSecondGroup,
+      })
+      const report = await service.mergeBatch(files, tmpDir, { targetSeconds: 39600, tolerancePercent: 10 })
+
+      // Two groups: first succeeds, second fails (even after retries)
+      expect(report.succeeded).toBe(1)
+      expect(report.failed).toBe(1)
     })
   })
 })

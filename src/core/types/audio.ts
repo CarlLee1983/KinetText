@@ -90,3 +90,53 @@ export interface DurationReport {
   /** Tolerance percentage used for validation (e.g., 10 means ±10%) */
   readonly tolerancePercent: number
 }
+
+/**
+ * Summary of a single merge group's results
+ */
+export interface GroupSummary {
+  /** 0-based group index */
+  readonly groupIndex: number
+  /** Absolute path to the merged output file */
+  readonly outputPath: string
+  /** Input files in this group (ordered) */
+  readonly inputFiles: ReadonlyArray<string>
+  /** Estimated total duration before merge (sum of input durations) */
+  readonly estimatedDuration: number
+  /** Actual duration of merged output file (re-read via music-metadata) */
+  readonly actualDuration: number
+  /** Whether actualDuration is within tolerance of target */
+  readonly withinTolerance: boolean
+  /** True if this group has a single file that exceeds the upper bound */
+  readonly oversizedSingleFile: boolean
+  /** Merge operation result (timing, file count) */
+  readonly mergeResult: {
+    readonly outputPath: string
+    readonly fileCount: number
+    readonly durationMs: number
+  }
+}
+
+/**
+ * Complete report of a batch merge operation
+ */
+export interface GroupingReport {
+  /** Total number of input files processed */
+  readonly totalInputFiles: number
+  /** Number of groups created */
+  readonly totalGroups: number
+  /** Target duration per group in seconds */
+  readonly targetDurationSeconds: number
+  /** Tolerance percentage used */
+  readonly tolerancePercent: number
+  /** Per-group summaries */
+  readonly groups: ReadonlyArray<GroupSummary>
+  /** Sum of all input file durations */
+  readonly totalInputDurationSeconds: number
+  /** Number of groups merged successfully */
+  readonly succeeded: number
+  /** Number of groups that failed to merge */
+  readonly failed: number
+  /** ISO 8601 timestamp of report generation */
+  readonly generatedAt: string
+}

@@ -6,15 +6,17 @@
 
 import { $ } from 'bun'
 import path from 'node:path'
-import { writeFile, unlink } from 'node:fs/promises'
+import { writeFile, unlink, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import pLimit from 'p-limit'
 import { DurationService } from './DurationService'
 import { RetryService } from './RetryService'
 import { AudioErrorClassifier } from './AudioErrorClassifier'
 import { AudioConvertConfig } from '../../config/AudioConvertConfig'
 import { RetryConfig } from '../../config/RetryConfig'
 import { createLogger } from '../utils/logger'
+import type { GroupSummary, GroupingReport } from '../types/audio'
 
 /**
  * A group of MP3 files to be merged together with an estimated total duration.
@@ -72,6 +74,18 @@ export interface AudioMergeServiceDeps {
   retryService?: RetryService
   shellExecutor?: MergeShellExecutor
   durationService?: DurationService
+}
+
+/**
+ * Options for the mergeBatch() pipeline
+ */
+export interface MergeBatchOptions {
+  /** Target duration per group in seconds (default: 39600 = 11 hours) */
+  readonly targetSeconds?: number
+  /** Tolerance percentage for grouping (default: 10 means ±10%) */
+  readonly tolerancePercent?: number
+  /** Output file name prefix (default: 'merged') */
+  readonly namePrefix?: string
 }
 
 /**
@@ -224,6 +238,118 @@ export class AudioMergeService {
     const paddedIndex = (groupIndex + 1).toString().padStart(3, '0')
     const outputPath = join(outputDir, `${namePrefix}_${paddedIndex}.mp3`)
     return this.mergeFiles(group.files, outputPath)
+  }
+
+  /**
+   * Complete batch pipeline: read durations → group → merge sequentially → post-validate → report.
+   *
+   * Uses p-limit for concurrent metadata reads (controlled by config.maxConcurrency).
+   * Merges groups sequentially to avoid I/O contention.
+   * Post-merge validation re-reads each output with getDuration to confirm actual duration.
+   *
+   * @param filePaths - Ordered list of input file paths
+   * @param outputDir - Directory for merged output files
+   * @param options - Batch merge options
+   * @returns Complete GroupingReport with per-group summaries and actual durations
+   */
+  async mergeBatch(
+    filePaths: ReadonlyArray<string>,
+    outputDir: string,
+    options: MergeBatchOptions = {}
+  ): Promise<GroupingReport> {
+    const targetSeconds = options.targetSeconds ?? 39600
+    const tolerancePercent = options.tolerancePercent ?? 10
+    const namePrefix = options.namePrefix ?? 'merged'
+    const upperBound = targetSeconds * (1 + tolerancePercent / 100)
+
+    // Empty input fast path
+    if (filePaths.length === 0) {
+      return {
+        totalInputFiles: 0,
+        totalGroups: 0,
+        targetDurationSeconds: targetSeconds,
+        tolerancePercent,
+        groups: [],
+        totalInputDurationSeconds: 0,
+        succeeded: 0,
+        failed: 0,
+        generatedAt: new Date().toISOString(),
+      }
+    }
+
+    // Step 1: Read all durations with p-limit to prevent EMFILE
+    const limit = pLimit(this.config.maxConcurrency)
+    const filesWithDurations = await Promise.all(
+      filePaths.map(fp =>
+        limit(async () => ({
+          path: fp,
+          duration: await this.durationService.getDuration(fp),
+        }))
+      )
+    )
+
+    const totalInputDurationSeconds = filesWithDurations.reduce(
+      (sum, f) => sum + f.duration, 0
+    )
+
+    // Step 2: Group by duration
+    const mergeGroups = await this.groupByDuration(
+      filesWithDurations, targetSeconds, tolerancePercent
+    )
+
+    // Step 3: Ensure output directory exists
+    await mkdir(outputDir, { recursive: true })
+
+    // Step 4: Merge groups sequentially (avoid I/O contention)
+    const groupSummaries: GroupSummary[] = []
+    let succeeded = 0
+    let failed = 0
+
+    for (let i = 0; i < mergeGroups.length; i++) {
+      const group = mergeGroups[i]
+      try {
+        const mergeResult = await this.mergeGroup(group, outputDir, i, namePrefix)
+
+        // Step 5: Post-merge validation - re-read actual duration
+        const actualDuration = await this.durationService.getDuration(mergeResult.outputPath)
+
+        const isOversized = group.files.length === 1 && group.estimatedDuration > upperBound
+
+        groupSummaries.push({
+          groupIndex: i,
+          outputPath: mergeResult.outputPath,
+          inputFiles: group.files,
+          estimatedDuration: group.estimatedDuration,
+          actualDuration,
+          withinTolerance: this.durationService.validateDuration(
+            actualDuration, targetSeconds, tolerancePercent
+          ),
+          oversizedSingleFile: isOversized,
+          mergeResult: {
+            outputPath: mergeResult.outputPath,
+            fileCount: mergeResult.fileCount,
+            durationMs: mergeResult.durationMs,
+          },
+        })
+        succeeded++
+      } catch (error) {
+        this.logger.error({ groupIndex: i, error }, `Failed to merge group ${i + 1}`)
+        failed++
+      }
+    }
+
+    // Step 6: Build report
+    return {
+      totalInputFiles: filePaths.length,
+      totalGroups: mergeGroups.length,
+      targetDurationSeconds: targetSeconds,
+      tolerancePercent,
+      groups: groupSummaries,
+      totalInputDurationSeconds,
+      succeeded,
+      failed,
+      generatedAt: new Date().toISOString(),
+    }
   }
 
   /**
