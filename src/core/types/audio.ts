@@ -140,3 +140,72 @@ export interface GroupingReport {
   /** ISO 8601 timestamp of report generation */
   readonly generatedAt: string
 }
+
+/**
+ * Metadata for MP4/M4A files
+ * All fields are optional as not all files have complete metadata
+ */
+export interface MP4Metadata {
+  /** Audio title/track name */
+  readonly title?: string
+  /** Artist or author name */
+  readonly artist?: string
+  /** Album or book title */
+  readonly album?: string
+  /** Release/publication date (YYYY-MM-DD format) */
+  readonly date?: string
+  /** Genre classification (e.g., 'Audiobook', 'Fiction') */
+  readonly genre?: string
+  /** Track number (1-indexed) */
+  readonly trackNumber?: number
+  /** Additional comments or notes */
+  readonly comment?: string
+}
+
+/**
+ * Result of a single MP4/M4A conversion operation
+ */
+export interface MP4ConversionResult {
+  /** Path to the source MP3 file */
+  readonly inputPath: string
+  /** Path to the generated M4A/MP4 file */
+  readonly outputPath: string
+  /** Output format: M4A (audio-only) or MP4 (with video) */
+  readonly format: 'M4A' | 'MP4'
+  /** Actual duration of output file in seconds */
+  readonly duration: number
+  /** Configured bitrate in kbps */
+  readonly bitrate: number
+  /** File size in bytes */
+  readonly fileSize: number
+  /** Embedded metadata in output file */
+  readonly metadata: Readonly<MP4Metadata>
+  /** Unix timestamp of conversion completion */
+  readonly timestamp: number
+  /** Error message if conversion failed (undefined on success) */
+  readonly error?: string
+}
+
+/**
+ * Report of an MP4Pipeline batch conversion operation
+ */
+export interface MP4PipelineReport {
+  /** Unix timestamp when batch started */
+  readonly timestamp: number
+  /** Input directory containing merged MP3 files */
+  readonly inputDirectory: string
+  /** Output directory for generated M4A files */
+  readonly outputDirectory: string
+  /** Total files discovered in input directory */
+  readonly totalFiles: number
+  /** Number of successful conversions */
+  readonly successCount: number
+  /** Number of failed conversions */
+  readonly failureCount: number
+  /** Per-file conversion results */
+  readonly results: ReadonlyArray<MP4ConversionResult>
+  /** Whether pipeline ran in preview-only mode (no FFmpeg execution) */
+  readonly dryRun: boolean
+  /** Error messages from failed conversions or pipeline errors */
+  readonly errors: ReadonlyArray<string>
+}

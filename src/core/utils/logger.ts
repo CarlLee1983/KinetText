@@ -18,6 +18,11 @@ export const createLogger = (name: string, options?: pino.LoggerOptions) => {
 }
 
 /**
+ * Alias for createLogger for convenience
+ */
+export const getLogger = createLogger
+
+/**
  * Logger instance for retry service
  */
 export const retryLogger = createLogger('retry-service')
