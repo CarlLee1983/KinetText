@@ -1,6 +1,25 @@
 import { describe, it, expect } from 'bun:test'
+import { RetryService } from '../../core/services/RetryService'
+import { AudioErrorClassifier } from '../../core/services/AudioErrorClassifier'
+import { RetryConfig } from '../../config/RetryConfig'
 
 describe('RetryService', () => {
+  describe('Dependency Injection', () => {
+    it('accepts custom errorClassifier in constructor', () => {
+      const config = new RetryConfig()
+      const classifier = new AudioErrorClassifier()
+      // Should not throw — backward compatible construction with classifier
+      const service = new RetryService(config, classifier)
+      expect(service).toBeDefined()
+    })
+
+    it('uses base ErrorClassifier by default when no classifier provided', () => {
+      const config = new RetryConfig()
+      // Should not throw — backward compatible construction without classifier
+      const service = new RetryService(config)
+      expect(service).toBeDefined()
+    })
+  })
   describe('Successful Execution', () => {
     it('should return result on first attempt if successful', async () => {
       // Given an operation that succeeds immediately

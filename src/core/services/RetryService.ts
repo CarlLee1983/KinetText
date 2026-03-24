@@ -41,10 +41,11 @@ export class RetryService {
 
   constructor(
     config: RetryConfig = new RetryConfig(),
+    errorClassifier?: ErrorClassifier,
     logger?: pino.Logger
   ) {
     this.config = config
-    this.errorClassifier = new ErrorClassifier()
+    this.errorClassifier = errorClassifier ?? new ErrorClassifier()
     this.backoffCalculator = new BackoffCalculator(
       config.initialDelayMs,
       config.maxDelayMs,
