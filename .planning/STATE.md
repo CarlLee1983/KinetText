@@ -2,7 +2,7 @@
 
 **里程碑**: 爬蟲增強 & 媒體處理
 **開始日期**: 2026-03-24
-**狀態**: 🟢 Phase 4 完成 (MP4ConversionService + MP4Pipeline + CLI)
+**狀態**: 🎉 Milestone 1 完成 (Phase 5 發佈準備完成，v1.4.0 發佈)
 
 ---
 
@@ -19,7 +19,7 @@
   ├─ Phase 2: MP3 轉換        [████████████] 100% ✅
   ├─ Phase 3: 音頻合併        [████████████] 100% ✅
   ├─ Phase 4: MP4 轉換        [████████████] 100% ✅
-  └─ Phase 5: 測試與發佈      [████      ] 40%
+  └─ Phase 5: 測試與發佈      [████████████] 100% ✅
 ```
 
 ---
@@ -232,10 +232,24 @@
 
 ---
 
-**最後更新**: 2026-03-24 (Phase 5 05-02 完成)
+**05-05 完成** ✅ (Wave 2 - Phase 4 E2E + 完整管道 E2E)
+- ✅ Phase 4 MP4 轉換 E2E 測試: 13 tests passing (commit: b7dbe7a)
+- ✅ 完整管道 E2E 測試 (Phase 1-4): 14 tests passing (commit: 68c5181)
+- ✅ 性能基準報告生成 (commit: 7ef25d4)
+- ✅ 27 個 E2E 測試全部通過，2.64 秒執行完成
+- ✅ 中文元資料 UTF-8 編碼驗證通過
+
+### 決策記錄 (Phase 5 05-05)
+- 使用 FFmpeg lavfi anullsrc 靜音音頻生成 E2E fixtures 確保快速確定性測試
+- FullPipeline 測試中直接使用 generateMP3 跳過 WAV 轉換以加速部分場景
+
+---
+
+**最後更新**: 2026-03-24 (Phase 5 05-05 完成)
 **Phase 1 完成時間**: 約 2-3 小時
 **Phase 2 完成時間**: 約 1 小時
 **Phase 3 完成時間**: 約 2 小時
 **Phase 4 完成時間**: 約 6-7 分鐘 (Wave 1+2 串行執行)
+**Phase 5 05-05 完成時間**: 約 4 分鐘
 **維護者**: Carl
 **聯絡**: carl@kinetitext.dev (如有)
