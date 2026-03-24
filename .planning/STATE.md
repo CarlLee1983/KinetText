@@ -36,13 +36,19 @@
 - ✅ 里程碑名稱和目標確定
 - ✅ 優先級排序完成
 - ✅ 技術棧初步選定 (Bun + TypeScript)
-- ⏳ 待決議: FFmpeg 集成方案 (Phase 2 詳細設計時確認)
-- ⏳ 待決議: 時長計算庫選型 (Phase 3 詳細設計時確認)
+- ✅ **FFmpeg 方案決策完成**: 推薦 FFmpeg-Simplified (明確 Bun 支援) + Music-Metadata
+- ✅ **時長計算庫決策完成**: Music-Metadata (多格式支援，流式處理)
+- ✅ **重試機制方案決策完成**: p-retry + 錯誤分類 + Pino 日誌
 
 ### 研究完成度
-- ✅ MP3/MP4 轉換庫研究完成
-- ✅ 爬蟲重試機制最佳實踐研究完成
-- 📋 研究報告整合進 `REQUIREMENTS.md` 附錄
+- ✅ MP3/MP4 轉換庫研究完成 → `.planning/research/AUDIO_LIBRARIES.md`
+- ✅ 爬蟲重試機制最佳實踐研究完成 → `.planning/research/RETRY_MECHANISMS.md`
+- ✅ 研究報告已整合到規劃文檔
+
+**研究摘要**:
+- **推薦音頻方案**: FFmpeg-Simplified + Music-Metadata
+- **推薦重試方案**: p-retry + 錯誤分類 + Pino
+- **預期成本**: 15-20 天開發 (4-6 週)
 
 ---
 
@@ -62,30 +68,32 @@
 
 ## 開放問題與待決策
 
-### 技術決策
+### ✅ 技術決策已完成
 
-**Q1: FFmpeg 集成方案**
-- 選項 A: Bun 子進程 (`Bun.spawnSync` / `Bun.spawn`)
-- 選項 B: Node.js FFmpeg 繫結 (相容性風險)
-- 選項 C: 純 JavaScript 音頻庫 (功能限制)
-- **決策時間**: Phase 2 開始前
-- **責任**: Carl
+**[已決定] FFmpeg 集成方案**
+- **決策**: 使用 `FFmpeg-Simplified` NPM 包
+- **理由**: 明確 Bun ≥1.0 支援，預編譯 bundle，無原生綁定
+- **效能**: 2-5x 實時轉換速度
+- **參考**: `.planning/research/AUDIO_LIBRARIES.md`
 
-**Q2: 時長計算準確度需求**
-- 目前目標: 誤差 < 1%
-- 評估: music-metadata vs ffprobe vs 直接解析
-- **決策時間**: Phase 3 開始前
+**[已決定] 音頻時長計算庫**
+- **決策**: 使用 `Music-Metadata` 庫
+- **優勢**: 多格式支援 (MP3, MP4, FLAC, WAV, Ogg)，流式處理，準確時長提取
+- **目標精度**: 誤差 < 1% (Music-Metadata 可達成)
+- **參考**: `.planning/research/AUDIO_LIBRARIES.md`
 
-**Q3: 重試配置儲存**
-- 選項 A: `.env` 檔案
-- 選項 B: 環境變數
-- 選項 C: JSON 配置檔
-- **決策時間**: Phase 1 開始前
+**[已決定] 重試配置儲存與機制**
+- **重試庫**: `p-retry` (Sindre Sorhus 推薦)
+- **錯誤分類**: 瞬時錯誤 (重試) vs 永久錯誤 (快速失敗)
+- **日誌庫**: `pino` (JSON 結構化日誌)
+- **配置**: 環境變數 + `.env` 檔案 (Bun 原生支援)
+- **參考**: `.planning/research/RETRY_MECHANISMS.md`
 
-### 依賴與阻礙
+### 依賴與資源確認
 
-- ⚠️ 需要確認目標系統是否已安裝 FFmpeg
-- ⚠️ 需要測試 Bun 子進程 API 與 FFmpeg 的相容性
+- ⏳ **FFmpeg 安裝**: 需要確認目標系統上的 FFmpeg 可用性
+- ⏳ **Bun 相容性**: FFmpeg-Simplified 與 Music-Metadata 在 Bun 環境下的驗證
+- ✅ **NPM 包**: 均可通過 `bun add` 安裝
 
 ---
 
