@@ -214,8 +214,8 @@ scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run
 **依賴**: Phase 1-4 (所有功能完成)
 
 **交付物**:
-- [ ] 完整的單元測試套件 (80%+ 覆蓋率)
-- [ ] 端到端測試 (Playwright, 如適用)
+- [x] 完整的單元測試套件 (80%+ 覆蓋率) — 374+ 測試 (05-01 ✅)
+- [x] 端到端測試 — Phase 2-3 E2E 完成 (05-02 ✅, 32 tests)
 - [ ] 性能基準和最佳化報告
 - [ ] 使用者文檔 (配置指南、API 文檔)
 - [ ] 故障排查指南
@@ -246,7 +246,7 @@ scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run
 | Phase 2 | 3-4天 | W1-W2 | W2 | ✅ 完成 |
 | Phase 3 | 1-2天 | W3 | W3 | 規劃完成 |
 | Phase 4 | 3-4天 | W3-W4 | W4 | 🎯 規劃完成 |
-| Phase 5 | 2-3天 | W4-W5 | W5 | 待啟動 |
+| Phase 5 | 2-3天 | W4-W5 | W5 | 進行中 (05-01✅, 05-02✅) |
 | **總計** | **15-20天** | | **4-6 週** | |
 
 ---

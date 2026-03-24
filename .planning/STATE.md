@@ -19,7 +19,7 @@
   ├─ Phase 2: MP3 轉換        [████████████] 100% ✅
   ├─ Phase 3: 音頻合併        [████████████] 100% ✅
   ├─ Phase 4: MP4 轉換        [████████████] 100% ✅
-  └─ Phase 5: 測試與發佈      [          ] 0%
+  └─ Phase 5: 測試與發佈      [████      ] 40%
 ```
 
 ---
@@ -214,12 +214,25 @@
 - ✅ 6 個整合測試通過
 - ✅ 中文報告格式化
 
-### 即將開始
-- [ ] Phase 5: 測試與發佈 (E2E tests, documentation, publishing)
+### Phase 5 進行中
+
+**05-01 完成** ✅ (Wave 1 - 單元測試)
+- ✅ 374+ 單元測試全部通過
+
+**05-02 完成** ✅ (Wave 2 - E2E 測試)
+- ✅ E2E 測試基礎設施: setup.ts, fixtures.ts, utils.ts (commits: 3570df6)
+- ✅ Phase 2 音頻轉換 E2E 測試: 12 tests passing (commit: 30a5b63)
+- ✅ Phase 3 音頻合併 E2E 測試: 20 tests passing (commit: 0ac1b7d)
+- ✅ 32 個 E2E 測試全部通過，實際 FFmpeg 驗證
+
+### 決策記錄 (Phase 5 05-02)
+- E2E 測試 suite 各自使用 mkdtemp 獨立目錄（不共享 e2eRootDir 的 beforeAll）
+- Fixtures 採 lazy 生成（測試 beforeAll 時建立，非預先提交的樣本檔）
+- 合併測試使用 targetSeconds=10, tolerancePercent=20 以保持 < 2 分鐘
 
 ---
 
-**最後更新**: 2026-03-24 (Phase 4 完成)
+**最後更新**: 2026-03-24 (Phase 5 05-02 完成)
 **Phase 1 完成時間**: 約 2-3 小時
 **Phase 2 完成時間**: 約 1 小時
 **Phase 3 完成時間**: 約 2 小時
