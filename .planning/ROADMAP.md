@@ -56,9 +56,9 @@ Milestone 1: 爬蟲增強 & 媒體處理
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — 基礎建設：音頻類型定義、AudioConvertConfig、AudioErrorClassifier
-- [ ] 02-02-PLAN.md — AudioConvertService 核心轉換引擎與多格式整合測試
-- [ ] 02-03-PLAN.md — DurationService 時長計算與 AudioMergeService 合併服務
+- [x] 02-01-PLAN.md — 基礎建設：音頻類型定義、AudioConvertConfig、AudioErrorClassifier ✅
+- [x] 02-02-PLAN.md — AudioConvertService 核心轉換引擎與多格式整合測試 ✅
+- [x] 02-03-PLAN.md — DurationService 時長計算與 AudioMergeService 合併服務 ✅
 
 **交付物**:
 - [ ] FFmpeg 集成 (透過 `Bun.$` 子進程)
@@ -188,8 +188,8 @@ Plans:
 
 | 階段 | 工作量 | 開始周 | 完成周 | 狀態 |
 |------|--------|--------|--------|------|
-| Phase 1 | 3-4天 | W1 | W1 | 待啟動 |
-| Phase 2 | 3-4天 | W1-W2 | W2 | 待啟動 |
+| Phase 1 | 3-4天 | W1 | W1 | ✅ 完成 |
+| Phase 2 | 3-4天 | W1-W2 | W2 | ✅ 完成 |
 | Phase 3 | 4-5天 | W2-W3 | W3 | 待啟動 |
 | Phase 4 | 3-4天 | W3-W4 | W4 | 待啟動 |
 | Phase 5 | 2-3天 | W4-W5 | W5 | 待啟動 |
