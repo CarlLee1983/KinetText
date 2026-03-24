@@ -214,7 +214,7 @@
 - ✅ 6 個整合測試通過
 - ✅ 中文報告格式化
 
-### Phase 5 進行中
+### Phase 5 完成 ✅
 
 **05-01 完成** ✅ (Wave 1 - 單元測試)
 - ✅ 374+ 單元測試全部通過
@@ -245,11 +245,40 @@
 
 ---
 
-**最後更新**: 2026-03-24 (Phase 5 05-05 完成)
+**05-07 完成** ✅ (Wave 2 - 發佈準備)
+- ✅ 代碼審查檢查清單 (commit: c5f5851)
+- ✅ 版本更新 v1.4.0 + CHANGELOG.md (commit: 038d222)
+- ✅ 發佈檢查清單 + Git 標籤 v1.4.0 (commit: 7925292)
+- ✅ 最終驗證報告: APPROVED FOR RELEASE (commit: b3a6eb3)
+- ✅ 434 個測試全部通過，Milestone 1 完成
+
+### 決策記錄 (Phase 5 05-07)
+- 版本 1.4.0 為 Milestone 1 最終發佈版本
+- 代碼審查識別 MEDIUM 問題（預存在 console.log）不阻擋發佈
+- 核心服務代碼品質達 A+（Phase 1-4 新增部分）
+
+---
+
+**最後更新**: 2026-03-24 (Phase 5 完成，Milestone 1 正式發佈 v1.4.0)
 **Phase 1 完成時間**: 約 2-3 小時
 **Phase 2 完成時間**: 約 1 小時
 **Phase 3 完成時間**: 約 2 小時
 **Phase 4 完成時間**: 約 6-7 分鐘 (Wave 1+2 串行執行)
-**Phase 5 05-05 完成時間**: 約 4 分鐘
+**Phase 5 完成時間**: 約 10 分鐘 (Wave 1+2 並行執行)
 **維護者**: Carl
 **聯絡**: carl@kinetitext.dev (如有)
+
+---
+
+## Phase 5 Plan 06 完成記錄
+
+**05-06 完成** ✅ (Wave 2 - 使用者文檔與 API 參考)
+- ✅ README.md 完整更新，新增 Phase 2-4 功能說明 (commit: 6e37cdc)
+- ✅ docs/API.md 新建，715 行完整 API 參考 (commit: 0d9086d)
+- ✅ docs/CONFIGURATION.md 新建，325 行配置指南 (commit: f19130d)
+- ✅ docs/TROUBLESHOOTING.md 新建，538 行故障排查指南 (commit: 5e88e84)
+- ✅ 總計 1,963 行新增文檔內容
+
+**Phase 5 05-06 完成時間**: 約 5 分鐘
+
+**Milestone 1 完全完成** 🎉 - 所有 Phase 1-5 均已執行完畢
