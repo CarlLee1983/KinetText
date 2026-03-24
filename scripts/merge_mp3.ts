@@ -4,6 +4,20 @@ import path from "path";
 import fs from "fs";
 import { resolveExistingPathWithOutputFallback } from "../src/workflows/pathUtils";
 
+/**
+ * 解析時長參數：接受秒數（39600）、小時（11h）或分鐘（660m）。
+ * @throws Error 如果格式無法識別
+ */
+function parseDurationArg(value: string): number {
+  const trimmed = value.trim()
+  if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10)
+  const hoursMatch = trimmed.match(/^(\d+)h$/i)
+  if (hoursMatch) return parseInt(hoursMatch[1], 10) * 3600
+  const minsMatch = trimmed.match(/^(\d+)m$/i)
+  if (minsMatch) return parseInt(minsMatch[1], 10) * 60
+  throw new Error(`無法解析時長: ${value}，請使用秒數、'11h' 或 '660m' 格式`)
+}
+
 // 解析命令列參數
 const { positionals, values } = parseArgs({
     args: Bun.argv.slice(2),
@@ -36,7 +50,22 @@ const { positionals, values } = parseArgs({
         },
         end: {
             type: "string",
-        }
+        },
+        mode: {
+            type: "string",
+            default: "count",
+        },
+        target: {
+            type: "string",
+            default: "39600",
+        },
+        tolerance: {
+            type: "string",
+            default: "10",
+        },
+        report: {
+            type: "string",
+        },
     },
     allowPositionals: true,
 });
@@ -44,13 +73,17 @@ const { positionals, values } = parseArgs({
 if (values.help) {
     console.log("使用方式: bun run merge-mp3 <input_directory> [選項]");
     console.log("選項:");
-    console.log("  -h, --help       顯示說明");
-    console.log("  -s, --size <n>   每 n 個檔案合併為一個 (預設: 20)");
-    console.log("  -o, --output <dir> 指定輸出資料夾 (預設: 與輸入資料夾相同)");
-    console.log("  -f, --force      強制覆蓋已存在的合併檔");
-    console.log("  --start <n>      開始的檔案索引 (預設: 1，即第一個檔案)");
-    console.log("  --end <n>        結束的檔案索引 (預設: 最後一個檔案)");
-    console.log("  --dry-run        僅顯示計畫，不執行 ffmpeg");
+    console.log("  -h, --help                 顯示說明");
+    console.log("  -s, --size <n>             每 n 個檔案合併為一個 (預設: 20) [--mode=count 用]");
+    console.log("  -o, --output <dir>         指定輸出資料夾 (預設: 與輸入資料夾相同)");
+    console.log("  -f, --force                強制覆蓋已存在的合併檔");
+    console.log("  --start <n>                開始的檔案索引 (預設: 1，即第一個檔案)");
+    console.log("  --end <n>                  結束的檔案索引 (預設: 最後一個檔案)");
+    console.log("  --dry-run                  僅顯示計畫，不執行 ffmpeg");
+    console.log("  --mode <count|duration>    分組模式 (預設: count)");
+    console.log("  --target <duration>        目標時長，支援秒數/11h/660m (預設: 39600) [--mode=duration 用]");
+    console.log("  --tolerance <n>            容差百分比 0-100 (預設: 10) [--mode=duration 用]");
+    console.log("  --report <path>            輸出 JSON 報告到指定路徑 [--mode=duration 用]");
     process.exit(0);
 }
 
@@ -74,8 +107,14 @@ const force = values.force;
 const dryRun = values.dryRun;
 const startIdx = values.start ? parseInt(values.start as string, 10) : 1;
 const endIdx = values.end ? parseInt(values.end as string, 10) : undefined;
+const mode = values.mode as string;
 
-if (isNaN(batchSize) || batchSize <= 0) {
+if (mode !== 'count' && mode !== 'duration') {
+    console.error(`錯誤: --mode 必須是 'count' 或 'duration'，收到: '${mode}'`);
+    process.exit(1);
+}
+
+if (mode === 'count' && (isNaN(batchSize) || batchSize <= 0)) {
     console.error("錯誤: --size 必須是正整數");
     process.exit(1);
 }
@@ -114,6 +153,71 @@ if (files.length === 0) {
     process.exit(0);
 }
 
+// === 時長分組模式 (--mode=duration) ===
+if (mode === 'duration') {
+    const { AudioMergeService } = await import('../src/core/services/AudioMergeService');
+    const { AudioConvertConfig } = await import('../src/config/AudioConvertConfig');
+
+    let targetSeconds: number;
+    try {
+        targetSeconds = parseDurationArg(values.target as string);
+    } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
+        process.exit(1);
+    }
+
+    const tolerancePercent = parseInt(values.tolerance as string, 10);
+    if (isNaN(tolerancePercent) || tolerancePercent < 0 || tolerancePercent > 100) {
+        console.error("錯誤: --tolerance 必須是 0-100 之間的整數");
+        process.exit(1);
+    }
+
+    const filePaths = files.map(f => path.resolve(inputDir, f));
+    const service = new AudioMergeService(AudioConvertConfig.fromEnvironment());
+
+    console.log(`🎵 時長分組模式: ${files.length} 個檔案, 目標 ${values.target}, 容差 ±${tolerancePercent}%`);
+
+    if (dryRun) {
+        // Dry-run: 顯示分組預覽，不執行合併
+        const { DurationService } = await import('../src/core/services/DurationService');
+        const ds = new DurationService();
+        const filesWithDurations = await Promise.all(
+            filePaths.map(async fp => ({
+                path: fp,
+                duration: await ds.getDuration(fp),
+            }))
+        );
+        const groups = await service.groupByDuration(filesWithDurations, targetSeconds, tolerancePercent);
+        console.log(`[Dry-run] 將產生 ${groups.length} 組:`);
+        for (let i = 0; i < groups.length; i++) {
+            console.log(`  Group ${i + 1}: ${groups[i].files.length} 個檔案, 估計 ${ds.formatDuration(groups[i].estimatedDuration)}`);
+        }
+        process.exit(0);
+    }
+
+    const report = await service.mergeBatch(filePaths, outputDir, {
+        targetSeconds,
+        tolerancePercent,
+        namePrefix: bookName,
+    });
+
+    // 輸出人類可讀摘要
+    console.log('\n' + service.formatReport(report));
+
+    // 若指定 --report 旗標，輸出 JSON 報告
+    if (values.report) {
+        const reportPath = path.resolve(values.report as string);
+        await Bun.write(reportPath, JSON.stringify(report, null, 2));
+        console.log(`\n📊 JSON 報告已寫入: ${reportPath}`);
+    }
+
+    console.log("\n✨ 時長分組合併已完成！");
+    process.exit(0);
+}
+
+const bookName = path.basename(baseDir) || "book";
+
+// === 計數分組模式 (--mode=count，預設) ===
 console.log(`🎵 發現 ${files.length} 個 mp3 檔案，將每 ${batchSize} 個合併為一檔...`);
 
 // 檢查 ffmpeg
@@ -125,8 +229,6 @@ if (!dryRun) {
         process.exit(1);
     }
 }
-
-const bookName = path.basename(baseDir) || "book";
 
 // 分批處理
 for (let i = 0; i < files.length; i += batchSize) {

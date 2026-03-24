@@ -241,6 +241,36 @@ export class AudioMergeService {
   }
 
   /**
+   * Format a GroupingReport as a human-readable string for CLI output.
+   * Shows per-group summaries with file counts, estimated/actual durations, and tolerance status.
+   *
+   * @param report - The GroupingReport to format
+   * @returns Multi-line human-readable string
+   */
+  formatReport(report: GroupingReport): string {
+    const ds = this.durationService
+    const lines: string[] = []
+
+    lines.push(
+      `分組摘要: ${report.totalInputFiles} 個檔案 → ${report.totalGroups} 組 ` +
+      `(目標: ${ds.formatDuration(report.targetDurationSeconds)}, 容差: ±${report.tolerancePercent}%)`
+    )
+
+    for (const group of report.groups) {
+      const status = group.withinTolerance ? '✓' : '✗'
+      const oversized = group.oversizedSingleFile ? ' [超大單檔]' : ''
+      lines.push(
+        `  Group ${group.groupIndex + 1}: ${group.inputFiles.length} 個檔案, ` +
+        `估計 ${ds.formatDuration(group.estimatedDuration)}, ` +
+        `實際 ${ds.formatDuration(group.actualDuration)} ${status}${oversized}`
+      )
+    }
+
+    lines.push(`總計: ${report.succeeded} 組成功, ${report.failed} 組失敗`)
+    return lines.join('\n')
+  }
+
+  /**
    * Complete batch pipeline: read durations → group → merge sequentially → post-validate → report.
    *
    * Uses p-limit for concurrent metadata reads (controlled by config.maxConcurrency).
