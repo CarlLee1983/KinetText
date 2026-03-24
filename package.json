@@ -1,5 +1,7 @@
 {
   "name": "kinetitext",
+  "version": "1.4.0",
+  "description": "Modular web crawler for novels with retry mechanism, audio conversion, merging, and MP4 support",
   "module": "index.ts",
   "type": "module",
   "private": true,
