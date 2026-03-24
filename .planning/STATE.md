@@ -170,6 +170,12 @@
 - ✅ music-metadata v11.12.3 整合完成
 - ✅ WAV/AAC/OGG/FLAC → MP3 轉換驗證完成
 
+### Phase 2.1 Gap Closure 完成 ✅
+- ✅ 02.1-01: AudioErrorClassifier 注入 RetryService（DI 支援）(commits: f934528, d8149e7)
+- ✅ RetryService 建構子新增可選 errorClassifier 參數（向後相容）
+- ✅ AudioConvertService 與 AudioMergeService 均注入 AudioErrorClassifier
+- ✅ 223 個測試全部通過
+
 ### 即將開始
 - [ ] Phase 3: 音頻合併與分組 (MP3 分組合並管道)
 
