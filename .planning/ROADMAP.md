@@ -93,35 +93,48 @@ Plans:
 
 ## Phase 3: 音頻合併與分組
 
-**目標**: 自動合併多個 MP3 檔案，根據時長分組
+**目標**: 補充批次合併管道 (mergeBatch)、CLI 時長分組模式、結構化報告輸出，以及後合併時長驗證。核心服務邏輯 (DurationService, AudioMergeService) 已在 Phase 2 完成。
 
-**依賴**: Phase 2 (MP3 檔案可用)
+**依賴**: Phase 2 (DurationService, AudioMergeService, RetryService)
+
+**Requirements:** [R1.2.2, R1.2.3]
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — mergeBatch() 批次管道 + GroupingReport 介面 + 後驗證 + 整合測試
+- [ ] 03-02-PLAN.md — CLI --mode=duration 升級 + formatReport() 人類可讀報告
 
 **交付物**:
-- [ ] MP3 元數據提取 (time-metadata 或 ffprobe)
-- [ ] 時長計算和驗證邏輯
-- [ ] 自動分組演算法 (基於目標時長)
-- [ ] 音頻合併 (ffmpeg concat demuxer)
-- [ ] 分組報告生成
-- [ ] 集成測試 (各種音頻組合)
+- [ ] mergeBatch() 方法（協調分組→合併→驗證→報告）
+- [ ] GroupSummary / GroupingReport 介面
+- [ ] 後合併時長驗證（actualDuration via music-metadata）
+- [ ] CLI --mode=duration 旗標（保留 --mode=count 向後相容）
+- [ ] JSON 與人類可讀格式報告輸出
+- [ ] 批次整合測試 (10+ 檔案)
 
-**預計工作量**: 4-5 天
+**預計工作量**: 1-2 天
 
 **驗收標準**:
-- [ ] 正確計算單個和批次 MP3 的時長 (誤差 < 1%)
-- [ ] 分組結果接近目標時長 (容差 ±10%)
-- [ ] 合併後的 MP3 播放無縫 (無重複、無間隙)
-- [ ] 可配置目標時長 (預設 11 小時)
-- [ ] 生成分組摘要 (哪些檔案分到哪一組)
+- [ ] mergeBatch() 產生完整 GroupingReport（含 actualDuration 後驗證）
+- [ ] 後驗證確認 actualDuration 與 estimatedDuration 誤差 < 1%
+- [ ] CLI --mode=duration 使用 mergeBatch 管道
+- [ ] CLI --mode=count 行為完全不變
+- [ ] --report 旗標輸出 JSON GroupingReport
+- [ ] p-limit 防止 100+ 檔案的 EMFILE 錯誤
+- [ ] 所有資料結構為 readonly（不可變）
 
 **關鍵決策**:
-- 如何計算時長：從檔案還是從 FFmpeg 元數據？
-- 合併演算法：貪心 vs 優化？
+- 時長計算庫: music-metadata（已決定，Phase 2）
+- 合併演算法: 貪心序列（已決定，Phase 2）
+- 後驗證方式: music-metadata（非 ffprobe）
+- CLI 策略: --mode 旗標升級現有腳本（非新腳本）
 
 **驗證計畫**:
-- [ ] 合併 20+ 小時的音頻並驗證分組
-- [ ] 檢查合併後 MP3 的連貫性 (播放整個文件)
-- [ ] 驗證分組報告的準確性
+- [ ] 合併 10+ 個檔案並驗證 GroupingReport 完整性
+- [ ] 後合併 actualDuration 與 estimatedDuration 對比
+- [ ] CLI --dry-run 顯示分組預覽
+- [ ] 全套回歸測試通過
 
 ---
 
@@ -190,7 +203,7 @@ Plans:
 |------|--------|--------|--------|------|
 | Phase 1 | 3-4天 | W1 | W1 | ✅ 完成 |
 | Phase 2 | 3-4天 | W1-W2 | W2 | ✅ 完成 |
-| Phase 3 | 4-5天 | W2-W3 | W3 | 待啟動 |
+| Phase 3 | 1-2天 | W3 | W3 | 規劃完成 |
 | Phase 4 | 3-4天 | W3-W4 | W4 | 待啟動 |
 | Phase 5 | 2-3天 | W4-W5 | W5 | 待啟動 |
 | **總計** | **15-20天** | | **4-6 週** | |
@@ -239,3 +252,4 @@ Plans:
 **更新歷史**:
 - 2026-03-24: 初始版本，路線圖規劃完成
 - 2026-03-24: Phase 2 規劃完成，3 個計畫分 3 個 wave
+- 2026-03-24: Phase 3 規劃完成，2 個計畫分 2 個 wave
