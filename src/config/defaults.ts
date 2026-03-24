@@ -15,3 +15,13 @@ export const DEFAULT_RETRY_CONFIG = {
   timeoutMs: 10000,        // 10 second timeout per request
   operationTimeoutMs: 60000 // 60 second timeout for full operation
 } as const
+
+/**
+ * Default configuration for audio conversion service
+ */
+export const DEFAULT_AUDIO_CONFIG = {
+  bitrate: '128k',
+  sampleRate: 44100,
+  maxConcurrency: 3,
+  ffmpegTimeoutMs: 300000, // 5 minutes per file
+} as const
