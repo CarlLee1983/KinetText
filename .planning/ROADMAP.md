@@ -103,7 +103,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — mergeBatch() 批次管道 + GroupingReport 介面 + 後驗證 + 整合測試 ✅
-- [ ] 03-02-PLAN.md — CLI --mode=duration 升級 + formatReport() 人類可讀報告
+- [ ] 03-02-PLAN.md — CLI --mode=duration 升級 + formatReport() 人類可讀報告 (Task 1 完成，等待驗證)
 
 **交付物**:
 - [ ] mergeBatch() 方法（協調分組→合併→驗證→報告）
