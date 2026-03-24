@@ -140,29 +140,70 @@ Plans:
 
 ## Phase 4: MP4 轉換與集成
 
-**目標**: 將合併的 MP3 轉換為 MP4，支援元數據和可選視頻
+**目標**: 將合併的 MP3 轉換為 M4A（音頻專用 MP4 容器，AAC 編碼），支援元數據嵌入。整合 Phase 1-3 形成完整音頻管道，提供用戶友善的 CLI 介面。
 
 **依賴**: Phase 3 (MP3 檔案可用)
 
-**交付物**:
-- [ ] MP3 → MP4 轉換 (純音頻容器)
-- [ ] 可選背景視頻支援 (靜止黑幕或圖像)
-- [ ] 元數據嵌入 (標題、藝術家等)
-- [ ] 轉換配置 (編碼格式、解析度)
-- [ ] 端到端管道整合 (Phase 1-4 完整工作流)
-- [ ] 集成測試
+**Requirements:** [R1.3.1, R1.3.2]
 
-**預計工作量**: 3-4 天
+**Plans:** 2 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — 核心服務層：MP4ConversionService、MP4ConversionConfig、FFmpeg 命令構建、單元測試
+- [ ] 04-02-PLAN.md — 管道整合與 CLI：MP4Pipeline 編排、scripts/mp3_to_mp4.ts 命令行、集成測試與驗證
+
+**交付物**:
+- [ ] MP4ConversionService (MP3 → M4A 轉換，支援 AAC 編碼、可配置比特率)
+- [ ] MP4ConversionConfig (配置架構、環境變數、Zod 驗證)
+- [ ] FFmpeg 命令構建工具 (參數化命令、元數據轉義、安全性)
+- [ ] MP4Pipeline (編排：發現→轉換→驗證，支援 dry-run 預覽)
+- [ ] CLI scripts/mp3_to_mp4.ts (--input, --output, --metadata, --dry-run 旗標)
+- [ ] 中文人類可讀報告輸出 (每個檔案結果、錯誤摘要)
+- [ ] 單元測試 (200+ 行，>80% 覆蓋)
+- [ ] 集成測試 (用真實 FFmpeg 驗證 M4A 可播性、元數據)
+
+**預計工作量**: 3-4 天 (2 個 Wave，04-01 → 04-02)
 
 **驗收標準**:
-- [ ] MP4 檔案可在常見播放器中播放
-- [ ] 元數據正確嵌入 (iTunes、Windows 媒體播放器可識別)
-- [ ] 檔案大小合理 (考慮音訊品質)
+- [ ] M4A 檔案可在 VLC、iTunes、Windows Media Player 播放
+- [ ] 元數據正確嵌入 (title, artist, album)，能被 music-metadata / ffprobe 讀取
+- [ ] 檔案大小合理 (256 kbps AAC ≈ 192 kbps MP3 品質)
 - [ ] 完整的爬蟲 → 重試 → 轉換 → 合併 → MP4 工作流程可運行
+- [ ] CLI --dry-run 顯示預覽，不執行 FFmpeg
+- [ ] 併發轉換 (p-limit) 防止系統過載
+- [ ] 所有錯誤分類並可重試（透過 Phase 1 RetryService）
 
-**端到端測試**:
-- [ ] 從爬蟲失敗情況開始，觀察自動重試和最終成功
-- [ ] 驗證 MP4 的播放質量和元數據
+**關鍵決策** (from RESEARCH.md):
+- 容器格式: M4A (.m4a 擴展名) 而非通用 MP4，audio-only 內容標準
+- 編碼器: AAC (`-c:a aac`)，比 MP3 更高效，低比特率下品質更好
+- 比特率: 256 kbps AAC (預設，可配置 96-320 kbps)
+- 元數據: FFmpeg `-metadata` 旗標 (文本欄位)，藝術品可選 (AtomicParsley P2)
+- 視頻背景: 可選黑幕視頻 (使用 FFmpeg color filter，-shortest 同步)
+- 並行轉換: p-limit 2-4 workers (取決於核心數)
+- 子進程: Bun.$ (相比 Node.js child_process 快 60%)
+
+**API 決策**:
+```typescript
+// Phase 04-01
+class MP4ConversionService {
+  async convert(inputPath, outputPath, metadata?): Promise<MP4ConversionResult>
+  async convertBatch(options): Promise<MP4ConversionResult[]>
+}
+
+// Phase 04-02
+class MP4Pipeline {
+  async execute(options: MP4PipelineOptions): Promise<MP4PipelineReport>
+}
+
+// CLI
+scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run]
+```
+
+**驗證計畫**:
+- [ ] Phase 04-01: 單元測試全部通過，config 驗證工作，FFmpeg 命令轉義檢查
+- [ ] Phase 04-02: 集成測試用真實 FFmpeg 創建 M4A，music-metadata 驗證可播性
+- [ ] E2E 檢查點: 手動驗證生成的 M4A 可在 VLC/iTunes 播放，元數據可見
+- [ ] Phase 04-02 完成後，完整管道 (Phase 1-4) 可透過 CLI 運行
 
 ---
 
@@ -204,7 +245,7 @@ Plans:
 | Phase 1 | 3-4天 | W1 | W1 | ✅ 完成 |
 | Phase 2 | 3-4天 | W1-W2 | W2 | ✅ 完成 |
 | Phase 3 | 1-2天 | W3 | W3 | 規劃完成 |
-| Phase 4 | 3-4天 | W3-W4 | W4 | 待啟動 |
+| Phase 4 | 3-4天 | W3-W4 | W4 | 🎯 規劃完成 |
 | Phase 5 | 2-3天 | W4-W5 | W5 | 待啟動 |
 | **總計** | **15-20天** | | **4-6 週** | |
 
@@ -239,9 +280,10 @@ Plans:
 ## 下一步
 
 1. **Path 批准**: 確認路線圖和時間表 ✅
-2. **開始 Phase 1**: 執行 `/gsd:plan-phase 1` 進行詳細設計
-3. **Phase 1 實現**: 重試機制核心開發
+2. **開始 Phase 1**: 執行 `/gsd:plan-phase 1` 進行詳細設計 ✅
+3. **Phase 1 實現**: 重試機制核心開發 ✅
 4. **迭代推進**: 按順序完成後續階段，每個階段結束進行驗證
+5. **Phase 4 啟動**: 執行 `/gsd:execute-phase 04` 進行 MP4 轉換實現
 
 ---
 
@@ -253,3 +295,4 @@ Plans:
 - 2026-03-24: 初始版本，路線圖規劃完成
 - 2026-03-24: Phase 2 規劃完成，3 個計畫分 3 個 wave
 - 2026-03-24: Phase 3 規劃完成，2 個計畫分 2 個 wave
+- 2026-03-24: Phase 4 規劃完成，2 個計畫分 2 個 wave
