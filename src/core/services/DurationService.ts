@@ -6,6 +6,8 @@
 import { parseFile } from 'music-metadata'
 import { createLogger } from '../utils/logger'
 import type { DurationReport } from '../types/audio'
+import { DurationGoWrapper } from './DurationGoWrapper'
+import type { DurationGoConfig } from '../../config/DurationGoConfig'
 
 /**
  * Injectable metadata reader type for duration extraction.
@@ -19,6 +21,8 @@ export type DurationMetadataReader = (filePath: string) => Promise<number>
  */
 export interface DurationServiceDeps {
   metadataReader?: DurationMetadataReader
+  goBackendConfig?: DurationGoConfig
+  enableGoBackend?: boolean
 }
 
 /**
@@ -35,10 +39,18 @@ const defaultMetadataReader: DurationMetadataReader = async (filePath) => {
  */
 export class DurationService {
   private readonly metadataReader: DurationMetadataReader
+  private readonly goBackendEnabled: boolean
   private readonly logger = createLogger('duration')
 
   constructor(deps: DurationServiceDeps = {}) {
     this.metadataReader = deps.metadataReader ?? defaultMetadataReader
+    this.goBackendEnabled = deps.enableGoBackend ?? false
+
+    if (this.goBackendEnabled && deps.goBackendConfig) {
+      // 初始化 Go 後端
+      const binaryPath = deps.goBackendConfig.goBinaryPath
+      DurationGoWrapper.init(binaryPath, deps.goBackendConfig)
+    }
   }
 
   /**
@@ -53,12 +65,69 @@ export class DurationService {
 
   /**
    * Calculate total duration of multiple audio files.
+   * Strategy: Try Go backend first if enabled, fallback to Bun Promise.all
    *
    * @param filePaths - Array of file paths (empty array returns 0)
    * @returns Total duration in seconds
    */
   async calculateTotalDuration(filePaths: ReadonlyArray<string>): Promise<number> {
     if (filePaths.length === 0) return 0
+
+    // Try Go backend first if enabled
+    if (this.goBackendEnabled && (await DurationGoWrapper.isAvailable())) {
+      try {
+        const startTime = performance.now()
+        const durations = await DurationGoWrapper.readMetadata(filePaths)
+        const elapsedMs = performance.now() - startTime
+
+        // Validate read results
+        if (durations.size > 0) {
+          const total = Array.from(durations.values()).reduce((sum, d) => sum + d, 0)
+          this.logger.info(
+            {
+              filesRead: durations.size,
+              totalFiles: filePaths.length,
+              totalDuration: total,
+              elapsedMs: Math.round(elapsedMs),
+            },
+            'Go backend duration read completed'
+          )
+
+          // If partial read, supplement missing files with Bun
+          if (durations.size < filePaths.length) {
+            const readPaths = new Set(durations.keys())
+            const missingPaths = filePaths.filter(fp => !readPaths.has(fp))
+
+            // Use Promise.allSettled to handle partial fallback failures gracefully
+            const fallbackResults = await Promise.allSettled(
+              missingPaths.map(fp => this.getDuration(fp))
+            )
+
+            fallbackResults.forEach((result, i) => {
+              if (result.status === 'fulfilled') {
+                durations.set(missingPaths[i], result.value)
+              } else {
+                this.logger.warn(
+                  { file: missingPaths[i], error: result.reason },
+                  'Bun fallback read failed'
+                )
+                // Skip this file; partial success is acceptable
+              }
+            })
+          }
+
+          return Array.from(durations.values()).reduce((sum, d) => sum + d, 0)
+        }
+      } catch (error) {
+        this.logger.warn(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Go backend failed, falling back to Bun'
+        )
+        // Continue to fallback
+      }
+    }
+
+    // Fallback: Original Bun implementation (Promise.all)
     const durations = await Promise.all(
       filePaths.map(fp => this.getDuration(fp))
     )
