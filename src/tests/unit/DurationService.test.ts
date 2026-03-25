@@ -6,6 +6,7 @@
 import { describe, test, expect, beforeEach } from 'bun:test'
 import { DurationService } from '../../core/services/DurationService'
 import type { DurationMetadataReader } from '../../core/services/DurationService'
+import type { DurationGoConfig } from '../../config/DurationGoConfig'
 
 /** Create a mock metadata reader that returns a controlled duration */
 const makeMockReader = (durationsByPath: Record<string, number>): DurationMetadataReader => {
@@ -171,6 +172,35 @@ describe('DurationService', () => {
 
     test('formats 59 seconds as "0h 00m 59s"', () => {
       expect(service.formatDuration(59)).toBe('0h 00m 59s')
+    })
+  })
+
+  describe('Go backend support (enableGoBackend)', () => {
+    test('DurationService with Go backend config enabled (mock fallback to Bun)', async () => {
+      const reader = makeMockReader({
+        '/test/a.mp3': 3600,
+        '/test/b.mp3': 7200,
+      })
+
+      // Note: Unit test uses mock reader; Go binary not available in unit test context
+      // In practice, Go backend would be tested in integration/E2E tests
+      const goConfig: DurationGoConfig = {
+        enabled: true,
+        goBinaryPath: '../../../kinetitext-go/bin/kinetitext-duration',
+        timeout: 30000,
+        concurrency: 4,
+        perFileTimeout: 5000,
+      }
+
+      const service = new DurationService({
+        metadataReader: reader,
+        enableGoBackend: true,
+        goBackendConfig: goConfig,
+      })
+
+      // Since Go binary is not available in unit test context, fallback to Bun
+      const total = await service.calculateTotalDuration(['/test/a.mp3', '/test/b.mp3'])
+      expect(total).toBe(10800)
     })
   })
 })
