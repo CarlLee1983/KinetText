@@ -6,17 +6,21 @@ import { formatCliError, parseCommonCliFlags } from './cli/common';
 function printUsage() {
     console.log('Usage: bun run start <URL>');
     console.log('Options:');
-    console.log('  --help, -h     Show help');
-    console.log('  --dry-run      Fetch metadata/chapter list only (no chapter download)');
-    console.log('  --ignore=<n,m> Ignore specific chapter indices (e.g., --ignore=180,241)');
+    console.log('  --help, -h        Show help');
+    console.log('  --dry-run         Fetch metadata/chapter list only (no chapter download)');
+    console.log('  --ignore=<n,m>    Ignore specific chapter indices (e.g., --ignore=180,241)');
+    console.log('  --use-go-audio    Enable Go backend for audio conversion');
     console.log('Examples:');
     console.log('  bun run start "https://www.8novel.com/novelbooks/12345/"');
     console.log('  bun run start "https://www.wfxs.tw/booklist/9999.html"');
+    console.log('  bun run start "https://www.8novel.com/..." --use-go-audio');
 }
 
 async function main() {
-    const { help, dryRun, ignoreChapters, positional } = parseCommonCliFlags(process.argv.slice(2));
+    const args = process.argv.slice(2);
+    const { help, dryRun, ignoreChapters, positional } = parseCommonCliFlags(args);
     const targetUrl = positional[0];
+    const useGoAudio = args.includes('--use-go-audio');
 
     if (help) {
         printUsage();
@@ -36,7 +40,10 @@ async function main() {
     }
 
     const storage = new TxtStorageAdapter('./output');
-    const engine = new CrawlerEngine(adapter, storage, 5);
+    const engine = new CrawlerEngine(adapter, storage, {
+        concurrency: 5,
+        audio: { useGoBackend: useGoAudio },
+    });
 
     await engine.run(targetUrl, { dryRun, ignoreChapters });
 

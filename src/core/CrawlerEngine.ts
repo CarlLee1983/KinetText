@@ -8,6 +8,28 @@ interface CrawlerRunOptions {
     ignoreChapters?: number[];
 }
 
+/**
+ * Optional audio conversion configuration for the crawler engine.
+ * When provided, the engine will pass these settings to AudioConvertService.
+ */
+export interface CrawlerAudioConfig {
+    /** Enable Go backend for audio conversion (default: false) */
+    useGoBackend?: boolean
+    /** Absolute path to the kinetitext-audio Go binary */
+    goBinaryPath?: string
+}
+
+/**
+ * Full crawler configuration options.
+ * All fields are optional; defaults are used for missing fields.
+ */
+export interface CrawlerConfig {
+    /** Crawl concurrency limit (default: 5) */
+    concurrency?: number
+    /** Audio conversion configuration */
+    audio?: CrawlerAudioConfig
+}
+
 type ChapterStatus =
     | 'saved'
     | 'skipped_valid'
@@ -38,11 +60,36 @@ export class CrawlerEngine {
     private storage: StorageAdapter;
     private concurrency: number;
     private nextRequestSlotAt = 0;
+    /** Audio configuration (for use with AudioConvertService) */
+    readonly audioConfig: CrawlerAudioConfig
 
-    constructor(adapter: NovelSiteAdapter, storage: StorageAdapter, concurrency: number = 5) {
+    /**
+     * @param adapter  - Site-specific scraping adapter
+     * @param storage  - Storage adapter for persisting chapters
+     * @param concurrencyOrConfig - Either a legacy numeric concurrency, or a CrawlerConfig object
+     */
+    constructor(
+        adapter: NovelSiteAdapter,
+        storage: StorageAdapter,
+        concurrencyOrConfig: number | CrawlerConfig = 5
+    ) {
         this.adapter = adapter;
         this.storage = storage;
-        this.concurrency = concurrency;
+
+        if (typeof concurrencyOrConfig === 'number') {
+            // Legacy API: CrawlerEngine(adapter, storage, 5)
+            this.concurrency = concurrencyOrConfig;
+            this.audioConfig = {};
+        } else {
+            // New API: CrawlerEngine(adapter, storage, { concurrency: 5, audio: {...} })
+            const useGoFromEnv = process.env.KINETITEXT_USE_GO_AUDIO === 'true';
+            this.concurrency = concurrencyOrConfig.concurrency ?? 5;
+            this.audioConfig = {
+                useGoBackend: (concurrencyOrConfig.audio?.useGoBackend ?? useGoFromEnv),
+                goBinaryPath: concurrencyOrConfig.audio?.goBinaryPath
+                    ?? process.env.KINETITEXT_GO_AUDIO_BIN,
+            };
+        }
     }
 
     async run(url: string, options: CrawlerRunOptions = {}) {
