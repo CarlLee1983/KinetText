@@ -11,6 +11,7 @@ import { unlink } from 'node:fs/promises'
 import pLimit from 'p-limit'
 import { RetryService } from './RetryService'
 import { AudioErrorClassifier } from './AudioErrorClassifier'
+import { AudioConvertGoWrapper } from './AudioConvertGoWrapper'
 import { AudioConvertConfig } from '../../config/AudioConvertConfig'
 import { RetryConfig } from '../../config/RetryConfig'
 import { createLogger } from '../utils/logger'
@@ -65,6 +66,8 @@ export interface AudioConvertServiceDeps {
   shellExecutor?: ShellExecutor
   metadataReader?: MetadataReader
   ffmpegChecker?: FfmpegChecker
+  /** Optional pre-initialized Go wrapper (for testing/injection) */
+  goWrapper?: typeof AudioConvertGoWrapper
 }
 
 /**
@@ -112,8 +115,11 @@ const defaultFfmpegChecker: FfmpegChecker = async () => {
 
 /**
  * Core audio conversion service.
- * Converts audio files to MP3 format via FFmpeg subprocess (Bun.$).
+ * Converts audio files to MP3 format via FFmpeg subprocess (Bun.$) or Go backend.
  * Wraps each conversion in RetryService for resilience.
+ *
+ * When useGoBackend is enabled in config, delegates to AudioConvertGoWrapper.
+ * If Go initialization fails, gracefully falls back to Bun FFmpeg.
  */
 export class AudioConvertService {
   private readonly config: AudioConvertConfig
@@ -122,6 +128,8 @@ export class AudioConvertService {
   private readonly metadataReader: MetadataReader
   private readonly ffmpegChecker: FfmpegChecker
   private readonly logger = createLogger('audio-convert')
+  /** Go wrapper instance (set when Go backend successfully initialized) */
+  private goWrapper: typeof AudioConvertGoWrapper | null = null
 
   constructor(
     config: AudioConvertConfig = new AudioConvertConfig(),
@@ -136,6 +144,36 @@ export class AudioConvertService {
     this.shellExecutor = deps.shellExecutor ?? defaultShellExecutor
     this.metadataReader = deps.metadataReader ?? defaultMetadataReader
     this.ffmpegChecker = deps.ffmpegChecker ?? defaultFfmpegChecker
+
+    // Use injected Go wrapper (for tests) or the real singleton
+    if (deps.goWrapper !== undefined) {
+      this.goWrapper = deps.goWrapper
+    }
+  }
+
+  /**
+   * Lazily initialize the Go wrapper.
+   * Call this once before converting if useGoBackend is true.
+   * On failure, gracefully falls back to Bun FFmpeg.
+   */
+  async initGoBackend(): Promise<void> {
+    if (!this.config.useGoBackend) return
+
+    const binaryPath = this.config.goBinaryPath
+    if (!binaryPath) {
+      this.logger.warn('useGoBackend is true but goBinaryPath is not set; falling back to Bun')
+      return
+    }
+
+    try {
+      await AudioConvertGoWrapper.init(binaryPath)
+      this.goWrapper = AudioConvertGoWrapper
+      this.logger.info({ binaryPath }, 'Go backend initialized successfully')
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      this.logger.warn({ error: msg }, 'Failed to init Go backend, falling back to Bun FFmpeg')
+      this.goWrapper = null
+    }
   }
 
   /**
@@ -159,6 +197,9 @@ export class AudioConvertService {
    * The conversion is wrapped in RetryService for automatic retry on transient failures.
    * On permanent failure, any partial output file is cleaned up.
    *
+   * When useGoBackend is enabled and the Go wrapper is initialized, delegates to
+   * the Go kinetitext-audio binary. Otherwise uses Bun FFmpeg subprocess.
+   *
    * @param inputPath - Absolute path to the source audio file
    * @param outputPath - Absolute path for the output MP3 file
    * @returns ConversionResult with metadata and timing information
@@ -167,8 +208,12 @@ export class AudioConvertService {
   async convertToMp3(inputPath: string, outputPath: string): Promise<ConversionResult> {
     const startMs = Date.now()
 
+    const useGo = this.config.useGoBackend && this.goWrapper !== null
+
     const retryResult = await this.retryService.execute(
-      () => this.runFfmpegConversion(inputPath, outputPath),
+      useGo
+        ? () => this.convertWithGo(inputPath, outputPath)
+        : () => this.runFfmpegConversion(inputPath, outputPath),
       `convert:${path.basename(inputPath)}`
     )
 
@@ -247,6 +292,35 @@ export class AudioConvertService {
    */
   async getMetadata(filePath: string): Promise<AudioMetadata> {
     return this.metadataReader(filePath)
+  }
+
+  /**
+   * Execute audio conversion using the Go kinetitext-audio backend.
+   * Throws on failure so RetryService can handle retries.
+   */
+  private async convertWithGo(inputPath: string, outputPath: string): Promise<void> {
+    if (!this.goWrapper) {
+      throw new Error('Go backend not initialized')
+    }
+
+    const bitrateNum = parseInt(this.config.bitrate.replace(/\D/g, ''), 10) || 192
+    const response = await this.goWrapper.convert({
+      inputFile: inputPath,
+      outputFile: outputPath,
+      format: 'mp3',
+      bitrate: bitrateNum,
+    })
+
+    if (!response.success) {
+      throw new Error(response.error ?? 'Go conversion failed')
+    }
+
+    // Verify output file was actually created
+    const outputFile = Bun.file(outputPath)
+    const exists = await outputFile.exists()
+    if (!exists) {
+      throw new Error(`Go conversion reported success but output file not found: ${outputPath}`)
+    }
   }
 
   /**

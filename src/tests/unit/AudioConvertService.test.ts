@@ -8,6 +8,7 @@ import { AudioConvertService } from '../../core/services/AudioConvertService'
 import { AudioConvertConfig } from '../../config/AudioConvertConfig'
 import type { ShellExecutor, MetadataReader, FfmpegChecker } from '../../core/services/AudioConvertService'
 import type { AudioMetadata } from '../../core/types/audio'
+import type { AudioConvertGoRequest, AudioConvertGoResponse } from '../../core/services/AudioConvertGoWrapper'
 
 /** Helper: create a mock metadata reader returning fixed values */
 const makeMockMetadata = (overrides: Partial<AudioMetadata> = {}): MetadataReader => {
@@ -211,6 +212,154 @@ describe('AudioConvertService', () => {
         cleanupAttempted = true
       }
       expect(cleanupAttempted).toBe(true)
+    })
+  })
+
+  describe('AudioConvertService with Go backend', () => {
+    test('useGoBackend defaults to false when not specified', () => {
+      const defaultConfig = new AudioConvertConfig()
+      expect(defaultConfig.useGoBackend).toBe(false)
+    })
+
+    test('AudioConvertConfig stores useGoBackend, goBinaryPath, goTimeout correctly', () => {
+      const goConfig = new AudioConvertConfig({
+        useGoBackend: true,
+        goBinaryPath: '/usr/local/bin/kinetitext-audio',
+        goTimeout: 30000,
+      })
+      expect(goConfig.useGoBackend).toBe(true)
+      expect(goConfig.goBinaryPath).toBe('/usr/local/bin/kinetitext-audio')
+      expect(goConfig.goTimeout).toBe(30000)
+    })
+
+    test('goTimeout defaults to 60000 when not specified', () => {
+      const goConfig = new AudioConvertConfig({ useGoBackend: true })
+      expect(goConfig.goTimeout).toBe(60000)
+    })
+
+    test('uses injected Go wrapper when useGoBackend=true and goWrapper provided', async () => {
+      let goCalled = false
+      const mockGoWrapper = {
+        init: async (_path: string) => {},
+        convert: async (req: AudioConvertGoRequest): Promise<AudioConvertGoResponse> => {
+          goCalled = true
+          // Create the output file so verifyOutputFile passes
+          await Bun.write(req.outputFile, Buffer.alloc(100))
+          return { success: true, outputFile: req.outputFile, duration: 5.0 }
+        },
+        isAvailable: async () => true,
+        getBinaryPath: () => '/fake/path',
+      } as any
+
+      const goConfig = new AudioConvertConfig({
+        useGoBackend: true,
+        goBinaryPath: '/fake/path',
+      })
+      const service = new AudioConvertService(goConfig, {
+        metadataReader: mockMetadata,
+        goWrapper: mockGoWrapper,
+      })
+
+      // Manually set go wrapper (simulating successful init)
+      ;(service as any).goWrapper = mockGoWrapper
+
+      const result = await service.convertToMp3('/test/input.wav', '/tmp/test-go-output.mp3')
+      expect(goCalled).toBe(true)
+      expect(result.inputPath).toBe('/test/input.wav')
+
+      // Cleanup
+      try { await Bun.file('/tmp/test-go-output.mp3').exists() } catch {}
+    })
+
+    test('falls back to Bun FFmpeg when goWrapper is null', async () => {
+      let bunCalled = false
+      const trackingShell: ShellExecutor = async () => { bunCalled = true }
+
+      const goConfig = new AudioConvertConfig({
+        useGoBackend: true,
+        goBinaryPath: '/fake/path',
+      })
+      const service = new AudioConvertService(goConfig, {
+        shellExecutor: trackingShell,
+        metadataReader: mockMetadata,
+      })
+      // goWrapper remains null (not initialized), should fall back to Bun
+
+      await service.convertToMp3('/test/input.wav', '/test/output.mp3')
+      expect(bunCalled).toBe(true)
+    })
+
+    test('initGoBackend() does nothing when useGoBackend=false', async () => {
+      const defaultConfig = new AudioConvertConfig({ useGoBackend: false })
+      const service = new AudioConvertService(defaultConfig, {
+        shellExecutor: successShell.executor,
+        metadataReader: mockMetadata,
+      })
+      // Should not throw even without goBinaryPath
+      await expect(service.initGoBackend()).resolves.toBeUndefined()
+      expect((service as any).goWrapper).toBeNull()
+    })
+
+    test('initGoBackend() warns and falls back when goBinaryPath is not set', async () => {
+      const goConfig = new AudioConvertConfig({ useGoBackend: true }) // no goBinaryPath
+      const service = new AudioConvertService(goConfig, {
+        shellExecutor: successShell.executor,
+        metadataReader: mockMetadata,
+      })
+      await expect(service.initGoBackend()).resolves.toBeUndefined()
+      expect((service as any).goWrapper).toBeNull()
+    })
+
+    test('initGoBackend() sets goWrapper=null when binary does not exist', async () => {
+      const goConfig = new AudioConvertConfig({
+        useGoBackend: true,
+        goBinaryPath: '/nonexistent/kinetitext-audio',
+      })
+      const service = new AudioConvertService(goConfig, {
+        shellExecutor: successShell.executor,
+        metadataReader: mockMetadata,
+      })
+      await expect(service.initGoBackend()).resolves.toBeUndefined()
+      // Should gracefully fall back (no throw)
+      expect((service as any).goWrapper).toBeNull()
+    })
+
+    test('RetryService wraps Go conversion when Go backend is active', async () => {
+      let retryExecuteCalled = false
+      const mockRetryService = {
+        execute: async <T>(operation: () => Promise<T>) => {
+          retryExecuteCalled = true
+          try {
+            const data = await operation()
+            return { success: true, data, totalAttempts: 1, totalTimeMs: 0 }
+          } catch (err) {
+            return { success: false, error: err as Error, totalAttempts: 1, totalTimeMs: 0 }
+          }
+        },
+      }
+
+      const mockGoWrapper = {
+        convert: async (req: AudioConvertGoRequest): Promise<AudioConvertGoResponse> => {
+          await Bun.write(req.outputFile, Buffer.alloc(100))
+          return { success: true, outputFile: req.outputFile }
+        },
+        isAvailable: async () => true,
+        getBinaryPath: () => '/fake/path',
+      } as any
+
+      const goConfig = new AudioConvertConfig({ useGoBackend: true })
+      const service = new AudioConvertService(goConfig, {
+        retryService: mockRetryService as any,
+        metadataReader: mockMetadata,
+        goWrapper: mockGoWrapper,
+      })
+      ;(service as any).goWrapper = mockGoWrapper
+
+      await service.convertToMp3('/test/input.wav', '/tmp/test-retry-go.mp3')
+      expect(retryExecuteCalled).toBe(true)
+
+      // Cleanup
+      try { await Bun.file('/tmp/test-retry-go.mp3').exists() } catch {}
     })
   })
 

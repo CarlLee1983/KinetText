@@ -22,6 +22,12 @@ export class AudioConvertConfig {
   readonly maxConcurrency: number
   /** Per-file FFmpeg timeout in milliseconds */
   readonly ffmpegTimeoutMs: number
+  /** Enable Go backend for audio conversion (default: false) */
+  readonly useGoBackend: boolean
+  /** Absolute path to the kinetitext-audio Go binary (optional) */
+  readonly goBinaryPath?: string
+  /** Timeout in milliseconds for Go backend calls (default: 60000) */
+  readonly goTimeout: number
 
   /**
    * Create a new AudioConvertConfig instance
@@ -40,12 +46,16 @@ export class AudioConvertConfig {
       0,
       overrides.ffmpegTimeoutMs ?? DEFAULT_AUDIO_CONFIG.ffmpegTimeoutMs
     )
+    this.useGoBackend = overrides.useGoBackend ?? false
+    this.goBinaryPath = overrides.goBinaryPath
+    this.goTimeout = Math.max(1000, overrides.goTimeout ?? 60000)
   }
 
   /**
    * Load configuration from environment variables.
    * Environment variable names: AUDIO_BITRATE, AUDIO_SAMPLE_RATE,
-   * AUDIO_MAX_CONCURRENCY, AUDIO_FFMPEG_TIMEOUT_MS
+   * AUDIO_MAX_CONCURRENCY, AUDIO_FFMPEG_TIMEOUT_MS,
+   * KINETITEXT_USE_GO_AUDIO, KINETITEXT_GO_AUDIO_BIN, AUDIO_GO_TIMEOUT_MS
    */
   static fromEnvironment(): AudioConvertConfig {
     return new AudioConvertConfig({
@@ -58,6 +68,11 @@ export class AudioConvertConfig {
         : undefined,
       ffmpegTimeoutMs: process.env.AUDIO_FFMPEG_TIMEOUT_MS
         ? parseInt(process.env.AUDIO_FFMPEG_TIMEOUT_MS, 10)
+        : undefined,
+      useGoBackend: process.env.KINETITEXT_USE_GO_AUDIO === 'true',
+      goBinaryPath: process.env.KINETITEXT_GO_AUDIO_BIN ?? undefined,
+      goTimeout: process.env.AUDIO_GO_TIMEOUT_MS
+        ? parseInt(process.env.AUDIO_GO_TIMEOUT_MS, 10)
         : undefined,
     })
   }

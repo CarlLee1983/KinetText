@@ -15,6 +15,12 @@ export interface AudioConvertConfigOptions {
   maxConcurrency?: number
   /** FFmpeg operation timeout in milliseconds */
   ffmpegTimeoutMs?: number
+  /** Enable Go backend for audio conversion (default: false) */
+  useGoBackend?: boolean
+  /** Absolute path to the kinetitext-audio Go binary */
+  goBinaryPath?: string
+  /** Timeout in milliseconds for Go backend calls (default: 60000) */
+  goTimeout?: number
 }
 
 /**
