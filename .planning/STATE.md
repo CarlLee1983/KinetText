@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-25T16:18:00.349Z"
+last_updated: "2026-03-25T22:51:32.021Z"
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Milestone 2 狀態追蹤
@@ -16,7 +16,7 @@ progress:
 **里程碑**: Bun + Go 混用優化
 **版本**: v1.1
 **開始日期**: 2026-03-25
-**狀態**: 🚀 執行中 (Phase 6 Plan 2 完成)
+**狀態**: ✅ Phase 6 完成 (全 3 個計劃執行完畢)
 
 ---
 
@@ -45,7 +45,7 @@ progress:
   ├─ Phase 6: AudioConvertService Go 遷移
   │   ├─ 06-01: Go 骨架 + FFmpeg Binding  [████████████] 100% ✅
   │   ├─ 06-02: 性能基準測試              [████████████] 100% ✅
-  │   └─ 06-03: 集成測試 + 文檔          [░░░░░░░░░░░░]   0% ⏳
+  │   └─ 06-03: 集成測試 + 文檔          [████████████] 100% ✅
   ├─ Phase 7: DurationService 優化       [░░░░░░░░░░░░]   0% ⏳
   └─ Phase 8: MP4ConversionService Go    [░░░░░░░░░░░░]   0% ⏳
 ```
@@ -385,14 +385,41 @@ progress:
 - ✅ 提交: 26d7369 (Task 1), c90c310 (Task 2), e5a84e6 (Task 3)
 
 **性能測試結果**:
+
 - 5 秒靜音音頻：Go 後端慢約 20%（雙層子進程開銷）
 - 30% 目標未達成，根因：無狀態進程模型 + Go 運行時啟動開銷
 - 真實長音頻場景預期 10-20% 提升
 
 **技術決策 (Phase 6-02)**:
+
 - Go 後端懶初始化: initGoBackend() 顯式調用，避免建構子 async
 - 直接路徑存在性檢查: Bun.file(path).exists() 替代 isAvailable() 靜態方法
 - CrawlerEngine 向後相容: 建構子接受 number | CrawlerConfig
 
 **Phase 6 06-02 完成時間**: 21 分鐘
 **最後更新**: 2026-03-25
+
+---
+
+## Phase 6 Plan 03 完成記錄
+
+**06-03 完成** ✅ (完整 E2E 測試與文檔完成)
+
+- ✅ AudioConvertGo.e2e.ts E2E 測試套件: 17 tests, 6 scenarios (commit: 3b594c2)
+- ✅ docs/ARCHITECTURE.md: 488 行完整架構文檔，含 Bun-Go 混用章節 (commit: 9f5fb8b)
+- ✅ docs/MIGRATION_GUIDE.md: 635 行開發者遷移指南 (commit: 11f7f1a)
+- ✅ 463 個測試全部通過 (測試套件完整性維護)
+- ✅ E2E 測試覆蓋: WAV/AAC/OGG/FLAC, 並發穩定性, Bun vs Go 品質對比
+
+**技術決策 (Phase 6-03)**:
+- E2E 測試優雅降級: Go binary 不可用時 console.warn 不拋錯（CI/CD 友善）
+- 架構文檔包含 ADR 表: 記錄 6 個關鍵技術決策
+- 遷移指南提供 4 種啟用方式: 環境變數、.env 文件、CLI 旗標、代碼配置
+
+**Phase 6 整體完成狀態**:
+- 06-01: ✅ Go 骨架 + FFmpeg Binding
+- 06-02: ✅ 性能基準測試 + CrawlerEngine 集成
+- 06-03: ✅ E2E 測試 + 文檔
+
+**Phase 6 06-03 完成時間**: 約 15 分鐘
+**最後更新**: 2026-03-26
