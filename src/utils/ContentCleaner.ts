@@ -13,6 +13,8 @@ interface CleanerRulesFile {
 export class ContentCleaner {
     private static watermarks: Record<string, string[]> = {};
     private static noiseRegexes: Record<string, RegExp[]> = {};
+    private static globalWatermarks: string[] = [];
+    private static globalRegexes: RegExp[] = [];
     private static loaded = false;
 
     private static loadRules() {
@@ -20,6 +22,17 @@ export class ContentCleaner {
 
         const defaultRules: CleanerRulesFile = {
             watermarks: {
+                '_global': [
+                    '上一章',
+                    '下一章',
+                    '目錄',
+                    '返回目錄',
+                    '書架',
+                    '首頁',
+                    '本章完',
+                    '本章未完',
+                    '未完待續'
+                ],
                 '8novel': [
                     '小主，這個章節後面還有哦，請點擊下一頁繼續閱讀，後面更精彩！',
                     '本小章還未完，請點擊下一頁繼續閱讀後面精彩內容！',
@@ -30,19 +43,21 @@ export class ContentCleaner {
                 'wfxs': [
                     '網腐小說',
                     'wfxs.tw',
-                    'www.wfxs.tw',
-                    '本章完',
-                    '上一章',
-                    '下一章'
+                    'www.wfxs.tw'
                 ]
             },
             noisePatterns: {
+                '_global': [
+                    { pattern: '>>章節報錯<<', flags: 'g' },
+                    { pattern: '關燈|護眼|字體：|字號|大|中|小', flags: 'g' },
+                    { pattern: '\\(adsbygoogle.*?;', flags: 'g' },
+                    { pattern: 'window\\.mg_asy_a\\s*=.*?\\}\\)\\(\\);', flags: 'gs' }
+                ],
                 '8novel': [
                     {
-                        pattern: '[8８⒏⑻⑧][\\s]*[nｎＮ][\\s]*[oｏＯσο][\\s]*[vｖＶν][\\s]*[eｅＥЁ][\\s]*[lｌＬ┗└][\\s]*[.．·。][\\s]*[cｃＣС][\\s]*[oｏＯοо][\\s]*[mｍＭｍ]',
+                        pattern: '[8８⒏⑻⑧][\\s]*[nｎＮ][\\s]*[oｏＯσο][\\s]*[vｖＶν][\\s]*[eｅＥЁ][\\s]*[lｌＬ┗└][\\s]*[.．·。][\\s]*[cｃＣС][\\s]*[oｏＯοο][\\s]*[mｍＭｍ]',
                         flags: 'ig'
-                    },
-                    { pattern: '無限輕小說', flags: 'g' }
+                    }
                 ],
                 'wfxs': [
                     { pattern: '網腐小說', flags: 'g' },
@@ -65,34 +80,64 @@ export class ContentCleaner {
             // Fallback to built-in defaults when rules file is missing or malformed.
         }
 
-        this.watermarks = rules.watermarks || {};
+        // Load global rules
+        this.globalWatermarks = rules.watermarks?.['_global'] || [];
+        const globalPatterns = rules.noisePatterns?.['_global'] || [];
+        this.globalRegexes = globalPatterns.map((item) => new RegExp(item.pattern, item.flags || 'g'));
+
+        // Load site-specific rules
+        this.watermarks = {};
         this.noiseRegexes = {};
+        for (const [siteId, wms] of Object.entries(rules.watermarks || {})) {
+            if (siteId !== '_global') {
+                this.watermarks[siteId] = wms;
+            }
+        }
         for (const [siteId, patterns] of Object.entries(rules.noisePatterns || {})) {
-            this.noiseRegexes[siteId] = patterns.map((item) => new RegExp(item.pattern, item.flags || 'g'));
+            if (siteId !== '_global') {
+                this.noiseRegexes[siteId] = patterns.map((item) => new RegExp(item.pattern, item.flags || 'g'));
+            }
         }
         this.loaded = true;
     }
 
     /**
      * Cleans content for a specific site
+     * Applies both global and site-specific rules
      */
     static clean(siteId: string, text: string): string {
         this.loadRules();
-        let cleaned = text
+        let cleaned = text;
 
-        // Remove exact watermarks
-        const siteWatermarks = this.watermarks[siteId] || []
+        // Remove global exact watermarks
+        for (const wm of this.globalWatermarks) {
+            cleaned = cleaned.split(wm).join('');
+        }
+
+        // Remove site-specific exact watermarks
+        const siteWatermarks = this.watermarks[siteId] || [];
         for (const wm of siteWatermarks) {
-            cleaned = cleaned.split(wm).join('')
+            cleaned = cleaned.split(wm).join('');
         }
 
-        // Apply noise regexes
-        const siteRegexes = this.noiseRegexes[siteId] || []
+        // Apply global noise regexes
+        for (const regex of this.globalRegexes) {
+            cleaned = cleaned.replace(regex, '');
+        }
+
+        // Apply site-specific noise regexes
+        const siteRegexes = this.noiseRegexes[siteId] || [];
         for (const regex of siteRegexes) {
-            cleaned = cleaned.replace(regex, '')
+            cleaned = cleaned.replace(regex, '');
         }
 
-        return cleaned.trim()
+        // Clean up excessive whitespace
+        cleaned = cleaned
+            .replace(/\n{3,}/g, '\n\n')  // Max 2 newlines
+            .replace(/\s+$/gm, '')        // Trailing whitespace per line
+            .trim();
+
+        return cleaned;
     }
 
     /**
@@ -101,10 +146,20 @@ export class ContentCleaner {
     static addWatermark(siteId: string, watermark: string) {
         this.loadRules();
         if (!this.watermarks[siteId]) {
-            this.watermarks[siteId] = []
+            this.watermarks[siteId] = [];
         }
         if (!this.watermarks[siteId].includes(watermark)) {
-            this.watermarks[siteId].push(watermark)
+            this.watermarks[siteId].push(watermark);
+        }
+    }
+
+    /**
+     * Add a global watermark that applies to all sites
+     */
+    static addGlobalWatermark(watermark: string) {
+        this.loadRules();
+        if (!this.globalWatermarks.includes(watermark)) {
+            this.globalWatermarks.push(watermark);
         }
     }
 }
