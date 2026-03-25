@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: Bun + Go 混用優化
-status: planning
-last_updated: "2026-03-25T12:00:00Z"
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-25T15:52:14.915Z"
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
 ---
 
 # Milestone 2 狀態追蹤
@@ -16,7 +16,7 @@ progress:
 **里程碑**: Bun + Go 混用優化
 **版本**: v1.1
 **開始日期**: 2026-03-25
-**狀態**: 🚀 規劃完成，準備執行 (Phase 6 待啟動)
+**狀態**: 🚀 執行中 (Phase 6 Plan 1 完成)
 
 ---
 
@@ -37,11 +37,17 @@ progress:
   └─ 域名研究    [████████████] 100% ✅
 
 執行階段
-  ├─ Phase 1: 重試機制        [████████████] 100% ✅
-  ├─ Phase 2: MP3 轉換        [████████████] 100% ✅
-  ├─ Phase 3: 音頻合併        [████████████] 100% ✅
-  ├─ Phase 4: MP4 轉換        [████████████] 100% ✅
-  └─ Phase 5: 測試與發佈      [████████████] 100% ✅
+  ├─ Phase 1: 重試機制        [████████████] 100% ✅ (M1)
+  ├─ Phase 2: MP3 轉換        [████████████] 100% ✅ (M1)
+  ├─ Phase 3: 音頻合併        [████████████] 100% ✅ (M1)
+  ├─ Phase 4: MP4 轉換        [████████████] 100% ✅ (M1)
+  ├─ Phase 5: 測試與發佈      [████████████] 100% ✅ (M1)
+  ├─ Phase 6: AudioConvertService Go 遷移
+  │   ├─ 06-01: Go 骨架 + FFmpeg Binding  [████████████] 100% ✅
+  │   ├─ 06-02: 性能基準測試              [░░░░░░░░░░░░]   0% ⏳
+  │   └─ 06-03: 集成測試 + 文檔          [░░░░░░░░░░░░]   0% ⏳
+  ├─ Phase 7: DurationService 優化       [░░░░░░░░░░░░]   0% ⏳
+  └─ Phase 8: MP4ConversionService Go    [░░░░░░░░░░░░]   0% ⏳
 ```
 
 ---
@@ -334,4 +340,30 @@ progress:
 
 **Phase 5 05-06 完成時間**: 約 5 分鐘
 
-**Milestone 1 完全完成** 🎉 - 所有 Phase 1-5 均已執行完畢
+**Milestone 1 完全完成** - 所有 Phase 1-5 均已執行完畢
+
+---
+
+## Phase 6 Plan 01 完成記錄
+
+**06-01 完成** ✅ (Go 項目骨架 + FFmpeg Binding 集成)
+
+- ✅ kinetitext-go Go 專案建立 (`/Users/carl/Dev/Carl/kinetitext-go`)，go.mod 初始化 (go 1.21)
+- ✅ github.com/u2takey/ffmpeg-go v0.5.0 集成，支援 5 格式 (MP3/AAC/WAV/OGG/FLAC)
+- ✅ kinetitext-audio 二進制編譯成功 (`bin/kinetitext-audio`)，接受 JSON stdin 輸出 JSON stdout
+- ✅ 11 個 Go 單元測試全部通過 (converter_test.go)
+- ✅ AudioConvertGoWrapper Bun 包裝層 (subprocess JSON IPC)
+- ✅ AudioConvertGoConfig Zod 配置架構
+- ✅ 7 個集成測試全部通過 (WAV→MP3, AAC→MP3, 錯誤回傳, WAV passthrough)
+- ✅ 447 個測試全部通過 (新增 18 個)
+- ✅ kinetitext-go 提交: f8ff1a0, 43326e0, b55347c
+- ✅ KinetiText 提交: 1516b40
+
+**技術決策 (Phase 6)**:
+- IPC 協議: subprocess JSON 而非 Bun FFI.cdef (穩定性、跨平台)
+- Go 側 -loglevel quiet: 抑制 ffmpeg-go stdout 污染保持 JSON 純淨
+- Bun stdin: FileSink.write/end() 非 WHATWG getWriter() (Bun 1.3 API 差異)
+- 無狀態進程模型 (每次調用啟動新進程)
+
+**Phase 6 06-01 完成時間**: 6 分鐘
+**最後更新**: 2026-03-25

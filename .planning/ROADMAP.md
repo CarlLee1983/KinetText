@@ -50,7 +50,7 @@ Milestone 2: Bun + Go 混用優化
 - 進程模型: 無狀態，按需建立
 
 **驗證計畫**:
-- [ ] Phase 6-01-PLAN: Go 項目設置 + FFmpeg binding 集成
+- [x] Phase 6-01-PLAN: Go 項目設置 + FFmpeg binding 集成 ✅ (2026-03-25, 6min)
 - [ ] Phase 6-02-PLAN: Bun FFI 層 + 基準測試
 - [ ] Phase 6-03-PLAN: 集成測試 + 文檔
 
