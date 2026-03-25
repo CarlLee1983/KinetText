@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-25T15:52:14.915Z"
+last_updated: "2026-03-25T16:18:00.349Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Milestone 2 狀態追蹤
@@ -16,7 +16,7 @@ progress:
 **里程碑**: Bun + Go 混用優化
 **版本**: v1.1
 **開始日期**: 2026-03-25
-**狀態**: 🚀 執行中 (Phase 6 Plan 1 完成)
+**狀態**: 🚀 執行中 (Phase 6 Plan 2 完成)
 
 ---
 
@@ -44,7 +44,7 @@ progress:
   ├─ Phase 5: 測試與發佈      [████████████] 100% ✅ (M1)
   ├─ Phase 6: AudioConvertService Go 遷移
   │   ├─ 06-01: Go 骨架 + FFmpeg Binding  [████████████] 100% ✅
-  │   ├─ 06-02: 性能基準測試              [░░░░░░░░░░░░]   0% ⏳
+  │   ├─ 06-02: 性能基準測試              [████████████] 100% ✅
   │   └─ 06-03: 集成測試 + 文檔          [░░░░░░░░░░░░]   0% ⏳
   ├─ Phase 7: DurationService 優化       [░░░░░░░░░░░░]   0% ⏳
   └─ Phase 8: MP4ConversionService Go    [░░░░░░░░░░░░]   0% ⏳
@@ -360,10 +360,39 @@ progress:
 - ✅ KinetiText 提交: 1516b40
 
 **技術決策 (Phase 6)**:
+
 - IPC 協議: subprocess JSON 而非 Bun FFI.cdef (穩定性、跨平台)
 - Go 側 -loglevel quiet: 抑制 ffmpeg-go stdout 污染保持 JSON 純淨
 - Bun stdin: FileSink.write/end() 非 WHATWG getWriter() (Bun 1.3 API 差異)
 - 無狀態進程模型 (每次調用啟動新進程)
 
 **Phase 6 06-01 完成時間**: 6 分鐘
+**最後更新**: 2026-03-25
+
+---
+
+## Phase 6 Plan 02 完成記錄
+
+**06-02 完成** ✅ (性能基準測試與 Go 後端集成驗證)
+
+- ✅ AudioConvertService 升級: useGoBackend/goBinaryPath/goTimeout 配置, initGoBackend() 懶初始化
+- ✅ convertWithGo() 私有方法: 調用 AudioConvertGoWrapper, 驗證輸出, 拋出異常供 RetryService 處理
+- ✅ 優雅降級: Go 初始化失敗時自動回退 Bun FFmpeg
+- ✅ AudioConvertBenchmark 性能基準測試類: benchmarkGoVsBun() 4 格式 × 3 輪
+- ✅ PERF_REPORT.md 生成含詳細根因分析
+- ✅ CrawlerEngine 支持 CrawlerConfig API + 環境變數 + --use-go-audio CLI 旗標
+- ✅ 463 個測試全部通過 (新增 31 個)
+- ✅ 提交: 26d7369 (Task 1), c90c310 (Task 2), e5a84e6 (Task 3)
+
+**性能測試結果**:
+- 5 秒靜音音頻：Go 後端慢約 20%（雙層子進程開銷）
+- 30% 目標未達成，根因：無狀態進程模型 + Go 運行時啟動開銷
+- 真實長音頻場景預期 10-20% 提升
+
+**技術決策 (Phase 6-02)**:
+- Go 後端懶初始化: initGoBackend() 顯式調用，避免建構子 async
+- 直接路徑存在性檢查: Bun.file(path).exists() 替代 isAvailable() 靜態方法
+- CrawlerEngine 向後相容: 建構子接受 number | CrawlerConfig
+
+**Phase 6 06-02 完成時間**: 21 分鐘
 **最後更新**: 2026-03-25
