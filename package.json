@@ -16,7 +16,8 @@
     "merge-mp3": "bun run scripts/merge_mp3.ts",
     "clean-files": "bun run scripts/clean_novels.ts",
     "verify": "bun run scripts/verify_chapters.ts",
-    "profile": "bun run scripts/profile_adapter.ts"
+    "profile": "bun run scripts/profile_adapter.ts",
+    "bench:convert": "bun run scripts/bench_convert.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
