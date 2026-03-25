@@ -1,6 +1,6 @@
 # KinetiText 專案
 
-**現在時間**: 2026-03-24
+**現在時間**: 2026-03-26
 
 ## 專案概覽
 
@@ -38,17 +38,25 @@ KinetiText 是一個多功能內容提取與媒體處理系統，集成了高效
 
 ## 里程碑 2: Bun + Go 混用優化 (v1.1) 🚀 進行中
 
-**狀態**: 規劃中 (2026-03-25 啟動)
+**狀態**: 執行中 (2026-03-25 啟動)
 **版本**: v1.1
 **預計週期**: 4-5 週 (18-23 天實現)
+
+### Phase 6 ✅ 完成 (2026-03-26)
+**AudioConvertService Go 遷移 (基礎架構)**
+- kinetitext-go 專案建立 + FFmpeg-go 集成
+- Bun FFI 層 + subprocess JSON IPC 雙重通訊
+- 17 個 E2E 測試，6 個場景，全部通過
+- 架構文檔 (488 行) + 遷移指南 (635 行)
+- **性能現狀**: 短音頻 20% 較慢（subprocess 開銷），長音頻預期 10-20% 改善（未驗證）
 
 ### 核心目標
 透過架構重構，將 FFmpeg 轉換和元數據 I/O 遷移至 Go，實現 20-35% 系統性能提升，同時保持 Bun 的業務邏輯簡潔性。
 
 ### 目標特性
-- ✅ **Phase 2.1**: AudioConvertService (FFmpeg) — 30-50% 更快
-- ✅ **Phase 2.2**: DurationService (元數據 I/O) — 5-10x 更快
-- ✅ **Phase 2.3**: MP4ConversionService (M4A) — 30-40% 更快
+- ✅ **Phase 6**: AudioConvertService Go 基礎架構 — 完成 (2026-03-26)
+- ⏳ **Phase 7**: DurationService (元數據 I/O) — 5-10x 更快
+- ⏳ **Phase 8**: MP4ConversionService (M4A) — 30-40% 更快
 
 ### 架構決策
 - **混用策略**: Bun 業務邏輯 + Go 高效能熱路徑

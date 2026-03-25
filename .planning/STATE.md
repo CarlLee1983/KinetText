@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-25T22:51:32.021Z"
+last_updated: "2026-03-25T23:01:08.027Z"
 progress:
   total_phases: 3
   completed_phases: 1
@@ -412,11 +412,13 @@ progress:
 - ✅ E2E 測試覆蓋: WAV/AAC/OGG/FLAC, 並發穩定性, Bun vs Go 品質對比
 
 **技術決策 (Phase 6-03)**:
+
 - E2E 測試優雅降級: Go binary 不可用時 console.warn 不拋錯（CI/CD 友善）
 - 架構文檔包含 ADR 表: 記錄 6 個關鍵技術決策
 - 遷移指南提供 4 種啟用方式: 環境變數、.env 文件、CLI 旗標、代碼配置
 
 **Phase 6 整體完成狀態**:
+
 - 06-01: ✅ Go 骨架 + FFmpeg Binding
 - 06-02: ✅ 性能基準測試 + CrawlerEngine 集成
 - 06-03: ✅ E2E 測試 + 文檔
