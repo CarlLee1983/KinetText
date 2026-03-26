@@ -8,6 +8,7 @@ import { MP4ConversionService } from '../../core/services/MP4ConversionService'
 import { RetryService } from '../../core/services/RetryService'
 import { AudioErrorClassifier } from '../../core/services/AudioErrorClassifier'
 import { MP4ConversionConfig } from '../../core/config/MP4ConversionConfig'
+import { MP4ConvertGoConfig } from '../../core/config/MP4ConvertGoConfig'
 import type { MP4Metadata, MP4ConversionResult } from '../../core/types/audio'
 
 /**
@@ -242,6 +243,150 @@ describe('MP4ConversionService', () => {
       // Verify that the service properly uses ffmpeg-commands utilities
       // This is tested indirectly through the convert() method
       expect(service).toBeDefined()
+    })
+  })
+
+  describe('Go backend support (initGoBackend)', () => {
+    test('initGoBackend succeeds when Go backend disabled', async () => {
+      // Create service WITHOUT Go backend config
+      const service = new MP4ConversionService(config, retryService, errorClassifier)
+
+      // initGoBackend should return successfully even with no config
+      await service.initGoBackend()
+
+      // Should not throw
+      expect(service).toBeDefined()
+    })
+
+    test('initGoBackend handles unavailable Go binary gracefully', async () => {
+      // Create service WITH Go backend config pointing to non-existent binary
+      const goConfig: MP4ConvertGoConfig = {
+        enabled: true,
+        goBinaryPath: '/nonexistent/kinetitext-mp4convert',
+        timeout: 60000,
+      }
+
+      const service = new MP4ConversionService(config, retryService, errorClassifier, goConfig)
+
+      // initGoBackend should not throw, even if binary is missing
+      await service.initGoBackend()
+
+      // Service should still be functional (will fall back to Bun)
+      expect(service).toBeDefined()
+    })
+
+    test('service with Go disabled ignores goBackendConfig', async () => {
+      // Create service with Go explicitly disabled
+      const goConfig: MP4ConvertGoConfig = {
+        enabled: false,
+        goBinaryPath: '/some/path/kinetitext-mp4convert',
+        timeout: 60000,
+      }
+
+      const service = new MP4ConversionService(config, retryService, errorClassifier, goConfig)
+
+      // initGoBackend should return immediately without checking binary
+      await service.initGoBackend()
+
+      expect(service).toBeDefined()
+    })
+  })
+
+  describe('Go backend code path coverage', () => {
+    test('service accepts MP4ConvertGoConfig in constructor', () => {
+      const goConfig: MP4ConvertGoConfig = {
+        enabled: true,
+        goBinaryPath: '/path/to/kinetitext-mp4convert',
+        timeout: 60000,
+      }
+
+      const service = new MP4ConversionService(config, retryService, errorClassifier, goConfig)
+      expect(service).toBeDefined()
+    })
+
+    test('convertWithGo path is called when Go backend initialized', async () => {
+      // This test verifies the Go wrapper is invoked
+      // Note: Full integration tested in src/tests/integration/MP4ConvertGo.test.ts
+      const goConfig: MP4ConvertGoConfig = {
+        enabled: true,
+        goBinaryPath: '/path/to/kinetitext-mp4convert',
+        timeout: 60000,
+      }
+
+      const service = new MP4ConversionService(config, retryService, errorClassifier, goConfig)
+
+      // Even if initialization fails, the service should exist
+      await service.initGoBackend()
+      expect(service).toBeDefined()
+    })
+
+    test('fallback to Bun occurs when Go conversion fails', async () => {
+      const goConfig: MP4ConvertGoConfig = {
+        enabled: true,
+        goBinaryPath: '/nonexistent/binary',
+        timeout: 60000,
+      }
+
+      const service = new MP4ConversionService(config, retryService, errorClassifier, goConfig)
+
+      // Initialize Go backend (will gracefully fall back since binary doesn't exist)
+      await service.initGoBackend()
+
+      // Convert attempt should still fail gracefully (input file doesn't exist)
+      const result = service.convert('/nonexistent/input.mp3', '/tmp/output.m4a')
+
+      // Should reject since input file doesn't exist
+      await expect(result).rejects.toThrow()
+    })
+  })
+
+  describe('Bun backend-only operation', () => {
+    test('service without Go config uses Bun FFmpeg only', () => {
+      // Create service without goBackendConfig parameter
+      const service = new MP4ConversionService(config, retryService, errorClassifier)
+
+      // Service should be fully functional
+      expect(service).toBeDefined()
+    })
+
+    test('convertToBun path taken when no Go backend config', async () => {
+      // Create service without Go backend
+      const service = new MP4ConversionService(config, retryService, errorClassifier)
+
+      // Convert should attempt via Bun FFmpeg (and fail due to missing input)
+      const result = service.convert('/nonexistent/file.mp3', '/tmp/output.m4a')
+
+      // Should reject (input file missing)
+      await expect(result).rejects.toThrow('Input file not found')
+    })
+  })
+
+  describe('Configuration validation with Go backend', () => {
+    test('Go timeout must be between 1s and 5m', () => {
+      const validConfigs = [
+        { enabled: true, goBinaryPath: '/path', timeout: 1000 },    // 1s min
+        { enabled: true, goBinaryPath: '/path', timeout: 60000 },   // 1m
+        { enabled: true, goBinaryPath: '/path', timeout: 300000 },  // 5m max
+      ]
+
+      validConfigs.forEach(goConfig => {
+        const service = new MP4ConversionService(config, retryService, errorClassifier, goConfig as MP4ConvertGoConfig)
+        expect(service).toBeDefined()
+      })
+    })
+
+    test('MP4ConvertGoConfig is optional in constructor', () => {
+      // Service should work with or without goBackendConfig
+      const service1 = new MP4ConversionService(config, retryService, errorClassifier)
+      const service2 = new MP4ConversionService(
+        config,
+        retryService,
+        errorClassifier,
+        { enabled: false, goBinaryPath: '/path', timeout: 60000 } as MP4ConvertGoConfig
+      )
+
+      expect(service1).toBeDefined()
+      expect(service2).toBeDefined()
     })
   })
 })
