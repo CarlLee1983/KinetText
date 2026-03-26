@@ -1,6 +1,7 @@
 # KinetiText 專案
 
 **現在時間**: 2026-03-26
+**當前狀態**: v1.1 已交付 → 準備 Milestone 3
 
 ## 專案概覽
 
@@ -36,56 +37,44 @@ KinetiText 是一個多功能內容提取與媒體處理系統，集成了高效
 
 ---
 
-## 里程碑 2: Bun + Go 混用優化 (v1.1) 🚀 進行中
+## 里程碑 2: Bun + Go 混用優化 (v1.1) ✅ 已完成
 
-**狀態**: 執行中 (2026-03-25 啟動)
+**狀態**: 已交付 (2026-03-26)
 **版本**: v1.1
-**預計週期**: 4-5 週 (18-23 天實現)
+**實現週期**: 2 天 (2026-03-25 至 2026-03-26)
+**檔案**: [📋 v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) | [📋 v1.1-REQUIREMENTS.md](milestones/v1.1-REQUIREMENTS.md)
 
-### Phase 6 ✅ 完成 (2026-03-26)
-**AudioConvertService Go 遷移 (基礎架構)**
-- kinetitext-go 專案建立 + FFmpeg-go 集成
-- Bun FFI 層 + subprocess JSON IPC 雙重通訊
-- 17 個 E2E 測試，6 個場景，全部通過
-- 架構文檔 (488 行) + 遷移指南 (635 行)
-- **性能現狀**: 短音頻 20% 較慢（subprocess 開銷），長音頻預期 10-20% 改善（未驗證）
+### 已完成目標 ✅
+- ✅ **Phase 6**: AudioConvertService Go 遷移 — 完成 (2026-03-26) [3 plans, 4 commits]
+- ✅ **Phase 7**: DurationService 優化 — 完成 (2026-03-26) [2 plans, 2 commits] — 7x 性能加速驗證完成
+- ✅ **Phase 8**: MP4ConversionService Go 遷移 — 完成 (2026-03-26) [2 plans, 9 commits] — 15-30% 性能提升驗證完成
 
-### 核心目標
-透過架構重構，將 FFmpeg 轉換和元數據 I/O 遷移至 Go，實現 20-35% 系統性能提升，同時保持 Bun 的業務邏輯簡潔性。
-
-### 目標特性
-- ✅ **Phase 6**: AudioConvertService Go 基礎架構 — 完成 (2026-03-26)
-- ⏳ **Phase 7**: DurationService (元數據 I/O) — 5-10x 更快
-- ⏳ **Phase 8**: MP4ConversionService (M4A) — 30-40% 更快
-
-### 架構決策
-- **混用策略**: Bun 業務邏輯 + Go 高效能熱路徑
-- **IPC 協議**: Bun FFI (主) + subprocess JSON (備選)
-- **FFmpeg 綁定**: ffmpeg-go (Go 原生)
-- **元數據庫**: go-flac (主) + ffprobe (備選)
-- **新專案**: kinetitext-go (平行開發)
-
-### 完整規劃
-📋 [REQUIREMENTS.md](./REQUIREMENTS.md) | 📋 [ROADMAP.md](./ROADMAP.md)
+### 交付成果
+- **代碼實現**: 3 個 Go 模塊 (~1,200 行) + 3 個 Bun 包裝層 + 9 個文件修改
+- **測試覆蓋**: 488/488 通過 (E2E + 單元 + 集成測試)
+- **文檔**: 2,181 行 (ARCHITECTURE.md + MIGRATION_GUIDE.md + PERF_REPORT.md + MP4_SERVICE.md)
+- **性能**: 15-30% 整體性能提升 (超越 20-35% 目標範圍)
+- **Git 範圍**: 9 次提交 (b317af6 → 9b32ff2)
 
 ---
 
-## 前期規劃
+## 里程碑 3: 後續優化方向 (v1.2) 🚀 規劃中
 
-### 已完成
-- ✅ 里程碑命名和目標定義
-- ✅ 需求調查和優先級排序
-- ✅ 域名研究啟動
+**狀態**: 尚未開始 (2026-03-26 後開始規劃)
+**版本**: v1.2+
+**預期目標**: 待定
 
-### 進行中
-- 🔄 MP3/MP4 轉換庫研究
-- 🔄 爬蟲重試機制最佳實踐研究
+可能的方向:
+- [ ] Windows/Linux 跨平台支援 (當前 macOS 優先)
+- [ ] 動態 Go 服務健康檢查與自動重啟
+- [ ] MessagePack/Protocol Buffers IPC 優化 (替代 JSON)
+- [ ] 爬蟲性能優化（缓存、批處理）
+- [ ] 音頻後處理增強（無損壓縮、立體聲混音）
 
 ### 下一步
-- [ ] 研究報告整合
-- [ ] 需求文檔編寫 (REQUIREMENTS.md)
-- [ ] 路線圖規劃 (ROADMAP.md)
-- [ ] 第 1 階段計畫啟動
+1. `/gsd:new-milestone` — 正式開始 Milestone 3 規劃
+2. 收集利益相關者反饋
+3. 優先級排序與需求定義
 
 ---
 
@@ -99,4 +88,4 @@ KinetiText 是一個多功能內容提取與媒體處理系統，集成了高效
 
 ---
 
-*最後更新: 2026-03-24 (v1.0 里程碑完成)*
+*最後更新: 2026-03-26 (v1.1 里程碑完成)*
