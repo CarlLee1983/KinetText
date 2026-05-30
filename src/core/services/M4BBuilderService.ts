@@ -106,4 +106,130 @@ export class M4BBuilderService {
     }
     return chapters.sort((a, b) => a.index - b.index)
   }
+
+  /** 產生 ffmpeg concat list 內容（單引號跳脫，絕對路徑） */
+  private buildConcatList(filePaths: ReadonlyArray<string>): string {
+    return filePaths
+      .map((fp) => `file '${path.resolve(fp).replace(/'/g, "'\\''")}'`)
+      .join('\n')
+  }
+
+  /** 建單一卷：寫暫存 concat list + ffmetadata → 執行 ffmpeg → 驗證輸出 */
+  private async buildVolume(
+    chapters: ReadonlyArray<M4BChapter>,
+    durations: ReadonlyMap<string, number>,
+    outputPath: string,
+    volumeTitle: string,
+    book: { album: string; artist?: string },
+    bitrate: number,
+    coverPath?: string,
+  ): Promise<void> {
+    const safe = volumeTitle.replace(/[^\w]+/g, '_')
+    const listPath = path.join(tmpdir(), `kineti_m4b_list_${process.pid}_${safe}.txt`)
+    const metaPath = path.join(tmpdir(), `kineti_m4b_meta_${process.pid}_${safe}.txt`)
+    try {
+      const chapterInputs: M4BChapterInput[] = chapters.map((c) => ({
+        title: c.title,
+        durationSec: durations.get(c.path) ?? 0,
+      }))
+      await writeFile(listPath, this.buildConcatList(chapters.map((c) => c.path)), 'utf-8')
+      await writeFile(
+        metaPath,
+        buildFFMetadata(chapterInputs, { album: book.album, artist: book.artist, title: volumeTitle }),
+        'utf-8',
+      )
+
+      const args = buildM4BCommand(listPath, metaPath, outputPath, bitrate, coverPath)
+      const r = await this.retryService.execute(
+        () => this.shellExecutor(args),
+        `m4b:${path.basename(outputPath)}`,
+      )
+      if (!r.success) throw r.error ?? new Error(`M4B build failed: ${outputPath}`)
+
+      const info = await stat(outputPath)
+      if (info.size === 0) throw new Error(`Output file is empty: ${outputPath}`)
+    } finally {
+      await unlink(listPath).catch(() => {})
+      await unlink(metaPath).catch(() => {})
+    }
+  }
+
+  /** 主流程：列章 → 讀時長 → 分卷 → 逐卷產 M4B → 報告 */
+  async build(options: M4BBuildOptions): Promise<M4BBuildReport> {
+    const targetSeconds = options.targetSeconds ?? 39600
+    const bitrate = options.bitrate ?? 256
+    const dryRun = options.dryRun ?? false
+    const errors: string[] = []
+
+    const chapters = await this.listChapters(options.audioDir)
+    if (chapters.length === 0) {
+      throw new Error(`audio/ 內找不到任何章節 mp3：${options.audioDir}`)
+    }
+
+    // 讀每章時長
+    const durations = new Map<string, number>()
+    for (const c of chapters) {
+      durations.set(c.path, await this.durationService.getDuration(c.path))
+    }
+
+    // 分卷（沿用貪婪演算法）
+    const groups = await this.mergeService.groupByDuration(
+      chapters.map((c) => ({ path: c.path, duration: durations.get(c.path) ?? 0 })),
+      targetSeconds,
+    )
+
+    // 將分卷結果對回 M4BChapter（依路徑）
+    const byPath = new Map(chapters.map((c) => [c.path, c]))
+    const volumeChapters = groups.map((g) => g.files.map((f) => byPath.get(f)!).filter(Boolean))
+
+    if (dryRun) {
+      const volumes: M4BVolumeResult[] = groups.map((g, i) => ({
+        volumeIndex: i + 1,
+        outputPath: path.join(options.outputDir, `${options.bookTitle}_vol${String(i + 1).padStart(2, '0')}.m4b`),
+        chapterCount: g.files.length,
+        estimatedDuration: g.estimatedDuration,
+      }))
+      return {
+        bookTitle: options.bookTitle, audioDir: options.audioDir, outputDir: options.outputDir,
+        totalChapters: chapters.length, totalVolumes: groups.length,
+        successCount: 0, failureCount: 0, volumes, dryRun: true, errors: [],
+      }
+    }
+
+    await mkdir(options.outputDir, { recursive: true })
+
+    const volumes: M4BVolumeResult[] = []
+    let successCount = 0
+    let failureCount = 0
+    for (let i = 0; i < volumeChapters.length; i++) {
+      const chs = volumeChapters[i]
+      const volNo = i + 1
+      const outputPath = path.join(
+        options.outputDir,
+        `${options.bookTitle}_vol${String(volNo).padStart(2, '0')}.m4b`,
+      )
+      const volumeTitle = `${options.bookTitle} 第${volNo}卷`
+      try {
+        await this.buildVolume(
+          chs, durations, outputPath, volumeTitle,
+          { album: options.bookTitle, artist: options.artist ?? 'KinetiText TTS' },
+          bitrate, options.coverPath,
+        )
+        volumes.push({ volumeIndex: volNo, outputPath, chapterCount: chs.length, estimatedDuration: groups[i].estimatedDuration })
+        successCount++
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        this.logger.error({ volNo, error: msg }, '卷建構失敗')
+        errors.push(`第${volNo}卷: ${msg}`)
+        volumes.push({ volumeIndex: volNo, outputPath, chapterCount: chs.length, estimatedDuration: groups[i].estimatedDuration, error: msg })
+        failureCount++
+      }
+    }
+
+    return {
+      bookTitle: options.bookTitle, audioDir: options.audioDir, outputDir: options.outputDir,
+      totalChapters: chapters.length, totalVolumes: groups.length,
+      successCount, failureCount, volumes, dryRun: false, errors,
+    }
+  }
 }

@@ -33,3 +33,84 @@ describe('M4BBuilderService.listChapters', () => {
     expect(await svc.listChapters('/no/such/dir')).toEqual([])
   })
 })
+
+import { DurationService } from '../src/core/services/DurationService'
+import { RetryService } from '../src/core/services/RetryService'
+import { RetryConfig } from '../src/config/RetryConfig'
+import { AudioErrorClassifier } from '../src/core/services/AudioErrorClassifier'
+
+/** 注入固定時長：每章 perFileSec 秒 */
+function fixedDurationService(perFileSec: number): DurationService {
+  return new DurationService({ metadataReader: async () => perFileSec })
+}
+
+describe('M4BBuilderService.build', () => {
+  test('groups chapters into volumes by target duration and calls executor per volume', async () => {
+    const audio = await makeAudioDir([
+      '0001 - 一.mp3', '0002 - 二.mp3', '0003 - 三.mp3', '0004 - 四.mp3', '0005 - 五.mp3',
+    ])
+    const outputDir = path.join(path.dirname(audio), 'm4b')
+    const calls: string[][] = []
+    const svc = new M4BBuilderService({
+      durationService: fixedDurationService(4),
+      shellExecutor: async (args) => {
+        calls.push(args)
+        await fsp.writeFile(args[args.length - 1], 'fake-m4b') // 產出檔讓存在檢查通過
+      },
+    })
+
+    // target 10s、容差 ±10% → 上界 11s → 每卷最多 2 章(8s)，第 3 章超界另起 → 3 卷(2,2,1)
+    const report = await svc.build({
+      audioDir: audio, outputDir, bookTitle: '測試書', targetSeconds: 10, bitrate: 128,
+    })
+
+    expect(report.totalChapters).toBe(5)
+    expect(report.totalVolumes).toBe(3)
+    expect(report.successCount).toBe(3)
+    expect(report.failureCount).toBe(0)
+    expect(calls.length).toBe(3)
+    expect(report.volumes[0].outputPath.endsWith('測試書_vol01.m4b')).toBe(true)
+    expect(report.volumes[2].outputPath.endsWith('測試書_vol03.m4b')).toBe(true)
+  })
+
+  test('dry-run produces report without calling executor', async () => {
+    const audio = await makeAudioDir(['0001 - 一.mp3', '0002 - 二.mp3'])
+    const outputDir = path.join(path.dirname(audio), 'm4b')
+    let called = 0
+    const svc = new M4BBuilderService({
+      durationService: fixedDurationService(4),
+      shellExecutor: async () => { called++ },
+    })
+    const report = await svc.build({
+      audioDir: audio, outputDir, bookTitle: '測試書', targetSeconds: 10, dryRun: true,
+    })
+    expect(called).toBe(0)
+    expect(report.dryRun).toBe(true)
+    expect(report.totalVolumes).toBe(1)
+    expect(report.successCount).toBe(0)
+  })
+
+  test('isolates per-volume failure without aborting others', async () => {
+    const audio = await makeAudioDir([
+      '0001 - 一.mp3', '0002 - 二.mp3', '0003 - 三.mp3', '0004 - 四.mp3',
+    ])
+    const outputDir = path.join(path.dirname(audio), 'm4b')
+    let n = 0
+    const svc = new M4BBuilderService({
+      durationService: fixedDurationService(4),
+      retryService: new RetryService(new RetryConfig({ maxRetries: 0 }), new AudioErrorClassifier()),
+      shellExecutor: async (args) => {
+        n++
+        if (n === 1) throw new Error('boom')
+        await fsp.writeFile(args[args.length - 1], 'ok')
+      },
+    })
+    const report = await svc.build({
+      audioDir: audio, outputDir, bookTitle: '測試書', targetSeconds: 10,
+    })
+    expect(report.totalVolumes).toBe(2)
+    expect(report.successCount).toBe(1)
+    expect(report.failureCount).toBe(1)
+    expect(report.errors.length).toBe(1)
+  })
+})
