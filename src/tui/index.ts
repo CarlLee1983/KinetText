@@ -4,6 +4,7 @@ import { crawlAction } from './actions/crawl'
 import { audiobookAction } from './actions/audiobook'
 import { mergeAction } from './actions/merge'
 import { convertAction } from './actions/convert'
+import { m4bAction } from './actions/m4b'
 import { backupAction } from './actions/backup'
 import { pipelineAction } from './actions/pipeline'
 
@@ -19,6 +20,7 @@ async function main(): Promise<void> {
         { value: 'audiobook', label: '🎙  生成語音書 (TTS)' },
         { value: 'merge', label: '🔗 合併 MP3' },
         { value: 'convert', label: '🎬 轉檔 M4A' },
+        { value: 'm4b', label: '🎧 生成 M4B 有聲書' },
         { value: 'backup', label: '☁  雲端備份' },
         { value: 'pipeline', label: '🚀 一鍵全跑' },
         { value: 'exit', label: '🚪 離開' },
@@ -37,6 +39,7 @@ async function main(): Promise<void> {
         case 'audiobook': await audiobookAction(); break
         case 'merge': await mergeAction(); break
         case 'convert': await convertAction(); break
+        case 'm4b': await m4bAction(); break
         case 'backup': await backupAction(); break
         case 'pipeline': await pipelineAction(); break
       }
