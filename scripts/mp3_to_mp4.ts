@@ -41,14 +41,25 @@ function parseArgs(): CliArgs {
     }
   })
 
+  const usageLines = [
+    'Usage: bun scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run]',
+    '',
+    'Options:',
+    '  --help, -h           Show help',
+    '  --input=/path        Directory containing merged MP3 files',
+    '  --output=/path       Directory for output M4A files',
+    '  --metadata=/path     JSON file with metadata map (optional)',
+    '  --dry-run            Preview conversion without executing FFmpeg',
+  ]
+
+  // 顯式 --help/-h：印說明到 stdout 並正常結束（exit 0）
+  if (parsed.help || args.includes('-h')) {
+    console.log(usageLines.join('\n'))
+    process.exit(0)
+  }
+
   if (!parsed.input || !parsed.output) {
-    console.error('Usage: bun scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run]')
-    console.error('')
-    console.error('Options:')
-    console.error('  --input=/path        Directory containing merged MP3 files')
-    console.error('  --output=/path       Directory for output M4A files')
-    console.error('  --metadata=/path     JSON file with metadata map (optional)')
-    console.error('  --dry-run            Preview conversion without executing FFmpeg')
+    console.error(usageLines.join('\n'))
     process.exit(1)
   }
 
