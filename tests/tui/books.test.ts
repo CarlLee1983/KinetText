@@ -103,3 +103,9 @@ test('parseChapterIndex 不誤判非章節數字檔名', () => {
   expect(parseChapterIndex('2024年度.txt')).toBeNull()
   expect(parseChapterIndex('0.mp3')).toBeNull()
 })
+
+test('counts m4b volumes', async () => {
+  await makeFiles(path.join(root, '某書', 'm4b'), ['某書_vol01.m4b', '某書_vol02.m4b'])
+  const status = await scanBook(root, '某書')
+  expect(status.m4b.count).toBe(2)
+})

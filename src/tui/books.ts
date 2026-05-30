@@ -16,6 +16,7 @@ export interface BookStatus {
   tts: { done: number; total: number; missing: number[] }
   merge: { count: number }
   convert: { m4a: number; mp4: number }
+  m4b: { count: number }
   metadata: boolean
   failedChapters: FailedChapter[]
   overall: Overall
@@ -73,7 +74,7 @@ async function readJson<T>(p: string): Promise<T | null> {
 
 function computeOverall(b: Omit<BookStatus, 'overall'>): Overall {
   if (b.crawl.saved === 0 && b.tts.done === 0 && b.tts.total === 0) return 'created'
-  if ((b.convert.m4a > 0 || b.convert.mp4 > 0) && b.tts.total > 0 && b.tts.missing.length === 0 && b.merge.count > 0) return 'complete'
+  if ((b.convert.m4a > 0 || b.convert.mp4 > 0 || b.m4b.count > 0) && b.tts.total > 0 && b.tts.missing.length === 0) return 'complete'
   if (b.merge.count > 0) return 'merge'
   if (b.tts.done > 0) return 'tts'
   return 'crawl'
@@ -90,6 +91,7 @@ export async function scanBook(outputRoot: string, title: string): Promise<BookS
   const mergeCount = await countFiles(path.join(dir, 'merged'), '.mp3')
   const m4a = await countFiles(path.join(dir, 'm4a'), '.m4a')
   const mp4 = await countFiles(path.join(dir, 'mp4'), '.mp4')
+  const m4bCount = await countFiles(path.join(dir, 'm4b'), '.m4b')
 
   const metadata =
     (await fileExists(path.join(dir, 'metadata.txt'))) ||
@@ -114,6 +116,7 @@ export async function scanBook(outputRoot: string, title: string): Promise<BookS
     tts: { done: audioIdx.length, total: txtIdx.length, missing },
     merge: { count: mergeCount },
     convert: { m4a, mp4 },
+    m4b: { count: m4bCount },
     metadata,
     failedChapters,
   }

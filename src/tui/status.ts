@@ -49,7 +49,8 @@ function renderOverview(books: BookStatus[]): void {
     const crawl = formatStageCell(b.crawl.saved, b.crawl.total ?? 0) + (b.crawl.failed > 0 ? ' ⚠' : '')
     const tts = formatStageCell(b.tts.done, b.tts.total)
     const merge = b.merge.count > 0 ? `${b.merge.count} 檔` : '—'
-    const conv = b.convert.m4a + b.convert.mp4 > 0 ? `${b.convert.m4a + b.convert.mp4} ✓` : '—'
+    const conv = b.convert.m4a + b.convert.mp4 + b.m4b.count > 0
+      ? `${b.convert.m4a + b.convert.mp4 + b.m4b.count} ✓` : '—'
     console.log(
       b.title.padEnd(18) + crawl.padEnd(14) + tts.padEnd(14) + merge.padEnd(8) + conv.padEnd(8) + overallLabel(b.overall),
     )
@@ -67,6 +68,7 @@ async function renderExpanded(b: BookStatus): Promise<void> {
     (b.tts.missing.length > 0 ? `：${b.tts.missing.slice(0, 20).join(', ')}${b.tts.missing.length > 20 ? ' …' : ''}` : ''))
   console.log(`├ 合併    ${b.merge.count} 個 merged 檔${durStr}`)
   console.log(`├ 轉檔    ${b.convert.m4a} 個 m4a / ${b.convert.mp4} 個 mp4`)
+  console.log(`├ M4B     ${b.m4b.count} 卷`)
   console.log(`├ 元資料  ${b.metadata ? '✓' : '✗'}`)
   const failHead = b.failedChapters.length > 0
     ? b.failedChapters.slice(0, 10).map((c) => `${c.index}(${c.reason ?? '?'})`).join(', ')

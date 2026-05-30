@@ -36,6 +36,18 @@ export function buildConvertArgs(i: ConvertInput): string[] {
   return args
 }
 
+export interface M4bInput {
+  title: string
+  target: string
+  bitrate?: string
+}
+
+export function buildM4bArgs(i: M4bInput): string[] {
+  const args = ['build-m4b', `--title=${i.title}`, `--target=${i.target}`]
+  if (i.bitrate) args.push(`--bitrate=${i.bitrate}`)
+  return args
+}
+
 export function buildCrawlArgs(url: string): string[] {
   return ['start', url]
 }

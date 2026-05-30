@@ -163,3 +163,46 @@ export function buildMP4WithVideoCommand(
 
   return args
 }
+
+/**
+ * 建構 M4B 有聲書 ffmpeg 參數陣列
+ * concat demuxer 串接各章音檔 + 嵌入 FFMETADATA（章節）+ 選配封面，重編碼 AAC
+ *
+ * @param concatListPath ffmpeg concat list 檔路徑（內含 file '...' 各行）
+ * @param ffmetadataPath FFMETADATA 檔路徑
+ * @param outputPath 輸出 .m4b 路徑
+ * @param bitrate AAC 位元率 kbps（96–320）
+ * @param coverPath 選配封面圖路徑（jpg/png）
+ * @returns ffmpeg 參數字串陣列（非 shell 字串）
+ */
+export function buildM4BCommand(
+  concatListPath: string,
+  ffmetadataPath: string,
+  outputPath: string,
+  bitrate: number,
+  coverPath?: string,
+): string[] {
+  if (bitrate < 96 || bitrate > 320) {
+    throw new Error(`Invalid bitrate: ${bitrate} kbps (must be 96-320)`)
+  }
+
+  const args: string[] = [
+    '-y',
+    '-f', 'concat', '-safe', '0', '-i', concatListPath,
+    '-i', ffmetadataPath,
+  ]
+
+  if (coverPath) {
+    args.push('-i', coverPath)
+  }
+
+  args.push('-map_metadata', '1', '-map', '0:a')
+
+  if (coverPath) {
+    args.push('-map', '2:v', '-disposition:v:0', 'attached_pic', '-c:v', 'copy')
+  }
+
+  args.push('-c:a', 'aac', '-b:a', `${bitrate}k`, '-movflags', '+faststart', outputPath)
+
+  return args
+}

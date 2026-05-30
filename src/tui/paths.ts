@@ -8,4 +8,5 @@ export const txtDir = (title: string): string => path.join(bookDir(title), 'txt'
 export const audioDir = (title: string): string => path.join(bookDir(title), 'audio')
 export const mergedDir = (title: string): string => path.join(bookDir(title), 'merged')
 export const m4aDir = (title: string): string => path.join(bookDir(title), 'm4a')
+export const m4bDir = (title: string): string => path.join(bookDir(title), 'm4b')
 export const metadataJsonPath = (title: string): string => path.join(bookDir(title), 'metadata.json')

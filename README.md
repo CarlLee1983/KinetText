@@ -352,6 +352,7 @@ bun run menu
 
 - 📊 檢視狀態：一眼看完所有書的爬取/TTS/合併/轉檔進度與缺章
 - 🎙 生成語音書：選書、選範圍，不必打路徑或記 flag
+- 🎧 生成 M4B 有聲書：逐章標記、按時長分卷，丟進 Apple Books / 手機有聲書 App 即可跳章、記憶進度
 - 🚀 一鍵全跑：爬取 → TTS → 合併 → 轉檔 → 備份 自動接續
 
 底層仍呼叫下方各指令，兩種用法可混用。
@@ -370,6 +371,7 @@ bun run menu
 | `bun run merge-mp3 --input=<目錄>` | 合併 MP3（按數量） | Phase 3 |
 | `bun run merge-mp3 --input=<目錄> --mode=duration` | 合併 MP3（按時長） | Phase 3 |
 | `bun run to-mp4 --input=<目錄>` | 轉換為 M4A | Phase 4 |
+| `bun run build-m4b --title=<書名>` | 生成 M4B 有聲書（含章節，按時長分卷） | Phase 4 |
 | `bun run backup` | 雲端備份 | 核心 |
 | `bun run test` | 執行測試 | 開發 |
 
