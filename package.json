@@ -7,6 +7,7 @@
   "private": true,
   "scripts": {
     "start": "bun run src/index.ts",
+    "menu": "bun run src/tui/index.ts",
     "test": "bun test",
     "backup": "bun run scripts/backup.ts",
     "retry-failed": "bun run scripts/retry_failed.ts",
@@ -28,6 +29,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@clack/prompts": "^1.5.0",
     "axios": "^1.13.6",
     "cheerio": "^1.2.0",
     "music-metadata": "^11.12.3",
