@@ -127,12 +127,13 @@ export function buildMP4WithVideoCommand(
   const args: string[] = [
     '-y', // Overwrite output without prompt
     '-f', 'lavfi',
-    '-i', `color=c=black:s=${width}x${height}`, // Black video background
-    '-i', audioPath, // Audio input
-    '-c:v', 'libx264', // H.264 video codec
-    '-preset', 'fast', // Balance quality and speed
-    '-c:a', 'aac', // AAC audio codec
-    '-b:a', `${bitrate}k`, // Audio bitrate
+    '-i', `color=c=black:s=${width}x${height}:r=1`,
+    '-i', audioPath,
+    '-c:v', 'libx264',
+    '-preset', 'fast',
+    '-tune', 'stillimage',
+    '-c:a', 'aac',
+    '-b:a', `${bitrate}k`,
     '-map', '0', // Map video stream
     '-map', '1', // Map audio stream
     '-shortest', // Stop at end of shorter stream (typically audio ends first)

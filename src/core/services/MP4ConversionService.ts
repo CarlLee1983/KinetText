@@ -10,7 +10,7 @@ import { AudioErrorClassifier } from './AudioErrorClassifier'
 import { MP4ConversionConfig } from '../config/MP4ConversionConfig'
 import { MP4ConvertGoConfig } from '../config/MP4ConvertGoConfig'
 import { MP4ConversionResult, MP4Metadata } from '../types/audio'
-import { buildM4ACommand } from '../utils/ffmpeg-commands'
+import { buildM4ACommand, buildMP4WithVideoCommand } from '../utils/ffmpeg-commands'
 import { getLogger } from '../utils/logger'
 import MP4ConvertGoWrapper from './MP4ConvertGoWrapper'
 
@@ -211,27 +211,30 @@ export class MP4ConversionService {
     const startTime = Date.now()
 
     try {
-      // Build FFmpeg command
-      const ffmpegArgs = buildM4ACommand(
-        inputPath,
-        outputPath,
-        this.config.bitrate,
-        metadata
-      )
+      const useVideo =
+        this.config.outputFormat === 'mp4' || this.config.videoBackground === 'black'
+
+      const ffmpegArgs = useVideo
+        ? buildMP4WithVideoCommand(
+            inputPath,
+            outputPath,
+            this.config.bitrate,
+            this.config.videoWidth,
+            this.config.videoHeight,
+            metadata
+          )
+        : buildM4ACommand(inputPath, outputPath, this.config.bitrate, metadata)
 
       // Execute conversion with retry logic
-      await this.retryService.execute(
+      const retryResult = await this.retryService.execute(
         async () => {
           this.logger.debug(
             { inputPath, outputPath, bitrate: this.config.bitrate },
             'Bun FFmpeg 轉換開始'
           )
 
-          // Execute FFmpeg via Bun.$
-          // Join args with proper shell escaping
           const bashCmd = ffmpegArgs
             .map(arg => {
-              // Quote arguments containing spaces or special chars
               if (arg.includes(' ') || arg.includes('"') || arg.includes('$')) {
                 return `"${arg.replace(/"/g, '\\"')}"`
               }
@@ -257,6 +260,10 @@ export class MP4ConversionService {
         }
       )
 
+      if (!retryResult.success) {
+        throw retryResult.error ?? new Error('MP4 conversion failed after retries')
+      }
+
       // Verify output file exists and has size
       const outputFile = Bun.file(outputPath)
       const fileExists = await outputFile.exists()
@@ -275,7 +282,7 @@ export class MP4ConversionService {
       return {
         inputPath,
         outputPath,
-        format: 'M4A',
+        format: useVideo ? 'MP4' : 'M4A',
         duration: 0,
         bitrate: this.config.bitrate,
         fileSize,
@@ -288,7 +295,7 @@ export class MP4ConversionService {
   }
 
   /**
-   * Convert multiple MP3 files to M4A in parallel
+   * Convert multiple audio files to M4A/MP4 in parallel
    * Respects maxConcurrency config to avoid system overload
    * Does not throw; all errors captured in result objects
    *

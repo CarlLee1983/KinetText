@@ -9,6 +9,7 @@ import { MP4ConversionService } from '../src/core/services/MP4ConversionService'
 import { AudioMergeService } from '../src/core/services/AudioMergeService'
 import { DurationService } from '../src/core/services/DurationService'
 import { RetryService } from '../src/core/services/RetryService'
+import { RetryConfig } from '../src/config/RetryConfig'
 import { AudioErrorClassifier } from '../src/core/services/AudioErrorClassifier'
 import { loadMP4Config } from '../src/core/config/MP4ConversionConfig'
 import { getLogger } from '../src/core/utils/logger'
@@ -147,7 +148,11 @@ async function main(): Promise<void> {
     }
 
     // Initialize services
-    const retryService = new RetryService()
+    const retryService = new RetryService(new RetryConfig({
+      maxRetries: 2,
+      timeoutMs: 3_600_000,
+      operationTimeoutMs: 10_800_000
+    }))
     const errorClassifier = new AudioErrorClassifier()
     const durationService = new DurationService()
     const audioMergeService = new AudioMergeService()
