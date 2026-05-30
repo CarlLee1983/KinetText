@@ -22,6 +22,7 @@ This project uses **Bun** exclusively. Do NOT use Node.js, npm, yarn, or pnpm.
 - **Storage (`src/storage/`)**: Persistence handlers.
     - All storage handlers must implement the `StorageAdapter` interface.
     - Supports `TxtStorageAdapter.ts` (structured directory format).
+- **TUI (`src/tui/`)**: 互動式控制台（`bun run menu`）。只負責互動問答 → 組參數 → 子程序呼叫現有 script，不含任何爬取/轉檔邏輯。狀態檢視由 `books.ts` 純函式掃描 `output/` 推導。
 
 ## 🛠️ Tech Stack & Preferred APIs
 
