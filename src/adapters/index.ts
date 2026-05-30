@@ -7,6 +7,7 @@ import { CzbooksAdapter } from './CzbooksAdapter';
 import { HjwzwAdapter } from './HjwzwAdapter';
 import { TwkanAdapter } from './TwkanAdapter';
 import { UukanshuAdapter } from './UukanshuAdapter';
+import { ZhysAdapter } from './ZhysAdapter';
 
 const adapters: NovelSiteAdapter[] = [
     new EightNovelAdapter(),
@@ -16,7 +17,8 @@ const adapters: NovelSiteAdapter[] = [
     new CzbooksAdapter(),
     new HjwzwAdapter(),
     new TwkanAdapter(),
-    new UukanshuAdapter()
+    new UukanshuAdapter(),
+    new ZhysAdapter()
 ];
 
 export function getAdapterForUrl(url: string): NovelSiteAdapter | undefined {

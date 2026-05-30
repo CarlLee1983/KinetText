@@ -9,6 +9,7 @@ import { MP4ConversionService } from '../src/core/services/MP4ConversionService'
 import { AudioMergeService } from '../src/core/services/AudioMergeService'
 import { DurationService } from '../src/core/services/DurationService'
 import { RetryService } from '../src/core/services/RetryService'
+import { RetryConfig } from '../src/config/RetryConfig'
 import { AudioErrorClassifier } from '../src/core/services/AudioErrorClassifier'
 import { loadMP4Config } from '../src/core/config/MP4ConversionConfig'
 import { getLogger } from '../src/core/utils/logger'
@@ -40,14 +41,25 @@ function parseArgs(): CliArgs {
     }
   })
 
+  const usageLines = [
+    'Usage: bun scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run]',
+    '',
+    'Options:',
+    '  --help, -h           Show help',
+    '  --input=/path        Directory containing merged MP3 files',
+    '  --output=/path       Directory for output M4A files',
+    '  --metadata=/path     JSON file with metadata map (optional)',
+    '  --dry-run            Preview conversion without executing FFmpeg',
+  ]
+
+  // 顯式 --help/-h：印說明到 stdout 並正常結束（exit 0）
+  if (parsed.help || args.includes('-h')) {
+    console.log(usageLines.join('\n'))
+    process.exit(0)
+  }
+
   if (!parsed.input || !parsed.output) {
-    console.error('Usage: bun scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run]')
-    console.error('')
-    console.error('Options:')
-    console.error('  --input=/path        Directory containing merged MP3 files')
-    console.error('  --output=/path       Directory for output M4A files')
-    console.error('  --metadata=/path     JSON file with metadata map (optional)')
-    console.error('  --dry-run            Preview conversion without executing FFmpeg')
+    console.error(usageLines.join('\n'))
     process.exit(1)
   }
 
@@ -147,7 +159,11 @@ async function main(): Promise<void> {
     }
 
     // Initialize services
-    const retryService = new RetryService()
+    const retryService = new RetryService(new RetryConfig({
+      maxRetries: 2,
+      timeoutMs: 3_600_000,
+      operationTimeoutMs: 10_800_000
+    }))
     const errorClassifier = new AudioErrorClassifier()
     const durationService = new DurationService()
     const audioMergeService = new AudioMergeService()

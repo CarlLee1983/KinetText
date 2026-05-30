@@ -6,6 +6,7 @@
 import { beforeAll, afterAll, describe, test, expect } from 'bun:test'
 import { $ } from 'bun'
 import { mkdtemp, rm, stat } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import MP4ConvertGoWrapper from '../../core/services/MP4ConvertGoWrapper'
@@ -23,6 +24,10 @@ const GO_BINARY_PATH = join(
   '../../../../kinetitext-go/bin/kinetitext-mp4convert'
 )
 
+// kinetitext-go 是獨立的 sibling 倉庫，CI 不會 checkout/編譯。
+// 偵測不到二進制時整組 skip，本機建構後即可正常執行。
+const goBinaryAvailable = existsSync(GO_BINARY_PATH)
+
 // 創建測試 config 物件
 const createTestConfig = (overrides?: Partial<MP4ConversionConfig>): MP4ConversionConfig => {
   return {
@@ -38,7 +43,7 @@ const createTestConfig = (overrides?: Partial<MP4ConversionConfig>): MP4Conversi
   }
 }
 
-describe('MP4ConvertGoWrapper 集成測試', () => {
+describe.skipIf(!goBinaryAvailable)('MP4ConvertGoWrapper 集成測試', () => {
   let tmpDir: string
 
   beforeAll(async () => {
@@ -175,7 +180,7 @@ describe('MP4ConvertGoWrapper 集成測試', () => {
   })
 })
 
-describe('MP4ConversionService 與 Go 後端集成', () => {
+describe.skipIf(!goBinaryAvailable)('MP4ConversionService 與 Go 後端集成', () => {
   let tmpDir: string
 
   beforeAll(async () => {

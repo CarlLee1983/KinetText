@@ -13,13 +13,23 @@
 import { test, describe, beforeAll, afterAll } from 'bun:test'
 import { DurationService } from '../../core/services/DurationService'
 import { mkdtemp, rm } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { createLogger } from '../../core/utils/logger'
 
 const logger = createLogger('duration-bench')
 
-describe('DurationService Performance Benchmarks', () => {
+// 此基準測試的目的是對比 Bun vs Go 後端速度，核心比較依賴 kinetitext-go 二進制。
+// kinetitext-go 是獨立 sibling 倉庫，CI 不會 checkout/編譯，故缺檔時整組 skip，
+// 避免在較慢的 CI runner 上因 beforeAll 大量產檔逾時而失敗；本機建構後仍正常執行。
+const GO_DURATION_BINARY = join(
+  import.meta.dir,
+  '../../../../kinetitext-go/bin/kinetitext-duration'
+)
+const goDurationBinaryAvailable = existsSync(GO_DURATION_BINARY)
+
+describe.skipIf(!goDurationBinaryAvailable)('DurationService Performance Benchmarks', () => {
   let testDir: string
   let testFiles: string[] = []
   let bunTime = 0
@@ -63,7 +73,7 @@ describe('DurationService Performance Benchmarks', () => {
       },
       '測試 WAV 檔案生成完成'
     )
-  })
+  }, 120000)
 
   afterAll(async () => {
     // 清理測試檔案

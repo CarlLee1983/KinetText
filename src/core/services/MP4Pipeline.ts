@@ -3,6 +3,7 @@
  * Coordinates merged MP3 files → M4A conversion with metadata and error handling
  */
 
+import { stat } from 'node:fs/promises'
 import { AudioMergeService } from './AudioMergeService'
 import { MP4ConversionService } from './MP4ConversionService'
 import { DurationService } from './DurationService'
@@ -55,18 +56,16 @@ export class MP4Pipeline {
 
     try {
       // Validate input directory
-      const inputDir = Bun.file(options.mergedAudioDir)
-      if (!(await inputDir.exists())) {
+      if (!(await this.directoryExists(options.mergedAudioDir))) {
         throw new Error(`Input directory not found: ${options.mergedAudioDir}`)
       }
 
-      this.logger.info({ dir: options.mergedAudioDir }, 'Scanning for merged MP3 files')
+      this.logger.info({ dir: options.mergedAudioDir }, 'Scanning for audio files')
 
-      // Step 1: Discover merged MP3 files
       const mergedFiles = await this.discoverMergedFiles(options.mergedAudioDir)
 
       if (mergedFiles.length === 0) {
-        throw new Error(`No merged MP3 files found in ${options.mergedAudioDir}`)
+        throw new Error(`No audio files (.mp3/.m4a) found in ${options.mergedAudioDir}`)
       }
 
       this.logger.info({ count: mergedFiles.length }, 'Found merged files')
@@ -155,6 +154,15 @@ export class MP4Pipeline {
     }
   }
 
+  private async directoryExists(dir: string): Promise<boolean> {
+    try {
+      const info = await stat(dir)
+      return info.isDirectory()
+    } catch {
+      return false
+    }
+  }
+
   /**
    * Discover all merged MP3 files in a directory
    * Returns sorted absolute paths
@@ -163,16 +171,15 @@ export class MP4Pipeline {
     const files: string[] = []
 
     try {
-      // Use shell command to find .mp3 files (more reliable than Bun.glob)
-      const result = await Bun.$`find ${dir} -maxdepth 1 -name "*.mp3" -type f`.text()
+      const mp3Result = await Bun.$`find ${dir} -maxdepth 1 -name "*.mp3" -type f`.text()
+      const m4aResult = await Bun.$`find ${dir} -maxdepth 1 -name "*.m4a" -type f`.text()
 
-      if (result && result.trim()) {
-        const lines = result.trim().split('\n')
-        lines.forEach(line => {
-          if (line && line.length > 0) {
-            files.push(line)
+      for (const result of [mp3Result, m4aResult]) {
+        if (result?.trim()) {
+          for (const line of result.trim().split('\n')) {
+            if (line) files.push(line)
           }
-        })
+        }
       }
 
       return files.sort()
@@ -188,7 +195,8 @@ export class MP4Pipeline {
    */
   private buildOutputPath(inputPath: string, outputDir: string): string {
     const basename = this.getBasename(inputPath)
-    const outputName = basename.replace(/\.mp3$/i, '.m4a')
+    const ext = this.config.outputFormat === 'mp4' ? '.mp4' : '.m4a'
+    const outputName = basename.replace(/\.(mp3|m4a)$/i, ext)
     return `${outputDir}/${outputName}`
   }
 
@@ -204,8 +212,7 @@ export class MP4Pipeline {
    */
   private async ensureOutputDirectory(dir: string): Promise<void> {
     try {
-      const dirHandle = Bun.file(dir)
-      if (!(await dirHandle.exists())) {
+      if (!(await this.directoryExists(dir))) {
         await Bun.$`mkdir -p ${dir}`.quiet()
         this.logger.info({ dir }, 'Created output directory')
       }
