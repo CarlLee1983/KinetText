@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { test, expect, describe } from 'bun:test'
 import {
   buildAudiobookArgs,
   buildMergeArgs,
@@ -6,6 +6,7 @@ import {
   buildCrawlArgs,
   buildBackupArgs,
   buildRetryArgs,
+  buildM4bArgs,
 } from '../../src/tui/runner'
 
 test('buildAudiobookArgs 位置參數順序正確', () => {
@@ -39,4 +40,15 @@ test('buildCrawlArgs / buildBackupArgs / buildRetryArgs', () => {
   expect(buildCrawlArgs('https://x.com')).toEqual(['start', 'https://x.com'])
   expect(buildBackupArgs()).toEqual(['backup'])
   expect(buildRetryArgs('書')).toEqual(['retry-failed', '書'])
+})
+
+describe('buildM4bArgs', () => {
+  test('builds title-based args with target and bitrate', () => {
+    expect(buildM4bArgs({ title: '某書', target: '39600', bitrate: '256' }))
+      .toEqual(['build-m4b', '--title=某書', '--target=39600', '--bitrate=256'])
+  })
+  test('omits bitrate when not given', () => {
+    expect(buildM4bArgs({ title: '某書', target: '39600' }))
+      .toEqual(['build-m4b', '--title=某書', '--target=39600'])
+  })
 })
