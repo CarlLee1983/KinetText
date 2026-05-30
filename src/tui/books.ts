@@ -23,7 +23,7 @@ export interface BookStatus {
 
 /** 從 "0001 - 標題.ext" 取出章節號；非章節檔回傳 null */
 export function parseChapterIndex(filename: string): number | null {
-  const m = filename.match(/^(\d{1,5})\b/)
+  const m = filename.match(/^(\d{1,5}) - /)
   if (!m) return null
   const n = parseInt(m[1], 10)
   return Number.isNaN(n) ? null : n
@@ -73,7 +73,7 @@ async function readJson<T>(p: string): Promise<T | null> {
 
 function computeOverall(b: Omit<BookStatus, 'overall'>): Overall {
   if (b.crawl.saved === 0 && b.tts.done === 0 && b.tts.total === 0) return 'created'
-  if (b.convert.m4a > 0 || b.convert.mp4 > 0) return 'complete'
+  if ((b.convert.m4a > 0 || b.convert.mp4 > 0) && b.tts.total > 0 && b.tts.missing.length === 0 && b.merge.count > 0) return 'complete'
   if (b.merge.count > 0) return 'merge'
   if (b.tts.done > 0) return 'tts'
   return 'crawl'

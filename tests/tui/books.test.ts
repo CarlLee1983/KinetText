@@ -80,3 +80,26 @@ test('scanAllBooks output 不存在時回傳空陣列', async () => {
   const all = await scanAllBooks(path.join(root, '不存在'))
   expect(all).toEqual([])
 })
+
+test('computeOverall 涵蓋各階段狀態', async () => {
+  await fs.mkdir(path.join(root, '空書'), { recursive: true })
+  expect((await scanBook(root, '空書')).overall).toBe('created')
+
+  await makeFiles(path.join(root, 'C書', 'txt'), ['0001 - a.txt'])
+  expect((await scanBook(root, 'C書')).overall).toBe('crawl')
+
+  await makeFiles(path.join(root, 'T書', 'txt'), ['0001 - a.txt', '0002 - b.txt'])
+  await makeFiles(path.join(root, 'T書', 'audio'), ['0001 - a.mp3'])
+  expect((await scanBook(root, 'T書')).overall).toBe('tts')
+
+  await makeFiles(path.join(root, 'X書', 'txt'), ['0001 - a.txt'])
+  await makeFiles(path.join(root, 'X書', 'audio'), ['0001 - a.mp3'])
+  await makeFiles(path.join(root, 'X書', 'merged'), ['X書_001-001_merged.mp3'])
+  await makeFiles(path.join(root, 'X書', 'm4a'), ['X書_001-001_merged.m4a'])
+  expect((await scanBook(root, 'X書')).overall).toBe('complete')
+})
+
+test('parseChapterIndex 不誤判非章節數字檔名', () => {
+  expect(parseChapterIndex('2024年度.txt')).toBeNull()
+  expect(parseChapterIndex('0.mp3')).toBeNull()
+})
