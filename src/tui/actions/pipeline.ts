@@ -1,15 +1,13 @@
 import { text, select, confirm, isCancel, cancel } from '@clack/prompts'
-import * as fs from 'node:fs/promises'
 import { scanAllBooks } from '../books'
 import {
   buildCrawlArgs,
   buildAudiobookArgs,
-  buildMergeArgs,
-  buildConvertArgs,
+  buildM4bArgs,
   buildBackupArgs,
   runScript,
 } from '../runner'
-import { OUTPUT_ROOT, bookDir, mergedDir, m4aDir, metadataJsonPath } from '../paths'
+import { OUTPUT_ROOT } from '../paths'
 
 interface Step {
   label: string
@@ -25,7 +23,7 @@ export async function pipelineAction(): Promise<void> {
   })
   if (isCancel(url)) return cancel('已取消')
 
-  const go = await confirm({ message: '將依序執行：爬取 → TTS(all) → 合併 → 轉檔 → 備份。開始？', initialValue: true })
+  const go = await confirm({ message: '將依序執行：爬取 → TTS(all) → 生成 M4B → 備份。開始？', initialValue: true })
   if (isCancel(go) || !go) return cancel('已取消')
 
   // 步驟 1：爬取
@@ -43,25 +41,16 @@ export async function pipelineAction(): Promise<void> {
     return
   }
   const picked = await select({
-    message: '剛爬好的是哪一本？（接下來對它做 TTS→合併→轉檔）',
+    message: '剛爬好的是哪一本？（接下來對它做 TTS→生成 M4B）',
     options: books.map((b) => ({ value: b.title, label: `${b.title}（txt ${b.crawl.saved} 章）` })),
   })
   if (isCancel(picked)) return cancel('已取消')
   const t = String(picked)
 
-  let metadata: string | undefined
-  try {
-    await fs.access(metadataJsonPath(t))
-    metadata = metadataJsonPath(t)
-  } catch {
-    metadata = undefined
-  }
-
   const steps: Step[] = [
     { label: '② TTS', args: buildAudiobookArgs({ title: t, selection: 'all', rate: '+0%', volume: '+0%', concurrency: '3', merge: false }) },
-    { label: '③ 合併', args: buildMergeArgs({ inputDir: bookDir(t), mode: 'duration', value: '39600' }) },
-    { label: '④ 轉檔', args: buildConvertArgs({ inputDir: mergedDir(t), outputDir: m4aDir(t), metadata }) },
-    { label: '⑤ 備份', args: buildBackupArgs() },
+    { label: '③ 生成 M4B', args: buildM4bArgs({ title: t, target: '39600', bitrate: '256' }) },
+    { label: '④ 備份', args: buildBackupArgs() },
   ]
 
   for (const step of steps) {
