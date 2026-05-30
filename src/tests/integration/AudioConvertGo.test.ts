@@ -6,6 +6,7 @@
 import { beforeAll, afterAll, describe, test, expect } from 'bun:test'
 import { $ } from 'bun'
 import { mkdtemp, rm, stat } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
@@ -21,7 +22,11 @@ const GO_BINARY_PATH = join(
   '../../../../kinetitext-go/bin/kinetitext-audio'
 )
 
-describe('AudioConvertGoWrapper 集成測試', () => {
+// kinetitext-go 是獨立的 sibling 倉庫，CI 不會 checkout/編譯。
+// 偵測不到二進制時整組 skip，本機建構後即可正常執行。
+const goBinaryAvailable = existsSync(GO_BINARY_PATH)
+
+describe.skipIf(!goBinaryAvailable)('AudioConvertGoWrapper 集成測試', () => {
   let tmpDir: string
 
   beforeAll(async () => {
