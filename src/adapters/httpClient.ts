@@ -1,10 +1,25 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import axios, { type AxiosProxyConfig, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { sleep } from './antiBot';
 
 export interface AdapterHttpClientOptions {
     defaultHeaders?: Record<string, string>;
     timeoutMs?: number;
     requestIntervalMs?: number;
+    proxy?: false | AxiosProxyConfig;
+}
+
+export function resolveAdapterProxyConfig(): false | AxiosProxyConfig {
+    const proxyUrl = process.env.KINETITEXT_HTTP_PROXY?.trim();
+    if (!proxyUrl) {
+        return false;
+    }
+
+    const parsed = new URL(proxyUrl);
+    return {
+        protocol: parsed.protocol.replace(':', ''),
+        host: parsed.hostname,
+        port: Number(parsed.port) || (parsed.protocol === 'https:' ? 443 : 80)
+    };
 }
 
 function getCookieName(cookie: string): string {
@@ -23,7 +38,9 @@ export class AdapterHttpClient {
     constructor(private readonly options: AdapterHttpClientOptions = {}) {
         this.client = axios.create({
             timeout: options.timeoutMs ?? 30000,
-            headers: options.defaultHeaders
+            headers: options.defaultHeaders,
+            // Ignore HTTP_PROXY/HTTPS_PROXY unless KINETITEXT_HTTP_PROXY is set explicitly.
+            proxy: options.proxy ?? resolveAdapterProxyConfig()
         });
 
         this.client.interceptors.request.use(async (config) => {
@@ -89,6 +106,7 @@ export function createDefaultAdapterHttpClient(requestIntervalMs: number = 0): A
     return new AdapterHttpClient({
         timeoutMs: 30000,
         requestIntervalMs,
+        proxy: resolveAdapterProxyConfig(),
         defaultHeaders: {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
             'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7'
