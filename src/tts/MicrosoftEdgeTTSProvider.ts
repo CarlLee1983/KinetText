@@ -5,21 +5,35 @@ import * as fs from 'fs/promises'
 import pLimit from 'p-limit'
 import type { TTSProvider } from './TTSProvider'
 
+export const DEFAULT_TRUSTED_CLIENT_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
+export const SEC_MS_GEC_VERSION = '1-143.0.3650.75'
+const WIN_EPOCH_SECONDS = 11644473600
+
+export function generateSecMsGec(
+    trustedClientToken: string,
+    unixTimestampSeconds: number = Math.floor(Date.now() / 1000)
+): string {
+    let ticks = unixTimestampSeconds + WIN_EPOCH_SECONDS
+    ticks -= ticks % 300
+    ticks *= 1e7
+    const strToHash = `${Math.floor(ticks)}${trustedClientToken}`
+    return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase()
+}
+
 export class MicrosoftEdgeTTSProvider implements TTSProvider {
     private voice: string
     private rate: string
     private volume: string
     private endpoint: string = 'wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1'
-    private trustedClientToken: string = '' // Removed as per instruction
-    private tokenExpiresAt: number = 0 // Removed as per instruction
-    private tokenRefreshUrl: string = process.env.MICROSOFT_TOKEN_REFRESH_URL || '' // Removed as per instruction
+    private trustedClientToken: string
+    private tokenExpiresAt: number = 0
+    private tokenRefreshUrl: string = process.env.MICROSOFT_TOKEN_REFRESH_URL || ''
 
     constructor(voice: string = 'zh-CN-YunxiNeural', rate: string = '+0%', volume: string = '+0%') {
         this.voice = voice
         this.rate = rate
         this.volume = volume
-        this.trustedClientToken = process.env.MICROSOFT_TTS_TOKEN || ''
-        // 假設 Token 有效期為 10 分鐘
+        this.trustedClientToken = process.env.MICROSOFT_TTS_TOKEN?.trim() || DEFAULT_TRUSTED_CLIENT_TOKEN
         this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
     }
 
@@ -32,7 +46,6 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
 
     private async refreshToken(): Promise<void> {
         try {
-            // 方案 1: 從遠程 API 刷新
             if (this.tokenRefreshUrl) {
                 const response = await fetch(this.tokenRefreshUrl)
                 if (!response.ok) throw new Error(`Token refresh failed: ${response.status}`)
@@ -43,8 +56,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
                 return
             }
 
-            // 方案 2: 從環境變數重新讀取
-            const newToken = process.env.MICROSOFT_TTS_TOKEN
+            const newToken = process.env.MICROSOFT_TTS_TOKEN?.trim()
             if (newToken) {
                 this.trustedClientToken = newToken
                 this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
@@ -52,14 +64,8 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
                 return
             }
 
-            // 方案 3: 降級策略 - 延長當前 Token 的有效期
-            if (this.trustedClientToken) {
-                this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
-                console.warn('[TTS] No token refresh configured. Extending current token validity.')
-                return
-            }
-
-            throw new Error('No valid token available. Set MICROSOFT_TTS_TOKEN or MICROSOFT_TOKEN_REFRESH_URL')
+            this.trustedClientToken = DEFAULT_TRUSTED_CLIENT_TOKEN
+            this.tokenExpiresAt = Date.now() + (10 * 60 * 1000)
         } catch (err) {
             console.error('[TTS] Token refresh failed:', err instanceof Error ? err.message : err)
             throw err
@@ -105,11 +111,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
     }
 
     private generateSecMsGec(clientToken: string): string {
-        let ticks = Math.floor(Date.now() / 1000)
-        ticks += 11644473600
-        ticks -= ticks % 300
-        const strToHash = ticks + '0000000' + clientToken
-        return crypto.createHash('sha256').update(strToHash, 'ascii').digest('hex').toUpperCase()
+        return generateSecMsGec(clientToken)
     }
 
     private async synthesizeWithRetry(text: string, maxRetries: number = 5): Promise<Buffer> {
@@ -123,7 +125,12 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
                 const errorMsg = err instanceof Error ? err.message : String(err)
 
                 // 檢測 Token 相關的錯誤
-                if (errorMsg.includes('failed to connect') || errorMsg.includes('connection closed') || errorMsg.includes('timed out')) {
+                if (
+                    errorMsg.includes('failed to connect')
+                    || errorMsg.includes('connection closed')
+                    || errorMsg.includes('timed out')
+                    || errorMsg.includes('Expected 101 status code')
+                ) {
                     console.warn(`[TTS] Connection error detected. Refreshing token...`)
                     try {
                         await this.refreshToken()
@@ -146,7 +153,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
         return new Promise((resolve, reject) => {
             const connectionId = uuidv4().replace(/-/g, '').toUpperCase()
             const secMsGec = this.generateSecMsGec(this.trustedClientToken)
-            const url = `${this.endpoint}?TrustedClientToken=${this.trustedClientToken}&ConnectionId=${connectionId}&Sec-MS-GEC=${secMsGec}&Sec-MS-GEC-Version=1-143.0.3650.75`
+            const url = `${this.endpoint}?TrustedClientToken=${this.trustedClientToken}&ConnectionId=${connectionId}&Sec-MS-GEC=${secMsGec}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}`
 
             const ws = new WebSocket(url, {
                 headers: {
