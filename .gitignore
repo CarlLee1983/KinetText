@@ -43,3 +43,7 @@ bun.lockb
 # Temporary files and scratchpads
 tmp/
 merge-input-*/
+
+# Claude Code runtime locks & SDD scratch
+.claude/scheduled_tasks.lock
+.superpowers/
