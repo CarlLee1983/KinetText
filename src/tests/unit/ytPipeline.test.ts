@@ -5,6 +5,8 @@ import {
   buildAudiobookStep,
   buildMergeStep,
   runStepsUntilFailure,
+  pickNewBook,
+  buildPartMp4Plans,
 } from '../../core/services/ytPipeline'
 
 test('parseYtPipelineArgs requires url', () => {
@@ -51,4 +53,31 @@ test('runStepsUntilFailure stops at first non-zero step', async () => {
   expect(res.ok).toBe(false)
   expect(res.failedLabel).toBe('B')
   expect(calls).toEqual(['a', 'b']) // C 不應執行
+})
+
+test('pickNewBook returns the single newly created dir', () => {
+  expect(pickNewBook(['a', 'b'], ['a', 'b', 'c'])).toBe('c')
+})
+
+test('pickNewBook honors title override', () => {
+  expect(pickNewBook(['a'], ['a', 'b', 'c'], 'b')).toBe('b')
+})
+
+test('pickNewBook throws when ambiguous and no override', () => {
+  expect(() => pickNewBook(['a'], ['a', 'b', 'c'])).toThrow(/--title/)
+})
+
+test('buildPartMp4Plans maps merged mp3 to cover+mp4 with part labels', () => {
+  const plans = buildPartMp4Plans(
+    ['/o/書/merged/書_part2.mp3', '/o/書/merged/書_part1.mp3'],
+    '/o/書/mp4/.covers',
+    '/o/書/mp4'
+  )
+  expect(plans.length).toBe(2)
+  // 依檔名排序後 part1 在前
+  expect(plans[0].partLabel).toBe('part1')
+  expect(plans[0].mp3Path).toBe('/o/書/merged/書_part1.mp3')
+  expect(plans[0].coverPath).toBe('/o/書/mp4/.covers/part1.jpg')
+  expect(plans[0].mp4Path).toBe('/o/書/mp4/書_part1.mp4')
+  expect(plans[1].partLabel).toBe('part2')
 })

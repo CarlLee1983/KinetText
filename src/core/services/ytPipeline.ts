@@ -67,3 +67,42 @@ export async function runStepsUntilFailure(
   }
   return { ok: true }
 }
+
+export function pickNewBook(before: string[], after: string[], titleOverride?: string): string {
+  if (titleOverride) return titleOverride
+  const beforeSet = new Set(before)
+  const created = after.filter((b) => !beforeSet.has(b))
+  if (created.length === 1) return created[0]!
+  throw new Error(
+    created.length === 0
+      ? '爬取後找不到新書目錄，無法判定書名。請用 --title=<書名> 指定（重跑時常見）。'
+      : `爬取後出現多個新目錄（${created.join(', ')}），請用 --title=<書名> 指定。`
+  )
+}
+
+export interface PartMp4Plan {
+  mp3Path: string
+  coverPath: string
+  mp4Path: string
+  partLabel: string
+}
+
+export function buildPartMp4Plans(
+  mergedMp3Files: string[],
+  coversDir: string,
+  mp4Dir: string
+): PartMp4Plan[] {
+  const sorted = [...mergedMp3Files].sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+  )
+  return sorted.map((mp3Path, i) => {
+    const partLabel = `part${i + 1}`
+    const base = mp3Path.split('/').pop()!.replace(/\.mp3$/i, '')
+    return {
+      mp3Path,
+      coverPath: `${coversDir}/${partLabel}.jpg`,
+      mp4Path: `${mp4Dir}/${base}.mp4`,
+      partLabel,
+    }
+  })
+}
