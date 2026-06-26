@@ -12,7 +12,7 @@ bun install
 ```
 
 ### 2. 開始爬取小說
-目前支援 8novel / wfxs / xsw / czbooks / hjwzw / twkan / uukanshu（依 URL 自動選擇 Adapter）。
+目前支援 8novel / wfxs / xsw / czbooks / hjwzw / twkan / uukanshu / zhys / novel543 共 9 個站點（依 URL 自動選擇 Adapter；完整主機對應見 `src/adapters/index.ts`）。
 
 ```bash
 bun run start "https://www.8novel.com/novelbooks/12345/"
@@ -103,6 +103,13 @@ bun run audiobook "小說名稱" 1-50 +0% +0% 3 false --dry-run
 *   **併發數**: 建議設定在 `5-10` 之間。
 *   **是否合併**: 填入 `true` 則會將該次生成的章節合併為單個 MP3。
 
+> [!NOTE]
+> **關於 TTS 來源**：本功能透過 WebSocket 直連 Microsoft Edge 的線上 TTS 端點
+> （`wss://speech.platform.bing.com/...`，輸出 24kHz 單聲道 MP3），需連網但**免費、不需自備金鑰**。
+> 內建預設 token，可用環境變數 `MICROSOFT_TTS_TOKEN` 覆寫，或設定 `MICROSOFT_TOKEN_REFRESH_URL`
+> 讓程式自動向遠端取得最新 token。預設聲音為 `zh-CN-YunxiNeural`（於程式碼設定，CLI 未開放更改）。
+> 比特率由 `AUDIO_BITRATE` 控制（預設 `128k`，範圍 `64k`–`320k`）。
+
 ### 5. 🎵 批次合併 MP3 (Merge MP3)
 將大量的小說章節 MP3 檔案按指定數量進行分批合併。例如：每 20 章合併為一個大檔案。
 
@@ -121,23 +128,37 @@ bun run merge-mp3 "output/小說名稱" --size 50 --dry-run
 *   **--end**: 結束的檔案索引 (預設: 全部)。
 *   **--force**: 強制重新合併，即使輸出檔案已存在。
 
-### 6. 🎬 MP3 轉 MP4 (Video Conversion)
-將生成的 MP3 語音書結合封面圖片 (`static/default_cover.png`) 轉換為 MP4 影片，方便上傳至影音平台。
+### 6. 🎬 MP3 轉 M4A / YouTube 影片 (to-mp4 / to-youtube)
+
+兩個指令共用同一套轉檔引擎，差別只在輸出：
+
+- **`to-mp4`**：預設輸出純音訊 `.m4a`（AAC，`MP4_OUTPUT_FORMAT=m4a`），適合當有聲書音檔。
+- **`to-youtube`**：`to-mp4` 的薄包裝，自動帶 `--youtube`，輸出 H.264 + AAC 的 `.mp4`
+  影片（黑底或封面圖，預設 1920×1080），可直接上傳 YouTube。
 
 ```bash
-# 轉換整本書的資料夾 (所有 mp3)
-bun run to-mp4 "output/小說名稱"
+# 批量轉 M4A（純音訊）
+bun run to-mp4 --input=output/小說名稱/merged --output=output/小說名稱/m4a
 
-# 轉換特定的 mp3 檔案
-bun run to-mp4 "output/小說名稱/chapter1.mp3"
+# 附元資料（title/artist/album）
+bun run to-mp4 \
+  --input=output/小說名稱/merged \
+  --output=output/小說名稱/m4a \
+  --metadata=output/小說名稱/metadata.json
 
-# 進階用法：調整音量與強制覆蓋
-# 語法: bun run to-mp4 <輸入路徑> [輸出名稱] [-v <音量>] [-f]
-bun run to-mp4 "output/小說名稱" -v 1.5           # 所有 mp3 音量放大 1.5 倍
-bun run to-mp4 "output/小說名稱/chapter1.mp3" -v 5dB   # 單一檔案音量增加 5dB
-bun run to-mp4 "output/小說名稱" --force               # 強制重新轉換所有檔案
-bun run to-mp4 "output/小說名稱" --dry-run             # 僅預覽轉換計畫
+# 轉成 YouTube 可上傳影片（H.264 1080p 黑底）
+bun run to-youtube --input=output/小說名稱/merged --output=output/小說名稱/youtube
+
+# 附封面圖（上傳預覽更好看）
+bun run to-youtube --input=output/小說名稱/merged --output=output/小說名稱/youtube --cover=output/小說名稱/cover.jpg
+
+# 僅預覽，不實際呼叫 FFmpeg
+bun run to-mp4 --input=... --output=... --dry-run
 ```
+
+可用旗標：`--input=`、`--output=`、`--metadata=`、`--cover=`、`--youtube`、`--dry-run`、`--help`。
+細部環境變數（比特率、解析度、背景）見下方 Phase 4 與 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)。
+
 > [!NOTE]
 > 此功能需要系統預先安裝 `ffmpeg`。
 
@@ -326,10 +347,15 @@ MP4_BITRATE=320k bun run to-youtube --input=... --output=...
 #### 配置選項
 | 環境變數 | 預設值 | 說明 |
 |---------|--------|------|
-| `MP4_BITRATE` | 256k | AAC 比特率 (96k-320k) |
-| `MP4_FORMAT` | m4a | 輸出格式 |
+| `MP4_BITRATE` | 256 | AAC 比特率（kbps，96-320） |
+| `MP4_OUTPUT_FORMAT` | m4a | 輸出格式（`m4a` 純音訊 / `mp4` H.264 影片） |
 | `MP4_MAX_CONCURRENCY` | 2 | 並行轉換數 |
-| `MP4_INCLUDE_METADATA` | true | 嵌入元資料 |
+| `MP4_VIDEO_WIDTH` / `MP4_VIDEO_HEIGHT` | 1920 / 1080 | YouTube 影片解析度 |
+| `MP4_VIDEO_BACKGROUND` | none | 視訊背景（`black` / `image`，YouTube 用） |
+| `MP4_COVER_IMAGE` | （空） | 封面圖路徑（等同 `--cover`） |
+
+> 元資料（title/artist/album）透過 `--metadata=<json>` 帶入，非由環境變數開關。
+> 完整視訊參數見 [docs/CONFIGURATION.md](docs/CONFIGURATION.md) Phase 4.5。
 
 ---
 
@@ -422,17 +448,24 @@ bun run menu
 | `bun run merge-mp3 --input=<目錄>` | 合併 MP3（按數量） | Phase 3 |
 | `bun run merge-mp3 --input=<目錄> --mode=duration` | 合併 MP3（按時長） | Phase 3 |
 | `bun run to-mp4 --input=<目錄>` | 轉換為 M4A | Phase 4 |
+| `bun run to-youtube --input=<目錄>` | 轉為 H.264 + AAC 的 `.mp4`（可上傳 YouTube） | Phase 4 |
 | `bun run build-m4b --title=<書名>` | 生成 M4B 有聲書（含章節，按時長分卷） | Phase 4 |
 | `bun run backup` | 雲端備份 | 核心 |
+| `bun run verify <書名>` | 檢查章節數量完整性 | 核心 |
+| `bun run bench:convert` | 轉檔效能基準測試 | 開發 |
 | `bun run test` | 執行測試 | 開發 |
 
 ---
 
 ## 📚 完整文檔導覽
 
+- [架構文檔](docs/ARCHITECTURE.md) - 系統設計、模組分層、Adapter / TTS / 影音管線
 - [API 參考](docs/API.md) - 所有服務類的完整 API 說明
 - [配置指南](docs/CONFIGURATION.md) - 環境變數與配置選項
 - [故障排查](docs/TROUBLESHOOTING.md) - 常見問題與解決方案
+- [MP4 服務](docs/MP4_SERVICE.md) - MP4 / YouTube 轉檔的 Go 後端細節
+- [時長服務](docs/DURATION_SERVICE.md) - 音頻時長計算演算法
+- [遷移指南](docs/MIGRATION_GUIDE.md) - 版本升級與 Go 後端啟用
 
 ## 📦 需求
 

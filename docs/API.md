@@ -9,6 +9,7 @@
 - [AudioConvertService](#audioconvertservice)
 - [AudioMergeService](#audiomergeservice)
 - [DurationService](#durationservice)
+- [TTSProvider / MicrosoftEdgeTTSProvider](#ttsprovider--microsoftedgettsprovider)
 - [MP4ConversionService](#mp4conversionservice)
 - [MP4Pipeline](#mp4pipeline)
 - [錯誤處理](#錯誤處理)
@@ -380,6 +381,75 @@ console.log(`時長: ${hours}小時${minutes}分`)
 
 ---
 
+## TTSProvider / MicrosoftEdgeTTSProvider
+
+### 用途
+將章節文字檔合成為 MP3 音檔。`MicrosoftEdgeTTSProvider` 透過 WebSocket 直連
+Microsoft Edge 線上 TTS 端點（需連網、免費、不需自備金鑰）。
+
+### TTSProvider 介面
+
+```typescript
+interface TTSProvider {
+  // 讀取 .txt 文字檔，合成後寫出 .mp3
+  generateAudioFromFile(inputFilePath: string, outputFilePath: string): Promise<void>
+}
+```
+
+### 建構子
+
+```typescript
+constructor(
+  voice: string = 'zh-CN-YunxiNeural',
+  rate: string = '+0%',
+  volume: string = '+0%'
+)
+```
+
+**參數**:
+| 名稱 | 預設 | 說明 |
+|------|------|------|
+| `voice` | `zh-CN-YunxiNeural` | TTS 聲音名稱 |
+| `rate` | `+0%` | 語速調整（如 `+20%`、`-10%`） |
+| `volume` | `+0%` | 音量調整（如 `+50%`、`-20%`） |
+
+### 方法
+
+#### generateAudioFromFile(inputFilePath, outputFilePath): Promise\<void\>
+
+讀取文字檔、分段合成並串接寫出 MP3。內部以併發分塊合成，並對每塊套用重試。
+
+#### setToken(token, expiresInSeconds?): void
+
+手動設定信任用戶端 token 及其有效秒數（預設 600 秒）。
+
+#### getTokenStatus(): { isValid: boolean; expiresIn: number }
+
+回傳目前 token 是否有效與剩餘秒數。
+
+**範例**:
+```typescript
+import { MicrosoftEdgeTTSProvider } from "./src/tts/MicrosoftEdgeTTSProvider"
+
+const tts = new MicrosoftEdgeTTSProvider("zh-CN-YunxiNeural", "+10%", "+0%")
+await tts.generateAudioFromFile(
+  "output/小說名稱/txt/chapter_001.txt",
+  "output/小說名稱/audio/chapter_001.mp3"
+)
+```
+
+### 配置（環境變數）
+
+| 變數名稱 | 預設值 | 說明 |
+|---------|--------|------|
+| `MICROSOFT_TTS_TOKEN` | （內建預設 token） | 信任用戶端 token；通常無需設定 |
+| `MICROSOFT_TOKEN_REFRESH_URL` | （空） | 選用：遠端 token 更新端點 |
+
+> 輸出固定為 `audio-24khz-48kbitrate-mono-mp3`。CLI 入口為 `bun run audiobook`，
+> 詳見 README 與 [ARCHITECTURE.md §3.3](ARCHITECTURE.md)。
+
+---
+
 ## MP4ConversionService
 
 ### 用途
@@ -475,10 +545,19 @@ interface MP4ConversionConfig {
 
 | 變數名稱 | 預設值 | 範圍 | 說明 |
 |---------|--------|------|------|
-| `MP4_BITRATE` | 256k | 96k-320k | AAC 比特率 |
-| `MP4_FORMAT` | m4a | m4a | 輸出格式 |
+| `MP4_BITRATE` | 256 | 96-320 | AAC 比特率（kbps） |
+| `MP4_OUTPUT_FORMAT` | m4a | m4a / mp4 | 輸出格式；`mp4` 走 H.264 影片路徑 |
 | `MP4_MAX_CONCURRENCY` | 2 | 1-8 | 並行轉換數 |
-| `MP4_INCLUDE_METADATA` | true | true/false | 嵌入元資料 |
+| `MP4_OUTPUT_DIRECTORY` | ./output/m4a | 路徑 | 預設輸出目錄 |
+| `MP4_RETRY_MAX_ATTEMPTS` | 3 | 1-10 | 轉換重試次數 |
+| `MP4_VIDEO_BACKGROUND` | none | none/black/image | 視訊背景（YouTube 匯出用） |
+| `MP4_VIDEO_WIDTH` | 1920 | 320-7680 | 視訊寬度（px） |
+| `MP4_VIDEO_HEIGHT` | 1080 | 240-4320 | 視訊高度（px） |
+| `MP4_COVER_IMAGE` | （空） | 路徑 | 封面圖路徑 |
+
+> **YouTube 影片匯出**：CLI `bun run to-youtube` 是 `to-mp4` 的薄包裝，注入 `--youtube`
+> 後強制輸出 H.264（`libx264` + `tune=stillimage`）+ AAC 的 `.mp4`，解析度
+> 預設 1920×1080。詳見 [ARCHITECTURE.md §3.4](ARCHITECTURE.md) 與 [CONFIGURATION.md Phase 4.5](CONFIGURATION.md)。
 
 ---
 
@@ -710,6 +789,7 @@ processAudioBook("我的小說").catch(console.error)
 | 1.1 | Phase 2: AudioConvertService |
 | 1.2 | Phase 3: AudioMergeService + DurationService |
 | 1.3 | Phase 4: MP4ConversionService + MP4Pipeline |
+| 1.4 | TTSProvider（Microsoft Edge）、YouTube 影片匯出、novel543 / zhys Adapter |
 
 > 詳細配置說明請參閱 [CONFIGURATION.md](CONFIGURATION.md)。
 > 常見問題解決請參閱 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)。

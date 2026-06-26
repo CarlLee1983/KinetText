@@ -235,6 +235,51 @@ bun run audiobook "小說名稱" 2>&1 | grep "failed\|error"
 
 ---
 
+### Q: TTS 沒有聲音輸出 / 章節 MP3 為空或極短
+
+**原因**: TTS 透過 WebSocket 連 Microsoft Edge 線上端點，可能斷網、token 失效，
+或該章節文字檔為空。
+
+```bash
+# 1. 確認可連到網路（TTS 為線上服務，非本地）
+ping speech.platform.bing.com
+
+# 2. 確認輸入文字檔非空
+wc -c output/小說名稱/txt/chapter_001.txt
+
+# 3. token 失效時可改用環境變數覆寫（或設定自動更新端點）
+MICROSOFT_TTS_TOKEN=你的token bun run audiobook "小說名稱" 1-1
+# 或
+MICROSOFT_TOKEN_REFRESH_URL=https://你的更新端點 bun run audiobook "小說名稱" 1-1
+
+# 4. 先單章測試，縮小問題
+bun run audiobook "小說名稱" 1-1
+```
+
+---
+
+### Q: TTS 速度很慢 / 大量章節卡住
+
+**原因**: 線上端點受網路延遲與頻率限制影響；併發過高反而易被限流。
+
+```bash
+# 降低併發（audiobook 第 4 個位置參數，預設 3）
+bun run audiobook "小說名稱" all +0% +0% 2
+
+# 分批處理
+bun run audiobook "小說名稱" 1-50
+bun run audiobook "小說名稱" 51-100
+```
+
+---
+
+### Q: 想換 TTS 聲音卻找不到參數
+
+**原因**: CLI 僅開放語速 / 音量 / 併發 / 範圍；聲音預設 `zh-CN-YunxiNeural`
+寫死於 `src/tts/MicrosoftEdgeTTSProvider.ts` 建構子，需改原始碼才能更換。
+
+---
+
 ## 4. 音頻合併（Phase 3）
 
 ### Q: "時長計算不準確" 或 "duration mismatch"
@@ -325,8 +370,8 @@ MP4_BITRATE=192k bun run to-mp4 --input=... --output=...
 # 確認元資料格式正確
 cat metadata.json | python3 -m json.tool
 
-# 重新轉換（不含元資料）以確認基本格式
-MP4_INCLUDE_METADATA=false bun run to-mp4 --input=merged.mp3 --output=test.m4a
+# 重新轉換（不帶 --metadata）以確認基本格式
+bun run to-mp4 --input=merged.mp3 --output=test.m4a
 ffprobe test.m4a
 ```
 
@@ -385,6 +430,51 @@ MP4_MAX_CONCURRENCY=1 bun run to-mp4 --input=... --output=...
 
 # 查看失敗詳情
 bun run to-mp4 --input=... --output=... 2>&1 | grep -A 5 "error\|failed"
+```
+
+---
+
+### Q: `to-youtube` 產出的影片畫質模糊 / 解析度不對
+
+**原因**: 視訊解析度由 `MP4_VIDEO_WIDTH` / `MP4_VIDEO_HEIGHT` 控制（預設 1920×1080）。
+
+```bash
+# 明確指定 1080p
+MP4_VIDEO_WIDTH=1920 MP4_VIDEO_HEIGHT=1080 \
+  bun run to-youtube --input=... --output=...
+
+# 驗證輸出解析度與編碼
+ffprobe -v error -select_streams v:0 \
+  -show_entries stream=codec_name,width,height \
+  -of default=noprint_wrappers=1 output.mp4
+# 預期：codec_name=h264, width=1920, height=1080
+```
+
+---
+
+### Q: `to-youtube` 輸出的是 `.m4a` 而非 `.mp4`（沒有視訊軌）
+
+**原因**: 直接用了 `to-mp4`（預設 `MP4_OUTPUT_FORMAT=m4a`，純音訊），或環境變數覆蓋了格式。
+
+```bash
+# 用 to-youtube（會自動注入 --youtube，強制影片輸出）
+bun run to-youtube --input=... --output=...
+
+# 或顯式指定影片格式
+MP4_OUTPUT_FORMAT=mp4 bun run to-mp4 --input=... --output=... --youtube
+```
+
+---
+
+### Q: YouTube 預覽圖沒有顯示封面
+
+**原因**: 未指定封面圖，預設為黑底。
+
+```bash
+# 帶入封面圖
+bun run to-youtube --input=... --output=... --cover=/path/to/cover.jpg
+# 或透過環境變數
+MP4_COVER_IMAGE=/path/to/cover.jpg bun run to-youtube --input=... --output=...
 ```
 
 ---

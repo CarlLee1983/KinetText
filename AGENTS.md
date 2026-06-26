@@ -18,7 +18,9 @@ This project uses **Bun** exclusively. Do NOT use Node.js, npm, yarn, or pnpm.
 - **Core Engine (`src/core/`)**: `CrawlerEngine.ts` orchestrates the workflow: metadata fetching, chapter list retrieval, and downloading content with concurrency control.
 - **Adapters (`src/adapters/`)**: Site-specific scraping logic.
     - All adapters must implement the `NovelSiteAdapter` interface.
-    - Register new adapters in `src/index.ts`.
+    - Register new adapters in `src/adapters/index.ts` (matched by URL in registration order).
+    - Currently registered sites: `8novel`, `wfxs`, `xsw`, `czbooks`, `hjwzw`, `twkan`, `uukanshu`, `zhys`, `novel543` (plus `SampleNovelSite` as a reference implementation).
+- **TTS (`src/tts/`)**: `MicrosoftEdgeTTSProvider` synthesizes text → MP3 over a WebSocket to Microsoft Edge's online TTS endpoint (online, free, no key). CLI: `bun run audiobook`.
 - **Storage (`src/storage/`)**: Persistence handlers.
     - All storage handlers must implement the `StorageAdapter` interface.
     - Supports `TxtStorageAdapter.ts` (structured directory format).

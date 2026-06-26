@@ -1,7 +1,7 @@
 # KinetiText 架構文檔
 
-**版本**: v1.1 (Milestone 2)
-**最後更新**: 2026-03-26
+**版本**: v1.2 (Milestone 2)
+**最後更新**: 2026-06-26
 **維護者**: Carl
 
 ---
@@ -10,7 +10,10 @@
 
 - [第 1 章: 系統概覽](#第-1-章-系統概覽)
 - [第 2 章: 核心模組設計](#第-2-章-核心模組設計)
+- [第 2.3 節: Adapter 系統與註冊機制](#23-adapter-系統與註冊機制)
 - [第 3 章: 音頻處理管線 (Milestone 1)](#第-3-章-音頻處理管線-milestone-1)
+- [第 3.3 節: 文本轉語音（TTS）管線](#33-文本轉語音tts管線)
+- [第 3.4 節: YouTube 影片匯出](#34-youtube-影片匯出)
 - [第 4 章: 重試機制設計](#第-4-章-重試機制設計)
 - [第 5 章: 測試策略](#第-5-章-測試策略)
 - [第 6 章: Bun-Go 混用優化架構 (Milestone 2)](#第-6-章-bun-go-混用優化架構-milestone-2)
@@ -89,6 +92,53 @@ CrawlerEngine
 └── CrawlerConfig API   - 支持 number | CrawlerConfig 向後相容
 ```
 
+### 2.3 Adapter 系統與註冊機制
+
+每個來源站點對應一個實作 `NovelSiteAdapter` 介面的 Adapter，由 `src/adapters/index.ts`
+集中註冊。引擎收到 URL 後，依註冊順序呼叫各 Adapter 的 `matchUrl(url)`，命中即採用。
+
+**`NovelSiteAdapter` 介面**:
+
+```typescript
+interface NovelSiteAdapter {
+  siteName: string
+  resourceProfile?: AdapterResourceProfile   // 站點級併發與延遲設定
+  matchUrl(url: string): boolean
+  getBookMetadata(url: string): Promise<Omit<Book, 'chapters'>>
+  getChapterList(url: string): Promise<Chapter[]>
+  getChapterContent(chapterUrl: string): Promise<string>
+  close?(): Promise<void>                     // 選用：清理（如關閉瀏覽器）
+}
+```
+
+**目前註冊的 Adapter（依 `src/adapters/index.ts` 順序）**:
+
+| siteName | 對應主機 |
+|----------|---------|
+| `8novel` | `8novel.com`, `www.8novel.com`, `article.8novel.com` |
+| `wfxs` | `wfxs.tw`, `www.wfxs.tw` |
+| `SampleNovelSite` | `example-novel-site.com`（參考實作範本，非真實站點） |
+| `xsw` | `m.xsw.tw`, `www.xsw.tw`, `xsw.tw` |
+| `czbooks` | `czbooks.net`, `m.czbooks.net`, `www.czbooks.net` |
+| `hjwzw` | `tw.hjwzw.com` |
+| `twkan` | `twkan.com`, `www.twkan.com` |
+| `uukanshu` | `uukanshu.cc`, `www.uukanshu.cc` |
+| `zhys` | `zhys.tw`（含子網域，正則比對） |
+| `novel543` | `novel543.com`, `www.novel543.com`, `look.thisiscm.com`, `read.timotxt.com` |
+
+**站點級資源配置（`resourceProfile`）**：各 Adapter 可宣告自己的併發上限、請求間隔與
+成功後延遲，避免單一站點被打太兇。例如：
+
+```typescript
+// Novel543Adapter
+resourceProfile = { maxConcurrency: 4, requestIntervalMs: 400, postSuccessDelayMs: 0 }
+// ZhysAdapter
+resourceProfile = { maxConcurrency: 3, requestIntervalMs: 500, postSuccessDelayMs: 0 }
+```
+
+`novel543` 支援多鏡像主機（含 `read.timotxt.com` 等），統一正規化回 canonical
+origin `https://www.novel543.com` 後再解析。新增站點的步驟見 README「如何支援新站點？」。
+
 ---
 
 ## 第 3 章: 音頻處理管線 (Milestone 1)
@@ -129,6 +179,62 @@ MP4ConversionService.convert()
 | OGG | 有損（Vorbis） | libvorbis |
 | FLAC | 無損壓縮 | flac |
 | MP3 | 有損壓縮 | libmp3lame |
+
+### 3.3 文本轉語音（TTS）管線
+
+第 3.1 節描述的是「既有音頻 → MP3」的轉換；本節是上游的「文字 → 音頻」生成，由
+`MicrosoftEdgeTTSProvider`（`src/tts/`）與 `scripts/generate_audiobook.ts` 負責。
+
+```
+章節文字（output/<書名>/txt/*.txt 或 --input 指定的 .txt/.md）
+        │
+        ▼
+MicrosoftEdgeTTSProvider.synthesize()
+  ├─ 透過 WebSocket 連線 Microsoft Edge 線上 TTS 端點
+  │    wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1
+  ├─ 套用 voice / rate / volume（預設 zh-CN-YunxiNeural、+0%、+0%）
+  ├─ 內建 token，可由 MICROSOFT_TTS_TOKEN / MICROSOFT_TOKEN_REFRESH_URL 覆寫
+  └─ 串流接收 audio-24khz-48kbitrate-mono-mp3 二進位
+        │
+        ▼
+MP3 章節音檔（output/<書名>/audio/chapter_NNN.mp3）
+        │
+        ▼
+（後續可接 3.1 的合併、4 的 M4A/M4B、3.4 的 YouTube 匯出）
+```
+
+**設計要點**:
+- **雲端而非本地模型**：實際是直連 Microsoft 線上端點（WebSocket），需連網；
+  優點是免費、無需自備金鑰、音質穩定，缺點是受網路與端點可用性影響。
+- **聲音寫死於程式碼預設**：CLI 僅開放 rate / volume / 併發 / 範圍等位置參數，
+  變更聲音需改 `MicrosoftEdgeTTSProvider` 的預設值。
+- **比特率**由 `AUDIO_BITRATE` 控制（與第 3.1 節 MP3 轉換共用）。
+
+### 3.4 YouTube 影片匯出
+
+`scripts/mp3_to_youtube.ts` 是 `scripts/mp3_to_mp4.ts` 的薄包裝——它注入 `--youtube`
+旗標後委派給後者，最終由 `MP4ConversionService` 透過 FFmpeg 產生可上傳 YouTube 的影片。
+
+```
+MP3 +（選用）封面圖
+        │
+        ▼
+mp3_to_youtube.ts ──(注入 --youtube)──▶ mp3_to_mp4.ts ──▶ MP4ConversionService
+        │
+        ▼
+FFmpeg（src/core/utils/ffmpeg-commands.ts）
+  ├─ 影像來源：lavfi color=black（黑底）或 --cover 指定的封面圖
+  ├─ 視訊編碼：libx264，preset=fast，tune=stillimage，pix_fmt=yuv420p
+  ├─ 音訊編碼：aac
+  └─ 解析度：MP4_VIDEO_WIDTH × MP4_VIDEO_HEIGHT（預設 1920×1080）
+        │
+        ▼
+.mp4（H.264 + AAC，可直接上傳 YouTube）
+```
+
+**與 `to-mp4` 的差異**：`to-mp4` 預設輸出純音訊 `.m4a`（`MP4_OUTPUT_FORMAT=m4a`）；
+`to-youtube` 強制走影片路徑，輸出帶 H.264 視訊軌的 `.mp4`。兩者共用同一套
+`MP4ConversionService` 與環境變數，差別只在輸出格式與是否疊上視訊軌。
 
 ---
 

@@ -98,6 +98,30 @@ AUDIO_CONVERT_MAX_CONCURRENCY=4
 
 ---
 
+### Phase 2.5: 文本轉語音（TTS）
+
+控制 `MicrosoftEdgeTTSProvider`（透過 WebSocket 直連 Microsoft Edge 線上 TTS 端點）的行為。
+
+| 變數名稱 | 預設值 | 說明 |
+|---------|--------|------|
+| `MICROSOFT_TTS_TOKEN` | （內建預設 token） | Microsoft Edge TTS 的信任用戶端 token；通常無需設定 |
+| `MICROSOFT_TOKEN_REFRESH_URL` | （空） | 選用：遠端 token 更新端點；設定後程式會自動取得最新 token |
+
+> **注意**：
+> - TTS 為**線上服務**（非本地模型），需連網；免費、不需自備金鑰。
+> - 預設聲音 `zh-CN-YunxiNeural`、語速 `+0%`、音量 `+0%` 寫死於程式碼。
+>   語速 / 音量可由 `audiobook` 的位置參數覆寫（見 README），聲音目前僅能改原始碼。
+> - 輸出格式固定為 `audio-24khz-48kbitrate-mono-mp3`。後續若再經 Phase 2 轉檔，
+>   才會套用 `AUDIO_BITRATE`。
+
+```bash
+# .env 範例（多數情況留空即可）
+# MICROSOFT_TTS_TOKEN=你的token
+# MICROSOFT_TOKEN_REFRESH_URL=https://example.com/token
+```
+
+---
+
 ### Phase 3: 音頻合併
 
 控制 MP3 合併分組行為。
@@ -144,10 +168,13 @@ bun run merge-mp3 --input=... --target=11h --tolerance=15
 
 | 變數名稱 | 預設值 | 範圍 | 說明 |
 |---------|--------|------|------|
-| `MP4_BITRATE` | 256k | 96k-320k | AAC 比特率 |
-| `MP4_FORMAT` | m4a | m4a | 輸出格式 |
+| `MP4_BITRATE` | 256 | 96-320 | AAC 比特率（kbps）；`256` 或 `256k` 皆可（`k` 後綴會被忽略） |
+| `MP4_OUTPUT_FORMAT` | m4a | m4a / mp4 | 輸出格式；`mp4` 會走影片路徑（見 Phase 4.5） |
 | `MP4_MAX_CONCURRENCY` | 2 | 1-8 | 並行轉換數 |
-| `MP4_INCLUDE_METADATA` | true | true/false | 嵌入元資料標籤 |
+| `MP4_OUTPUT_DIRECTORY` | ./output/m4a | 路徑 | 預設輸出目錄 |
+| `MP4_RETRY_MAX_ATTEMPTS` | 3 | 1-10 | 轉換重試次數 |
+
+> 元資料（title / artist / album）透過 `--metadata=<json>` 帶入，非由環境變數開關。
 
 **AAC vs MP3 效率對比**:
 
@@ -160,10 +187,35 @@ bun run merge-mp3 --input=... --target=11h --tolerance=15
 
 ```bash
 # .env 範例（高品質）
-MP4_BITRATE=256k
-MP4_FORMAT=m4a
+MP4_BITRATE=256
+MP4_OUTPUT_FORMAT=m4a
 MP4_MAX_CONCURRENCY=2
-MP4_INCLUDE_METADATA=true
+```
+
+---
+
+### Phase 4.5: YouTube 影片匯出
+
+`to-youtube` 會在 `to-mp4` 的基礎上強制輸出 H.264 + AAC 的 `.mp4`（黑底或封面圖），
+共用 Phase 4 的環境變數，並額外用到下列視訊相關設定。
+
+| 變數名稱 | 預設值 | 範圍 | 說明 |
+|---------|--------|------|------|
+| `MP4_VIDEO_BACKGROUND` | none | none / black / image | 視訊背景；`to-youtube` 內部會切到 `black` 或封面圖 |
+| `MP4_VIDEO_WIDTH` | 1920 | 320-7680 | 視訊寬度（px） |
+| `MP4_VIDEO_HEIGHT` | 1080 | 240-4320 | 視訊高度（px） |
+| `MP4_COVER_IMAGE` | （空） | 路徑 | 封面圖路徑（等同 CLI 的 `--cover`） |
+
+> 視訊編碼固定為 `libx264`（preset=fast、tune=stillimage、pix_fmt=yuv420p），
+> 音訊為 `aac`，比特率沿用 `MP4_BITRATE`。一般直接用 CLI 旗標即可，無需設這些變數：
+> `bun run to-youtube --input=<目錄> --output=<目錄> [--cover=<圖>]`
+
+```bash
+# .env 範例（YouTube 1080p）
+MP4_OUTPUT_FORMAT=mp4
+MP4_VIDEO_BACKGROUND=black
+MP4_VIDEO_WIDTH=1920
+MP4_VIDEO_HEIGHT=1080
 ```
 
 ---
@@ -195,11 +247,20 @@ AUDIO_MERGE_TARGET_DURATION=39600
 AUDIO_MERGE_TOLERANCE_PERCENT=10
 AUDIO_MERGE_MAX_CONCURRENCY=2
 
+# --- Phase 2.5: TTS（多數情況留空）---
+# MICROSOFT_TTS_TOKEN=
+# MICROSOFT_TOKEN_REFRESH_URL=
+
 # --- Phase 4: MP4 轉換 ---
-MP4_BITRATE=256k
-MP4_FORMAT=m4a
+MP4_BITRATE=256
+MP4_OUTPUT_FORMAT=m4a
 MP4_MAX_CONCURRENCY=2
-MP4_INCLUDE_METADATA=true
+
+# --- Phase 4.5: YouTube 影片匯出（選用）---
+# MP4_OUTPUT_FORMAT=mp4
+# MP4_VIDEO_BACKGROUND=black
+# MP4_VIDEO_WIDTH=1920
+# MP4_VIDEO_HEIGHT=1080
 ```
 
 ---
