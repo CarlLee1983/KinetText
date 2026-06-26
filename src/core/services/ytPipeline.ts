@@ -47,6 +47,22 @@ export function parseYtPipelineArgs(argv: string[]): YtPipelineOptions {
     const n = parseInt(v, 10)
     return isNaN(n) ? undefined : n
   }
+
+  const crawlRetries = parseOptInt(flags['crawl-retries'])
+  const crawlConcurrency = parseOptInt(flags['crawl-concurrency'])
+  const crawlDelay = parseOptInt(flags['crawl-delay'])
+
+  // Validate crawl knob ranges
+  if (crawlRetries !== undefined && crawlRetries < 1) {
+    throw new Error('--crawl-retries 必須 >= 1')
+  }
+  if (crawlConcurrency !== undefined && crawlConcurrency < 1) {
+    throw new Error('--crawl-concurrency 必須 >= 1')
+  }
+  if (crawlDelay !== undefined && crawlDelay < 0) {
+    throw new Error('--crawl-delay 必須 >= 0')
+  }
+
   return {
     url,
     target: (flags.target as string) ?? '6h',
@@ -58,9 +74,9 @@ export function parseYtPipelineArgs(argv: string[]): YtPipelineOptions {
     resume: flags.resume === undefined ? true : flags.resume !== 'false',
     dryRun: flags['dry-run'] === true || flags['dry-run'] === 'true',
     title: flags.title as string | undefined,
-    crawlRetries: parseOptInt(flags['crawl-retries']),
-    crawlConcurrency: parseOptInt(flags['crawl-concurrency']),
-    crawlDelay: parseOptInt(flags['crawl-delay']),
+    crawlRetries,
+    crawlConcurrency,
+    crawlDelay,
     tolerance: parseOptInt(flags['tolerance']),
     retryFailed: flags['no-retry-failed'] ? false : true,
   }

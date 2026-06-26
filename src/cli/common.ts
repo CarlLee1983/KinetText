@@ -57,5 +57,17 @@ export function parseCrawlFlags(args: string[]): CrawlFlags {
         else if (m[1] === 'concurrency') out.concurrency = n;
         else out.delay = n;
     }
+
+    // Validate ranges
+    if (out.retries !== undefined && out.retries < 1) {
+        throw new Error('--crawl-retries 必須 >= 1');
+    }
+    if (out.concurrency !== undefined && out.concurrency < 1) {
+        throw new Error('--crawl-concurrency 必須 >= 1');
+    }
+    if (out.delay !== undefined && out.delay < 0) {
+        throw new Error('--crawl-delay 必須 >= 0');
+    }
+
     return out;
 }

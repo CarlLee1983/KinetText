@@ -18,6 +18,10 @@ test('parseYtPipelineArgs throws on invalid bitrate (out of 96-320 range)', () =
   expect(() => parseYtPipelineArgs(['https://x/1', '--bitrate=999'])).toThrow(/96.*320|位元率|bitrate/i)
 })
 
+test('parseYtPipelineArgs throws on --crawl-retries=0', () => {
+  expect(() => parseYtPipelineArgs(['https://x/1', '--crawl-retries=0'])).toThrow(/crawl-retries/)
+})
+
 test('parseYtPipelineArgs applies defaults and overrides', () => {
   const o = parseYtPipelineArgs(['https://x.tw/b/1.html', '--target=4h', '--bitrate=192'])
   expect(o.url).toBe('https://x.tw/b/1.html')
