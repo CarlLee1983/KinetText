@@ -10,7 +10,7 @@ import { AudioErrorClassifier } from './AudioErrorClassifier'
 import { MP4ConversionConfig } from '../config/MP4ConversionConfig'
 import { MP4ConvertGoConfig } from '../config/MP4ConvertGoConfig'
 import { MP4ConversionResult, MP4Metadata } from '../types/audio'
-import { buildM4ACommand, buildMP4WithVideoCommand } from '../utils/ffmpeg-commands'
+import { buildM4ACommand, buildMP4WithImageCommand, buildMP4WithVideoCommand } from '../utils/ffmpeg-commands'
 import { getLogger } from '../utils/logger'
 import MP4ConvertGoWrapper from './MP4ConvertGoWrapper'
 
@@ -211,10 +211,22 @@ export class MP4ConversionService {
     const startTime = Date.now()
 
     try {
+      const useImage =
+        this.config.videoBackground === 'image' && Boolean(this.config.coverImagePath)
       const useVideo =
-        this.config.outputFormat === 'mp4' || this.config.videoBackground === 'black'
+        useImage || this.config.outputFormat === 'mp4' || this.config.videoBackground === 'black'
 
-      const ffmpegArgs = useVideo
+      const ffmpegArgs = useImage
+        ? buildMP4WithImageCommand(
+            this.config.coverImagePath!,
+            inputPath,
+            outputPath,
+            this.config.bitrate,
+            this.config.videoWidth,
+            this.config.videoHeight,
+            metadata
+          )
+        : useVideo
         ? buildMP4WithVideoCommand(
             inputPath,
             outputPath,

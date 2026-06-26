@@ -1,5 +1,7 @@
 export interface AudiobookInput {
-  title: string
+  title?: string
+  inputDir?: string
+  outputDir?: string
   selection: string
   rate: string
   volume: string
@@ -8,7 +10,15 @@ export interface AudiobookInput {
 }
 
 export function buildAudiobookArgs(i: AudiobookInput): string[] {
-  return ['audiobook', i.title, i.selection, i.rate, i.volume, i.concurrency, String(i.merge)]
+  const args: string[] = ['audiobook']
+  if (i.inputDir) {
+    args.push(`--input=${i.inputDir}`)
+    if (i.outputDir) args.push(`--output=${i.outputDir}`)
+    args.push(i.selection, i.rate, i.volume, i.concurrency, String(i.merge))
+    return args
+  }
+  args.push(i.title!, i.selection, i.rate, i.volume, i.concurrency, String(i.merge))
+  return args
 }
 
 export interface MergeInput {

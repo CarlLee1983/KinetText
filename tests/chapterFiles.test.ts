@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import * as fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { listChapterTxtFiles, resolveBookDirectories } from '../src/workflows/chapterFiles';
+import { listChapterTextFiles, resolveBookDirectories } from '../src/workflows/chapterFiles';
 
 const tempDirs: string[] = [];
 
@@ -32,9 +32,9 @@ describe('chapterFiles workflow helpers', () => {
         await fs.writeFile(path.join(root, '0010 - c10.txt'), 'x');
         await fs.writeFile(path.join(root, '0002 - c2.txt'), 'x');
         await fs.writeFile(path.join(root, 'metadata.txt'), 'meta');
-        await fs.writeFile(path.join(root, 'note.md'), 'ignore');
+        await fs.writeFile(path.join(root, 'readme.md'), 'ignore');
 
-        const files = await listChapterTxtFiles(root);
+        const files = await listChapterTextFiles(root);
         expect(files).toEqual(['0002 - c2.txt', '0010 - c10.txt']);
     });
 });

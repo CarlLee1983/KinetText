@@ -21,8 +21,39 @@ async function pickBook(message: string): Promise<string | null> {
 }
 
 export async function audiobookAction(presetTitle?: string): Promise<void> {
-  const title = presetTitle ?? (await pickBook('選擇要生成語音的書籍'))
-  if (!title) return
+  const sourceMode = await select({
+    message: '章節來源',
+    options: [
+      { value: 'output', label: 'output/ 已爬取書籍' },
+      { value: 'local', label: '本地目錄（.txt / .md）' },
+    ],
+  })
+  if (isCancel(sourceMode)) return cancel('已取消')
+
+  let title: string | undefined
+  let inputDir: string | undefined
+  let outputDir: string | undefined
+
+  if (sourceMode === 'local') {
+    const input = await text({
+      message: '章節目錄路徑',
+      placeholder: '/Users/carl/Dev/Fiction/Read-World/chapters',
+    })
+    if (isCancel(input)) return cancel('已取消')
+    inputDir = String(input).trim()
+
+    const output = await text({
+      message: 'MP3 輸出目錄（留空 → 同層 audio/）',
+      placeholder: '',
+    })
+    if (isCancel(output)) return cancel('已取消')
+    const trimmed = String(output).trim()
+    if (trimmed) outputDir = trimmed
+  } else {
+    const picked = presetTitle ?? (await pickBook('選擇要生成語音的書籍'))
+    if (!picked) return
+    title = picked
+  }
 
   const selection = await text({ message: '章節範圍', placeholder: '5 / 10-20 / 2,4,10', initialValue: 'all' })
   if (isCancel(selection)) return cancel('已取消')
@@ -38,6 +69,8 @@ export async function audiobookAction(presetTitle?: string): Promise<void> {
   const code = await runScript(
     buildAudiobookArgs({
       title,
+      inputDir,
+      outputDir,
       selection: String(selection),
       rate: String(rate),
       volume: String(volume),

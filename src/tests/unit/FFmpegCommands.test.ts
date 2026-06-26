@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { buildM4ACommand, buildMP4WithVideoCommand } from '../../core/utils/ffmpeg-commands'
+import { buildM4ACommand, buildMP4WithImageCommand, buildMP4WithVideoCommand } from '../../core/utils/ffmpeg-commands'
 import type { MP4Metadata } from '../../core/types/audio'
 
 describe('FFmpeg Command Builders', () => {
@@ -166,6 +166,12 @@ describe('FFmpeg Command Builders', () => {
       expect(cmd).toContain('-shortest')
     })
 
+    test('uses yuv420p for broad player compatibility', () => {
+      const cmd = buildMP4WithVideoCommand('/audio.m4a', '/output.mp4', 256, 1920, 1080)
+      expect(cmd).toContain('-pix_fmt')
+      expect(cmd).toContain('yuv420p')
+    })
+
     test('includes H.264 codec with fast preset', () => {
       const cmd = buildMP4WithVideoCommand('/audio.m4a', '/output.mp4', 256, 1920, 1080)
 
@@ -251,6 +257,18 @@ describe('FFmpeg Command Builders', () => {
     test('accepts valid dimensions', () => {
       const cmd = buildMP4WithVideoCommand('/audio.m4a', '/output.mp4', 256, 1280, 720)
       expect(cmd.some(arg => arg.includes('1280x720'))).toBe(true)
+    })
+  })
+
+  describe('buildMP4WithImageCommand()', () => {
+    test('builds cover image + audio command for YouTube', () => {
+      const cmd = buildMP4WithImageCommand('/cover.jpg', '/audio.mp3', '/out.mp4', 256, 1920, 1080)
+      expect(cmd).toContain('-loop')
+      expect(cmd).toContain('/cover.jpg')
+      expect(cmd).toContain('-pix_fmt')
+      expect(cmd).toContain('yuv420p')
+      expect(cmd).toContain('-shortest')
+      expect(cmd.at(-1)).toBe('/out.mp4')
     })
   })
 

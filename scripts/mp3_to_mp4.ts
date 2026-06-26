@@ -11,7 +11,7 @@ import { DurationService } from '../src/core/services/DurationService'
 import { RetryService } from '../src/core/services/RetryService'
 import { RetryConfig } from '../src/config/RetryConfig'
 import { AudioErrorClassifier } from '../src/core/services/AudioErrorClassifier'
-import { loadMP4Config } from '../src/core/config/MP4ConversionConfig'
+import { loadMP4Config, type MP4ConversionConfig } from '../src/core/config/MP4ConversionConfig'
 import { getLogger } from '../src/core/utils/logger'
 import type { MP4Metadata, MP4PipelineReport } from '../src/core/types/audio'
 
@@ -25,6 +25,18 @@ interface CliArgs {
   output: string
   metadata?: string
   dryRun?: boolean
+  youtube?: boolean
+  cover?: string
+}
+
+function applyYoutubeConfig(base: MP4ConversionConfig, args: CliArgs): MP4ConversionConfig {
+  if (!args.youtube && !args.cover) return base
+  return {
+    ...base,
+    outputFormat: 'mp4',
+    videoBackground: args.cover ? 'image' : 'black',
+    coverImagePath: args.cover ?? base.coverImagePath,
+  }
 }
 
 /**
@@ -42,14 +54,20 @@ function parseArgs(): CliArgs {
   })
 
   const usageLines = [
-    'Usage: bun scripts/mp3_to_mp4.ts --input=/path --output=/path [--metadata=/path] [--dry-run]',
+    'Usage: bun run to-mp4 --input=/path --output=/path [options]',
+    '       bun run to-youtube --input=/path --output=/path [options]',
     '',
     'Options:',
     '  --help, -h           Show help',
-    '  --input=/path        Directory containing merged MP3 files',
-    '  --output=/path       Directory for output M4A files',
-    '  --metadata=/path     JSON file with metadata map (optional)',
-    '  --dry-run            Preview conversion without executing FFmpeg',
+    '  --input=/path        Directory containing MP3 files',
+    '  --output=/path       Directory for output files',
+    '  --metadata=/path     JSON metadata map (optional)',
+    '  --youtube            Output H.264+AAC .mp4 for YouTube (black video)',
+    '  --cover=/path.jpg    Use cover image as video (implies --youtube)',
+    '  --dry-run            Preview without FFmpeg',
+    '',
+    'YouTube mode env (alternative):',
+    '  MP4_OUTPUT_FORMAT=mp4 MP4_VIDEO_BACKGROUND=black bun run to-mp4 ...',
   ]
 
   // 顯式 --help/-h：印說明到 stdout 並正常結束（exit 0）
@@ -67,19 +85,22 @@ function parseArgs(): CliArgs {
     input: parsed.input as string,
     output: parsed.output as string,
     metadata: parsed.metadata as string | undefined,
-    dryRun: parsed['dry-run'] === true || parsed['dry-run'] === 'true'
+    dryRun: parsed['dry-run'] === true || parsed['dry-run'] === 'true',
+    youtube: parsed.youtube === true || parsed.youtube === 'true',
+    cover: parsed.cover as string | undefined,
   }
 }
 
 /**
  * Format pipeline report as human-readable Chinese output
  */
-function formatReport(report: MP4PipelineReport): string {
+function formatReport(report: MP4PipelineReport, youtube: boolean): string {
   const timestamp = new Date(report.timestamp).toLocaleString('zh-TW')
+  const formatLabel = youtube ? 'MP3 → YouTube MP4' : 'MP3 → M4A'
   const lines: string[] = [
     '',
     '═══════════════════════════════════════════════',
-    'MP3 → M4A 轉換報告',
+    formatLabel + ' 轉換報告',
     '═══════════════════════════════════════════════',
     `時間戳: ${timestamp}`,
     `輸入目錄: ${report.inputDirectory}`,
@@ -119,7 +140,8 @@ function formatReport(report: MP4PipelineReport): string {
   }
 
   if (report.successCount > 0 && !report.dryRun) {
-    lines.push(`成功生成 ${report.successCount} 個 M4A 檔案至: ${report.outputDirectory}`)
+    const ext = youtube ? 'MP4' : 'M4A'
+    lines.push(`成功生成 ${report.successCount} 個 ${ext} 檔案至: ${report.outputDirectory}`)
     lines.push('')
   }
 
@@ -135,10 +157,10 @@ function formatReport(report: MP4PipelineReport): string {
 async function main(): Promise<void> {
   try {
     const args = parseArgs()
-    logger.info({ args }, 'Starting MP3→M4A conversion pipeline')
+    const youtube = Boolean(args.youtube || args.cover)
+    logger.info({ args, youtube }, 'Starting MP3 conversion pipeline')
 
-    // Load configuration
-    const config = await loadMP4Config()
+    const config = applyYoutubeConfig(await loadMP4Config(), args)
     logger.info({ config }, 'Configuration loaded')
 
     // Load metadata if provided
@@ -189,7 +211,7 @@ async function main(): Promise<void> {
     })
 
     // Print report
-    console.log(formatReport(report))
+    console.log(formatReport(report, youtube))
 
     // Exit with appropriate code
     process.exit(report.failureCount > 0 ? 1 : 0)

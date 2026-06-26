@@ -4,6 +4,7 @@ import WebSocket from 'ws'
 import * as fs from 'fs/promises'
 import pLimit from 'p-limit'
 import type { TTSProvider } from './TTSProvider'
+import { prepareChapterTextForTts } from '../workflows/chapterText'
 
 export const DEFAULT_TRUSTED_CLIENT_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4'
 export const SEC_MS_GEC_VERSION = '1-143.0.3650.75'
@@ -73,14 +74,8 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
     }
 
     async generateAudioFromFile(inputFilePath: string, outputFilePath: string): Promise<void> {
-        let text = await fs.readFile(inputFilePath, 'utf-8')
-
-        // Remove chapter title and separator lines to prevent TTS from reading them
-        const lines = text.split('\n')
-        const separatorIndex = lines.findIndex((line, index) => index < 5 && line.startsWith('---'))
-        if (separatorIndex !== -1) {
-            text = lines.slice(separatorIndex + 1).join('\n').trim()
-        }
+        const raw = await fs.readFile(inputFilePath, 'utf-8')
+        const text = prepareChapterTextForTts(raw)
 
         const chunks = this.splitText(text, 1500)
 

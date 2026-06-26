@@ -20,7 +20,8 @@ const MP4ConfigSchema = z.object({
   videoHeight: z.number().int().positive(),
   maxConcurrency: z.number().int().min(1).max(8),
   outputDirectory: z.string().min(1),
-  retryMaxAttempts: z.number().int().min(1).max(10)
+  retryMaxAttempts: z.number().int().min(1).max(10),
+  coverImagePath: z.string().min(1).optional(),
 })
 
 /**
@@ -44,6 +45,8 @@ export interface MP4ConversionConfig {
   readonly outputDirectory: string
   /** Max retry attempts for transient FFmpeg errors (default 3) */
   readonly retryMaxAttempts: number
+  /** Static cover image for videoBackground='image' (YouTube uploads) */
+  readonly coverImagePath?: string
 }
 
 /**
@@ -59,6 +62,7 @@ export async function loadMP4Config(): Promise<MP4ConversionConfig> {
   const maxConcurrency = parseInt(process.env.MP4_MAX_CONCURRENCY ?? '2', 10)
   const outputDirectory = process.env.MP4_OUTPUT_DIRECTORY ?? './output/m4a'
   const retryMaxAttempts = parseInt(process.env.MP4_RETRY_MAX_ATTEMPTS ?? '3', 10)
+  const coverImagePath = process.env.MP4_COVER_IMAGE?.trim() || undefined
 
   const config: MP4ConversionConfig = {
     bitrate,
@@ -68,7 +72,8 @@ export async function loadMP4Config(): Promise<MP4ConversionConfig> {
     videoHeight,
     maxConcurrency,
     outputDirectory,
-    retryMaxAttempts
+    retryMaxAttempts,
+    coverImagePath,
   }
 
   // Validate configuration schema

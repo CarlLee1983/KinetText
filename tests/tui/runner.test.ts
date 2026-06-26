@@ -15,6 +15,20 @@ test('buildAudiobookArgs 位置參數順序正確', () => {
   ).toEqual(['audiobook', '749局祕聞', 'all', '+0%', '+50%', '5', 'true'])
 })
 
+test('buildAudiobookArgs 本地目錄模式', () => {
+  expect(
+    buildAudiobookArgs({
+      inputDir: '/tmp/chapters',
+      outputDir: '/tmp/mp3',
+      selection: '1-5',
+      rate: '+0%',
+      volume: '+0%',
+      concurrency: '3',
+      merge: false,
+    }),
+  ).toEqual(['audiobook', '--input=/tmp/chapters', '--output=/tmp/mp3', '1-5', '+0%', '+0%', '3', 'false'])
+})
+
 test('buildMergeArgs count 模式用 --size', () => {
   expect(buildMergeArgs({ inputDir: 'output/書', mode: 'count', value: '100' })).toEqual([
     'merge-mp3', 'output/書', '--size=100',

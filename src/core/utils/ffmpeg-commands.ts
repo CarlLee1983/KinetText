@@ -132,6 +132,7 @@ export function buildMP4WithVideoCommand(
     '-c:v', 'libx264',
     '-preset', 'fast',
     '-tune', 'stillimage',
+    '-pix_fmt', 'yuv420p',
     '-c:a', 'aac',
     '-b:a', `${bitrate}k`,
     '-map', '0', // Map video stream
@@ -162,6 +163,51 @@ export function buildMP4WithVideoCommand(
     videoResolution: `${width}x${height}`
   }, 'Built MP4 with video conversion command')
 
+  return args
+}
+
+/**
+ * Build FFmpeg command for MP3/M4A with a static cover image (YouTube-friendly MP4)
+ */
+export function buildMP4WithImageCommand(
+  imagePath: string,
+  audioPath: string,
+  outputPath: string,
+  bitrate: number,
+  width: number,
+  height: number,
+  metadata?: Readonly<MP4Metadata>
+): string[] {
+  if (bitrate < 96 || bitrate > 320) {
+    throw new Error(`Invalid bitrate: ${bitrate} kbps (must be 96-320)`)
+  }
+
+  const scalePad = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`
+  const args: string[] = [
+    '-y',
+    '-loop', '1',
+    '-i', imagePath,
+    '-i', audioPath,
+    '-c:v', 'libx264',
+    '-preset', 'fast',
+    '-tune', 'stillimage',
+    '-vf', scalePad,
+    '-pix_fmt', 'yuv420p',
+    '-c:a', 'aac',
+    '-b:a', `${bitrate}k`,
+    '-map', '0:v',
+    '-map', '1:a',
+    '-shortest',
+    '-movflags', '+faststart',
+  ]
+
+  if (metadata) {
+    if (metadata.title) args.push('-metadata', `title=${escapeMetadata(metadata.title)}`)
+    if (metadata.artist) args.push('-metadata', `artist=${escapeMetadata(metadata.artist)}`)
+    if (metadata.album) args.push('-metadata', `album=${escapeMetadata(metadata.album)}`)
+  }
+
+  args.push(outputPath)
   return args
 }
 

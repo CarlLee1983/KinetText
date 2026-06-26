@@ -212,8 +212,15 @@ bun run profile --help
 
 #### 使用範例
 ```bash
-# 生成語音書 MP3
+# 生成語音書 MP3（output/ 已爬取書籍）
 bun run audiobook "小說名稱" 1-50
+
+# 本地章節目錄（支援 .txt / .md，Markdown 會自動取 ## 正文 段落）
+bun run audiobook --input=/Users/carl/Dev/Fiction/Read-World/chapters
+bun run audiobook --input=/path/to/chapters --output=/path/to/mp3 1-10
+
+# 預覽將處理的章節
+bun run audiobook --input=/path/to/chapters --dry-run
 
 # 指定比特率（高品質）
 AUDIO_BITRATE=192k bun run audiobook "小說名稱"
@@ -271,6 +278,7 @@ bun run merge-mp3 --input=/path/to/mp3 --report=human
 
 #### 功能概述
 - 將 MP3 轉換為 M4A（AAC 音頻 MP4 容器）
+- **`to-youtube`**：輸出 H.264 + AAC 的 `.mp4`（黑底或封面圖），可直接上傳 YouTube
 - 支援元資料嵌入（title, artist, album）
 - AAC 編碼，比 MP3 更高效
 - 批量轉換支援
@@ -284,8 +292,19 @@ bun run to-mp4 \
   --metadata=/path/to/metadata.json \
   --dry-run
 
+# YouTube 可上傳格式（H.264 1080p 黑底 + AAC）
+bun run to-youtube \
+  --input=/Users/carl/Dev/Fiction/Read-World/chapters \
+  --output=/Users/carl/Dev/Fiction/Read-World/chapters/youtube
+
+# 附封面圖（上傳 YouTube 時預覽圖更好看）
+bun run to-youtube \
+  --input=/path/to/mp3 \
+  --output=/path/to/youtube \
+  --cover=/path/to/cover.jpg
+
 # 高品質轉換
-MP4_BITRATE=320k bun run to-mp4 --input=... --output=...
+MP4_BITRATE=320k bun run to-youtube --input=... --output=...
 ```
 
 #### 元資料 JSON 格式
@@ -336,9 +355,41 @@ bun run to-mp4 \
   --output=output/小說名稱/m4a \
   --metadata=output/小說名稱/metadata.json
 
-# 步驟 5: 上傳到雲端
+# 步驟 5: 生成 M4B 有聲書（含章節標記、按時長分卷，供 Apple Books 匯入）
+bun run build-m4b --title=小說名稱
+
+# 步驟 6: 上傳到雲端
 bun run backup
 ```
+
+> 步驟 5 直接讀 `output/小說名稱/audio/` 的逐章 MP3，故步驟 3、4 的合併/轉檔可略過；
+> 若只想做有聲書，跑完步驟 2 後直接 `build-m4b` 即可。
+
+---
+
+## 📲 匯入 Apple Books
+
+`build-m4b` 產物落在 `output/<書名>/m4b/<書名>_vol01.m4b …`，每卷內含章節標記可跳章。
+所謂「上傳 Apple Books」即把 `.m4b` **匯入** Apple Books App（Apple 無個人有聲書上傳 API，全靠手動匯入）。
+
+**macOS（建議：先在 Mac 匯入，再靠 iCloud 同步到手機）**
+
+1. 開 **Books** App
+2. Finder 開 `output/<書名>/m4b/`，把 `.m4b` 全選**拖進** Books 視窗（或 Books 選單 → 檔案 → 加入資源庫）
+3. 切到上方「**有聲書**」分頁即可看到，點開可跳章、自動記憶進度
+4. 確認 系統設定 → Apple ID → iCloud → Books 已開「同步」，手機端會自動出現
+
+**iPhone / iPad（不經 Mac）**
+
+- **AirDrop**：從 Mac AirDrop `.m4b` → 手機選「用 Books 開啟」
+- 或把 `.m4b` 丟到 **iCloud Drive / 檔案 App**，長按檔案 → 分享 → **Books**
+
+**注意事項**
+
+- 章節導覽與進度記憶要生效，**必須是 M4B**（含章節標記）——這正是捨棄黑底 MP4 上 YouTube、改走 M4B 的原因。
+- 分卷是刻意設計：每卷預設約 11 小時（`--target=39600`），太大的單檔 iCloud 同步容易失敗。
+- 若 `output/<書名>/cover.jpg|png` 存在會自動嵌封面，否則略過。
+- 這是**個人資源庫匯入**，非上架販售。公開販售有聲書須走 Apple Books Partner / 經銷商（如 Findaway Voices）且需自有版權，爬取內容不適用。
 
 ---
 
