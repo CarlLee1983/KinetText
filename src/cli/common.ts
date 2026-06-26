@@ -36,3 +36,26 @@ export function formatCliError(error: unknown): string {
     return String(error);
 }
 
+export interface CrawlFlags {
+    retries?: number;
+    concurrency?: number;
+    delay?: number;
+}
+
+/**
+ * 解析爬取相關 CLI 旗標：--crawl-retries / --crawl-concurrency / --crawl-delay。
+ * 非數字或缺省則該欄不設（呼叫端沿用預設）。
+ */
+export function parseCrawlFlags(args: string[]): CrawlFlags {
+    const out: CrawlFlags = {};
+    for (const arg of args) {
+        const m = arg.match(/^--crawl-(retries|concurrency|delay)=(.+)$/);
+        if (!m) continue;
+        const n = parseInt(m[2], 10);
+        if (isNaN(n)) continue;
+        if (m[1] === 'retries') out.retries = n;
+        else if (m[1] === 'concurrency') out.concurrency = n;
+        else out.delay = n;
+    }
+    return out;
+}
