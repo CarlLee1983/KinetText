@@ -162,6 +162,18 @@ bun run to-mp4 --input=... --output=... --dry-run
 > [!NOTE]
 > 此功能需要系統預先安裝 `ffmpeg`。
 
+### 6.5. 🎬 一鍵端到端：yt-pipeline
+
+從小說網址一路產出可上傳 YouTube 的 MP4（爬文 → TTS → 時長合併 → 自動封面 + MP4）：
+
+```bash
+bun run yt-pipeline "https://twp.zhys.tw/book/777167.html"
+# 可調：--target=6h --bitrate=256 --rate=+0% --concurrency=3 --font=<字型> --title=<書名>
+# --dry-run 只印計畫；--resume（預設開）已存在產物自動跳過，可重跑接續
+```
+
+產物落點：`output/<書名>/mp4/*.mp4`（封面為純色底 + 書名 + partN）。
+
 ### 7. ☁️ 雲端備份 (Cloud Backup)
 使用 `rclone` 將 `output/` 目錄同步至雲端（如 Google Drive, OneDrive 等）。
 
