@@ -7,6 +7,7 @@ import {
   runStepsUntilFailure,
   pickNewBook,
   buildPartMp4Plans,
+  shouldRetryFailed,
 } from '../../core/services/ytPipeline'
 
 test('parseYtPipelineArgs requires url', () => {
@@ -84,4 +85,54 @@ test('buildPartMp4Plans maps merged mp3 to cover+mp4 with part labels', () => {
   expect(plans[0].coverPath).toBe('/o/書/mp4/.covers/part1.jpg')
   expect(plans[0].mp4Path).toBe('/o/書/mp4/書_part1.mp4')
   expect(plans[1].partLabel).toBe('part2')
+})
+
+test('parseYtPipelineArgs 解析爬取旗標 + tolerance + no-retry-failed', () => {
+  const o = parseYtPipelineArgs([
+    'https://x/1',
+    '--crawl-retries=5',
+    '--crawl-concurrency=8',
+    '--crawl-delay=1500',
+    '--tolerance=20',
+    '--no-retry-failed',
+  ])
+  expect(o.crawlRetries).toBe(5)
+  expect(o.crawlConcurrency).toBe(8)
+  expect(o.crawlDelay).toBe(1500)
+  expect(o.tolerance).toBe(20)
+  expect(o.retryFailed).toBe(false)
+})
+
+test('parseYtPipelineArgs 預設：爬取旗標 undefined、補抓開啟', () => {
+  const o = parseYtPipelineArgs(['https://x/1'])
+  expect(o.crawlRetries).toBeUndefined()
+  expect(o.crawlConcurrency).toBeUndefined()
+  expect(o.crawlDelay).toBeUndefined()
+  expect(o.tolerance).toBeUndefined()
+  expect(o.retryFailed).toBe(true)
+})
+
+test('buildCrawlStep 附加爬取旗標（有 opts）', () => {
+  expect(buildCrawlStep('https://x/1', { crawlRetries: 5, crawlConcurrency: 8, crawlDelay: 1500 })).toEqual([
+    'start', 'https://x/1', '--crawl-retries=5', '--crawl-concurrency=8', '--crawl-delay=1500',
+  ])
+})
+
+test('buildCrawlStep 無 opts 維持向後相容', () => {
+  expect(buildCrawlStep('https://x/1')).toEqual(['start', 'https://x/1'])
+})
+
+test('buildMergeStep 附加 tolerance（有值才加）', () => {
+  expect(buildMergeStep('output/書', 'output/書/merged', '6h', 20)).toEqual([
+    'merge-mp3', 'output/書', '--mode=duration', '--target=6h', '--output=output/書/merged', '--tolerance=20',
+  ])
+  expect(buildMergeStep('output/書', 'output/書/merged', '6h')).toEqual([
+    'merge-mp3', 'output/書', '--mode=duration', '--target=6h', '--output=output/書/merged',
+  ])
+})
+
+test('shouldRetryFailed：啟用且非空才補', () => {
+  expect(shouldRetryFailed([{ index: 1 }], true)).toBe(true)
+  expect(shouldRetryFailed([], true)).toBe(false)
+  expect(shouldRetryFailed([{ index: 1 }], false)).toBe(false)
 })
