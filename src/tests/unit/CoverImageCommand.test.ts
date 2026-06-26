@@ -35,3 +35,8 @@ test('buildCoverImageCommand escapes colon in title', () => {
   })
   expect(cmd.join(' ')).toContain('text=番外\\:終章')
 })
+
+test('escapeDrawtext escapes comma, single-quote, and square brackets', () => {
+  // Input: A,B'C[D]  — each special char must be backslash-escaped
+  expect(escapeDrawtext("A,B'C[D]")).toBe("A\\,B\\'C\\[D\\]")
+})

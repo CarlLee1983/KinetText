@@ -27,10 +27,14 @@ export function parseYtPipelineArgs(argv: string[]): YtPipelineOptions {
   if (!url) {
     throw new Error('缺少必要參數: <url>。用法: bun run yt-pipeline <url> [--target=6h ...]')
   }
+  const bitrate = flags.bitrate ? parseInt(flags.bitrate as string, 10) : 256
+  if (isNaN(bitrate) || bitrate < 96 || bitrate > 320) {
+    throw new Error(`無效的位元率: ${flags.bitrate}。bitrate 必須在 96–320 kbps 之間。`)
+  }
   return {
     url,
     target: (flags.target as string) ?? '6h',
-    bitrate: flags.bitrate ? parseInt(flags.bitrate as string, 10) : 256,
+    bitrate,
     rate: (flags.rate as string) ?? '+0%',
     volume: (flags.volume as string) ?? '+0%',
     concurrency: (flags.concurrency as string) ?? '3',

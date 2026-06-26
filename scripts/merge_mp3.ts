@@ -138,6 +138,8 @@ if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
 }
 
+const bookName = path.basename(baseDir) || "book";
+
 // 取得所有 mp3 檔案並排序
 let files = fs.readdirSync(inputDir)
     .filter(f => f.toLowerCase().endsWith(".mp3"))
@@ -214,8 +216,6 @@ if (mode === 'duration') {
     console.log("\n✨ 時長分組合併已完成！");
     process.exit(0);
 }
-
-const bookName = path.basename(baseDir) || "book";
 
 // === 計數分組模式 (--mode=count，預設) ===
 console.log(`🎵 發現 ${files.length} 個 mp3 檔案，將每 ${batchSize} 個合併為一檔...`);

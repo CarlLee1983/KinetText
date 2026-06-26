@@ -255,14 +255,19 @@ export function buildM4BCommand(
 }
 
 /**
- * 跳脫 drawtext filter 的特殊字元（: \ % 反斜線），避免破壞 filter 語法。
- * 注意：drawtext 在 filter 字串內以 ':' 分隔選項，故文字內的 ':' 必須跳脫。
+ * 跳脫 drawtext filter 的特殊字元（\ : % , ' [ ] 及換行），避免破壞 filtergraph 語法。
+ * 反斜線必須最先跳脫（順序關鍵）。換行替換為空格（書名不應含換行，但保守處理）。
  */
 export function escapeDrawtext(value: string): string {
   return value
     .replace(/\\/g, '\\\\')
     .replace(/:/g, '\\:')
     .replace(/%/g, '\\%')
+    .replace(/,/g, '\\,')
+    .replace(/'/g, "\\'")
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/\n/g, ' ')
 }
 
 /**

@@ -7,7 +7,6 @@ import {
   buildCrawlStep,
   buildAudiobookStep,
   buildMergeStep,
-  runStepsUntilFailure,
   pickNewBook,
   buildPartMp4Plans,
 } from '../src/core/services/ytPipeline'
@@ -82,8 +81,8 @@ async function main(): Promise<void> {
   }
   console.log(`\n📖 書名: ${title}`)
 
-  const bookDir = path.join('output', title)
-  const mergedDir = path.join('output', title, 'merged')
+  const bookDir = path.join(OUTPUT_ROOT, title)
+  const mergedDir = path.join(OUTPUT_ROOT, title, 'merged')
   const mp4Dir = path.join(OUTPUT_ROOT, title, 'mp4')
   const coversDir = path.join(mp4Dir, '.covers')
 
@@ -103,7 +102,7 @@ async function main(): Promise<void> {
   await mkdir(coversDir, { recursive: true })
   await ensureFfmpeg()
 
-  const mergedAbs = path.join(OUTPUT_ROOT, title, 'merged')
+  const mergedAbs = mergedDir
   const mergedFiles = (await readdir(mergedAbs))
     .filter((f) => f.toLowerCase().endsWith('.mp3'))
     .map((f) => path.join(mergedAbs, f))
