@@ -253,3 +253,52 @@ export function buildM4BCommand(
 
   return args
 }
+
+/**
+ * 跳脫 drawtext filter 的特殊字元（: \ % 反斜線），避免破壞 filter 語法。
+ * 注意：drawtext 在 filter 字串內以 ':' 分隔選項，故文字內的 ':' 必須跳脫。
+ */
+export function escapeDrawtext(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/:/g, '\\:')
+    .replace(/%/g, '\\%')
+}
+
+/**
+ * 建構靜態封面 ffmpeg 參數陣列：純色底 + 書名（大字）+ partN（小字），輸出單張 jpg。
+ */
+export function buildCoverImageCommand(opts: {
+  title: string
+  partLabel: string
+  outPath: string
+  font: string
+  width?: number
+  height?: number
+  bg?: string
+}): string[] {
+  const width = opts.width ?? 1920
+  const height = opts.height ?? 1080
+  const bg = opts.bg ?? '#1a1a2e'
+  const titleSize = Math.round(height / 12)
+  const partSize = Math.round(height / 24)
+  const escTitle = escapeDrawtext(opts.title)
+  const escPart = escapeDrawtext(opts.partLabel)
+  const font = opts.font
+
+  const titleDraw =
+    `drawtext=fontfile=${font}:text=${escTitle}:fontcolor=white:fontsize=${titleSize}` +
+    `:x=(w-text_w)/2:y=(h/2)-${titleSize}`
+  const partDraw =
+    `drawtext=fontfile=${font}:text=${escPart}:fontcolor=#b0b0c0:fontsize=${partSize}` +
+    `:x=(w-text_w)/2:y=(h/2)+${Math.round(titleSize / 2)}`
+
+  return [
+    '-y',
+    '-f', 'lavfi',
+    '-i', `color=c=${bg}:s=${width}x${height}`,
+    '-vf', `${titleDraw},${partDraw}`,
+    '-frames:v', '1',
+    opts.outPath,
+  ]
+}
