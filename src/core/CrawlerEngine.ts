@@ -26,6 +26,10 @@ export interface CrawlerAudioConfig {
 export interface CrawlerConfig {
     /** Crawl concurrency limit (default: 5) */
     concurrency?: number
+    /** Max fetch attempts per chapter (default: 3) */
+    maxRetries?: number
+    /** Base backoff delay in ms, multiplied by attempt number (default: 2000) */
+    retryBaseDelayMs?: number
     /** Audio conversion configuration */
     audio?: CrawlerAudioConfig
 }
@@ -59,6 +63,8 @@ export class CrawlerEngine {
     private adapter: NovelSiteAdapter;
     private storage: StorageAdapter;
     private concurrency: number;
+    private maxRetries: number;
+    private retryBaseDelayMs: number;
     private nextRequestSlotAt = 0;
     /** Audio configuration (for use with AudioConvertService) */
     readonly audioConfig: CrawlerAudioConfig
@@ -75,6 +81,8 @@ export class CrawlerEngine {
     ) {
         this.adapter = adapter;
         this.storage = storage;
+        this.maxRetries = 3;
+        this.retryBaseDelayMs = 2000;
 
         if (typeof concurrencyOrConfig === 'number') {
             // Legacy API: CrawlerEngine(adapter, storage, 5)
@@ -84,6 +92,8 @@ export class CrawlerEngine {
             // New API: CrawlerEngine(adapter, storage, { concurrency: 5, audio: {...} })
             const useGoFromEnv = process.env.KINETITEXT_USE_GO_AUDIO === 'true';
             this.concurrency = concurrencyOrConfig.concurrency ?? 5;
+            this.maxRetries = concurrencyOrConfig.maxRetries ?? 3;
+            this.retryBaseDelayMs = concurrencyOrConfig.retryBaseDelayMs ?? 2000;
             this.audioConfig = {
                 useGoBackend: (concurrencyOrConfig.audio?.useGoBackend ?? useGoFromEnv),
                 goBinaryPath: concurrencyOrConfig.audio?.goBinaryPath
@@ -175,7 +185,7 @@ export class CrawlerEngine {
 
                     let content = '';
                     let attempts = 0;
-                    const maxRetries = 3;
+                    const maxRetries = this.maxRetries;
 
                     while (attempts < maxRetries) {
                         attempts++;
@@ -196,7 +206,7 @@ export class CrawlerEngine {
                         }
 
                         if (attempts < maxRetries) {
-                            const delay = 2000 * attempts + Math.random() * 1000;
+                            const delay = this.retryBaseDelayMs * attempts + Math.random() * 1000;
                             await new Promise(res => setTimeout(res, delay));
                         }
                     }

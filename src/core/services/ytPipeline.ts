@@ -9,9 +9,20 @@ export interface YtPipelineOptions {
   resume: boolean
   dryRun: boolean
   title?: string
+  crawlRetries?: number
+  crawlConcurrency?: number
+  crawlDelay?: number
+  tolerance?: number
+  retryFailed: boolean
 }
 
 const DEFAULT_FONT = '/System/Library/Fonts/PingFang.ttc'
+
+export interface CrawlStepOptions {
+  crawlRetries?: number
+  crawlConcurrency?: number
+  crawlDelay?: number
+}
 
 export function parseYtPipelineArgs(argv: string[]): YtPipelineOptions {
   const flags: Record<string, string | boolean> = {}
@@ -31,6 +42,27 @@ export function parseYtPipelineArgs(argv: string[]): YtPipelineOptions {
   if (isNaN(bitrate) || bitrate < 96 || bitrate > 320) {
     throw new Error(`無效的位元率: ${flags.bitrate}。bitrate 必須在 96–320 kbps 之間。`)
   }
+  const parseOptInt = (v: unknown): number | undefined => {
+    if (typeof v !== 'string') return undefined
+    const n = parseInt(v, 10)
+    return isNaN(n) ? undefined : n
+  }
+
+  const crawlRetries = parseOptInt(flags['crawl-retries'])
+  const crawlConcurrency = parseOptInt(flags['crawl-concurrency'])
+  const crawlDelay = parseOptInt(flags['crawl-delay'])
+
+  // Validate crawl knob ranges
+  if (crawlRetries !== undefined && crawlRetries < 1) {
+    throw new Error('--crawl-retries 必須 >= 1')
+  }
+  if (crawlConcurrency !== undefined && crawlConcurrency < 1) {
+    throw new Error('--crawl-concurrency 必須 >= 1')
+  }
+  if (crawlDelay !== undefined && crawlDelay < 0) {
+    throw new Error('--crawl-delay 必須 >= 0')
+  }
+
   return {
     url,
     target: (flags.target as string) ?? '6h',
@@ -42,19 +74,35 @@ export function parseYtPipelineArgs(argv: string[]): YtPipelineOptions {
     resume: flags.resume === undefined ? true : flags.resume !== 'false',
     dryRun: flags['dry-run'] === true || flags['dry-run'] === 'true',
     title: flags.title as string | undefined,
+    crawlRetries,
+    crawlConcurrency,
+    crawlDelay,
+    tolerance: parseOptInt(flags['tolerance']),
+    retryFailed: flags['no-retry-failed'] ? false : true,
   }
 }
 
-export function buildCrawlStep(url: string): string[] {
-  return ['start', url]
+export function buildCrawlStep(url: string, opts?: CrawlStepOptions): string[] {
+  const args = ['start', url]
+  if (opts?.crawlRetries !== undefined) args.push(`--crawl-retries=${opts.crawlRetries}`)
+  if (opts?.crawlConcurrency !== undefined) args.push(`--crawl-concurrency=${opts.crawlConcurrency}`)
+  if (opts?.crawlDelay !== undefined) args.push(`--crawl-delay=${opts.crawlDelay}`)
+  return args
 }
 
 export function buildAudiobookStep(title: string, o: YtPipelineOptions): string[] {
   return ['audiobook', title, 'all', o.rate, o.volume, o.concurrency, 'false']
 }
 
-export function buildMergeStep(bookDir: string, mergedDir: string, target: string): string[] {
-  return ['merge-mp3', bookDir, '--mode=duration', `--target=${target}`, `--output=${mergedDir}`]
+export function buildMergeStep(
+  bookDir: string,
+  mergedDir: string,
+  target: string,
+  tolerance?: number
+): string[] {
+  const args = ['merge-mp3', bookDir, '--mode=duration', `--target=${target}`, `--output=${mergedDir}`]
+  if (tolerance !== undefined) args.push(`--tolerance=${tolerance}`)
+  return args
 }
 
 export type StepRunner = (args: string[]) => Promise<number>
@@ -109,4 +157,11 @@ export function buildPartMp4Plans(
       partLabel,
     }
   })
+}
+
+/**
+ * 判定是否需要補抓失敗章節：啟用且失敗清單非空才補。
+ */
+export function shouldRetryFailed(failedList: unknown[], retryFailedEnabled: boolean): boolean {
+  return retryFailedEnabled && Array.isArray(failedList) && failedList.length > 0
 }

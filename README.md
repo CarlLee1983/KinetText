@@ -169,6 +169,9 @@ bun run to-mp4 --input=... --output=... --dry-run
 ```bash
 bun run yt-pipeline "https://twp.zhys.tw/book/777167.html"
 # 可調：--target=6h --bitrate=256 --rate=+0% --concurrency=3 --font=<字型> --title=<書名>
+# 爬取可調：--crawl-retries=3 --crawl-concurrency=5 --crawl-delay=2000
+# 合併容差：--tolerance=10
+# 爬完自動補抓失敗章節（預設開）；--no-retry-failed 可關閉
 # --dry-run 只印計畫；--resume（預設開）已存在產物自動跳過，可重跑接續
 ```
 
