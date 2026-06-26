@@ -20,12 +20,15 @@
     "clean-files": "bun run scripts/clean_novels.ts",
     "verify": "bun run scripts/verify_chapters.ts",
     "profile": "bun run scripts/profile_adapter.ts",
-    "bench:convert": "bun run scripts/bench_convert.ts"
+    "bench:convert": "bun run scripts/bench_convert.ts",
+    "build:docs": "bun run scripts/build_docs.ts",
+    "docs:serve": "python3 -m http.server 8765 --directory docs"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^25.3.3",
-    "@types/ws": "^8.18.1"
+    "@types/ws": "^8.18.1",
+    "marked": "^18.0.5"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

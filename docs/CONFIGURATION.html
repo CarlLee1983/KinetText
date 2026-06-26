@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>配置指南 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li class="active"><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="kinetitext-配置指南"><a class="anchor" href="#kinetitext-配置指南">#</a>KinetiText 配置指南</h1>
+<p>本文檔說明所有可配置的選項、環境變數及其預設值。Bun 原生支援自動載入 <code>.env</code> 檔案，無需額外套件。</p>
+<h2 id="快速開始"><a class="anchor" href="#快速開始">#</a>快速開始</h2>
+<p><strong>1. 複製 <code>.env.example</code> 到 <code>.env</code>（若有）</strong>:</p>
+<pre><code class="language-bash">cp .env.example .env
+</code></pre>
+<p><strong>2. 編輯 <code>.env</code> 設置偏好值</strong>:</p>
+<pre><code class="language-bash"># 使用任何文字編輯器
+nano .env
+# 或
+code .env
+</code></pre>
+<p><strong>3. 執行應用程式時自動載入</strong>:</p>
+<pre><code class="language-bash">bun run audiobook &quot;小說名稱&quot;
+# .env 中的環境變數會自動套用
+</code></pre>
+<blockquote>
+<p><strong>提示</strong>: Bun 執行時會自動讀取專案根目錄的 <code>.env</code> 檔案，無需手動載入。</p>
+</blockquote>
+<hr>
+<h2 id="環境變數完整參考"><a class="anchor" href="#環境變數完整參考">#</a>環境變數完整參考</h2>
+<h3 id="phase-1-重試機制"><a class="anchor" href="#phase-1-重試機制">#</a>Phase 1: 重試機制</h3>
+<p>控制所有服務的自動重試行為。</p>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RETRY_MAX_ATTEMPTS</code></td>
+<td>3</td>
+<td>1-10</td>
+<td>最大重試次數</td>
+</tr>
+<tr>
+<td><code>RETRY_BASE_DELAY_MS</code></td>
+<td>100</td>
+<td>1-1000</td>
+<td>初始延遲（毫秒）</td>
+</tr>
+<tr>
+<td><code>RETRY_MAX_DELAY_MS</code></td>
+<td>10000</td>
+<td>1000-60000</td>
+<td>最大延遲（毫秒）</td>
+</tr>
+<tr>
+<td><code>RETRY_BACKOFF_MULTIPLIER</code></td>
+<td>2</td>
+<td>1.5-3</td>
+<td>指數退避倍數</td>
+</tr>
+<tr>
+<td><code>RETRY_JITTER_ENABLED</code></td>
+<td>true</td>
+<td>true/false</td>
+<td>啟用隨機抖動</td>
+</tr>
+</tbody></table>
+<p><strong>延遲計算</strong>:</p>
+<pre><code>延遲 = min(baseDelay × multiplier^attempt, maxDelay) + random(0, jitter)
+</code></pre>
+<p><strong>範例場景</strong>:</p>
+<ul>
+<li>預設（<code>RETRY_MAX_ATTEMPTS=3</code>）：約 0.1s → 0.2s → 0.4s 共 3 次重試</li>
+<li>寬鬆（<code>RETRY_MAX_ATTEMPTS=5</code>，<code>RETRY_BASE_DELAY_MS=200</code>）：更多重試、更長間隔</li>
+</ul>
+<pre><code class="language-bash"># .env 範例
+RETRY_MAX_ATTEMPTS=5
+RETRY_BASE_DELAY_MS=200
+RETRY_MAX_DELAY_MS=30000
+RETRY_BACKOFF_MULTIPLIER=2
+RETRY_JITTER_ENABLED=true
+</code></pre>
+<hr>
+<h3 id="phase-2-音頻轉換"><a class="anchor" href="#phase-2-音頻轉換">#</a>Phase 2: 音頻轉換</h3>
+<p>控制 WAV/AAC/OGG/FLAC → MP3 的轉換行為。</p>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AUDIO_BITRATE</code></td>
+<td>128k</td>
+<td>64k-320k</td>
+<td>MP3 比特率</td>
+</tr>
+<tr>
+<td><code>AUDIO_SAMPLE_RATE</code></td>
+<td>44100</td>
+<td>8000-48000</td>
+<td>採樣率 (Hz)</td>
+</tr>
+<tr>
+<td><code>AUDIO_CHANNELS</code></td>
+<td>2</td>
+<td>1-2</td>
+<td>聲道數（1=單聲道，2=立體聲）</td>
+</tr>
+<tr>
+<td><code>AUDIO_FORMAT</code></td>
+<td>mp3</td>
+<td>mp3</td>
+<td>輸出格式</td>
+</tr>
+<tr>
+<td><code>AUDIO_CONVERT_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>1-8</td>
+<td>並行轉換數</td>
+</tr>
+</tbody></table>
+<p><strong>比特率品質對比</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>比特率</th>
+<th>品質</th>
+<th>每分鐘大小</th>
+<th>適用場景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>64k</td>
+<td>低</td>
+<td>~0.5 MB</td>
+<td>語音、節省空間</td>
+</tr>
+<tr>
+<td>128k</td>
+<td>標準</td>
+<td>~1.0 MB</td>
+<td>一般語音書</td>
+</tr>
+<tr>
+<td>192k</td>
+<td>高</td>
+<td>~1.5 MB</td>
+<td>高品質語音書</td>
+</tr>
+<tr>
+<td>256k</td>
+<td>很高</td>
+<td>~2.0 MB</td>
+<td>音樂</td>
+</tr>
+<tr>
+<td>320k</td>
+<td>最高</td>
+<td>~2.5 MB</td>
+<td>專業音樂</td>
+</tr>
+</tbody></table>
+<p><strong>並行度建議</strong>:</p>
+<ul>
+<li>1 vCPU：<code>AUDIO_CONVERT_MAX_CONCURRENCY=1</code></li>
+<li>4 vCPU：<code>AUDIO_CONVERT_MAX_CONCURRENCY=4</code></li>
+<li>8 vCPU：<code>AUDIO_CONVERT_MAX_CONCURRENCY=6</code>（建議留餘量）</li>
+</ul>
+<pre><code class="language-bash"># .env 範例（均衡設置）
+AUDIO_BITRATE=192k
+AUDIO_SAMPLE_RATE=44100
+AUDIO_CHANNELS=2
+AUDIO_CONVERT_MAX_CONCURRENCY=4
+</code></pre>
+<hr>
+<h3 id="phase-25-文本轉語音tts"><a class="anchor" href="#phase-25-文本轉語音tts">#</a>Phase 2.5: 文本轉語音（TTS）</h3>
+<p>控制 <code>MicrosoftEdgeTTSProvider</code>（透過 WebSocket 直連 Microsoft Edge 線上 TTS 端點）的行為。</p>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MICROSOFT_TTS_TOKEN</code></td>
+<td>（內建預設 token）</td>
+<td>Microsoft Edge TTS 的信任用戶端 token；通常無需設定</td>
+</tr>
+<tr>
+<td><code>MICROSOFT_TOKEN_REFRESH_URL</code></td>
+<td>（空）</td>
+<td>選用：遠端 token 更新端點；設定後程式會自動取得最新 token</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>注意</strong>：</p>
+<ul>
+<li>TTS 為<strong>線上服務</strong>（非本地模型），需連網；免費、不需自備金鑰。</li>
+<li>預設聲音 <code>zh-CN-YunxiNeural</code>、語速 <code>+0%</code>、音量 <code>+0%</code> 寫死於程式碼。
+語速 / 音量可由 <code>audiobook</code> 的位置參數覆寫（見 README），聲音目前僅能改原始碼。</li>
+<li>輸出格式固定為 <code>audio-24khz-48kbitrate-mono-mp3</code>。後續若再經 Phase 2 轉檔，
+才會套用 <code>AUDIO_BITRATE</code>。</li>
+</ul>
+</blockquote>
+<pre><code class="language-bash"># .env 範例（多數情況留空即可）
+# MICROSOFT_TTS_TOKEN=你的token
+# MICROSOFT_TOKEN_REFRESH_URL=https://example.com/token
+</code></pre>
+<hr>
+<h3 id="phase-3-音頻合併"><a class="anchor" href="#phase-3-音頻合併">#</a>Phase 3: 音頻合併</h3>
+<p>控制 MP3 合併分組行為。</p>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AUDIO_MERGE_TARGET_DURATION</code></td>
+<td>39600</td>
+<td>1800-86400</td>
+<td>目標時長（秒）</td>
+</tr>
+<tr>
+<td><code>AUDIO_MERGE_TOLERANCE_PERCENT</code></td>
+<td>10</td>
+<td>1-50</td>
+<td>容差百分比</td>
+</tr>
+<tr>
+<td><code>AUDIO_MERGE_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>1-8</td>
+<td>並行讀取數</td>
+</tr>
+</tbody></table>
+<p><strong>時長參照</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>秒數</th>
+<th>時長</th>
+<th>適用場景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3600</td>
+<td>1 小時</td>
+<td>短篇合集</td>
+</tr>
+<tr>
+<td>7200</td>
+<td>2 小時</td>
+<td>Podcast 集合</td>
+</tr>
+<tr>
+<td>14400</td>
+<td>4 小時</td>
+<td>中篇有聲書</td>
+</tr>
+<tr>
+<td>28800</td>
+<td>8 小時</td>
+<td>長篇有聲書（短）</td>
+</tr>
+<tr>
+<td>39600</td>
+<td>11 小時</td>
+<td>長篇有聲書（預設）</td>
+</tr>
+<tr>
+<td>86400</td>
+<td>24 小時</td>
+<td>超長合集</td>
+</tr>
+</tbody></table>
+<p><strong>容差說明</strong>:</p>
+<ul>
+<li>容差 10% 表示目標時長的 ±10% 範圍內均可接受</li>
+<li>例如目標 39600 秒（11 小時），容差 10%：可接受 35640-43560 秒</li>
+<li>較大容差 = 更靈活的分組；較小容差 = 更精確的時長控制</li>
+</ul>
+<pre><code class="language-bash"># .env 範例
+AUDIO_MERGE_TARGET_DURATION=39600
+AUDIO_MERGE_TOLERANCE_PERCENT=10
+AUDIO_MERGE_MAX_CONCURRENCY=2
+</code></pre>
+<p>也可透過 CLI 參數覆蓋（優先於環境變數）：</p>
+<pre><code class="language-bash">bun run merge-mp3 --input=... --target=11h --tolerance=15
+</code></pre>
+<hr>
+<h3 id="phase-4-mp4-轉換"><a class="anchor" href="#phase-4-mp4-轉換">#</a>Phase 4: MP4 轉換</h3>
+<p>控制 MP3 → M4A（AAC）轉換行為。</p>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MP4_BITRATE</code></td>
+<td>256</td>
+<td>96-320</td>
+<td>AAC 比特率（kbps）；<code>256</code> 或 <code>256k</code> 皆可（<code>k</code> 後綴會被忽略）</td>
+</tr>
+<tr>
+<td><code>MP4_OUTPUT_FORMAT</code></td>
+<td>m4a</td>
+<td>m4a / mp4</td>
+<td>輸出格式；<code>mp4</code> 會走影片路徑（見 Phase 4.5）</td>
+</tr>
+<tr>
+<td><code>MP4_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>1-8</td>
+<td>並行轉換數</td>
+</tr>
+<tr>
+<td><code>MP4_OUTPUT_DIRECTORY</code></td>
+<td>./output/m4a</td>
+<td>路徑</td>
+<td>預設輸出目錄</td>
+</tr>
+<tr>
+<td><code>MP4_RETRY_MAX_ATTEMPTS</code></td>
+<td>3</td>
+<td>1-10</td>
+<td>轉換重試次數</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>元資料（title / artist / album）透過 <code>--metadata=&lt;json&gt;</code> 帶入，非由環境變數開關。</p>
+</blockquote>
+<p><strong>AAC vs MP3 效率對比</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>AAC 比特率</th>
+<th>等效 MP3 品質</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>96k</td>
+<td>~128k MP3</td>
+<td>可接受品質，節省空間</td>
+</tr>
+<tr>
+<td>192k</td>
+<td>~256k MP3</td>
+<td>高品質，推薦語音書</td>
+</tr>
+<tr>
+<td>256k</td>
+<td>~320k MP3</td>
+<td>很高品質（預設）</td>
+</tr>
+<tr>
+<td>320k</td>
+<td>&gt;320k MP3</td>
+<td>最高品質</td>
+</tr>
+</tbody></table>
+<pre><code class="language-bash"># .env 範例（高品質）
+MP4_BITRATE=256
+MP4_OUTPUT_FORMAT=m4a
+MP4_MAX_CONCURRENCY=2
+</code></pre>
+<hr>
+<h3 id="phase-45-youtube-影片匯出"><a class="anchor" href="#phase-45-youtube-影片匯出">#</a>Phase 4.5: YouTube 影片匯出</h3>
+<p><code>to-youtube</code> 會在 <code>to-mp4</code> 的基礎上強制輸出 H.264 + AAC 的 <code>.mp4</code>（黑底或封面圖），
+共用 Phase 4 的環境變數，並額外用到下列視訊相關設定。</p>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MP4_VIDEO_BACKGROUND</code></td>
+<td>none</td>
+<td>none / black / image</td>
+<td>視訊背景；<code>to-youtube</code> 內部會切到 <code>black</code> 或封面圖</td>
+</tr>
+<tr>
+<td><code>MP4_VIDEO_WIDTH</code></td>
+<td>1920</td>
+<td>320-7680</td>
+<td>視訊寬度（px）</td>
+</tr>
+<tr>
+<td><code>MP4_VIDEO_HEIGHT</code></td>
+<td>1080</td>
+<td>240-4320</td>
+<td>視訊高度（px）</td>
+</tr>
+<tr>
+<td><code>MP4_COVER_IMAGE</code></td>
+<td>（空）</td>
+<td>路徑</td>
+<td>封面圖路徑（等同 CLI 的 <code>--cover</code>）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>視訊編碼固定為 <code>libx264</code>（preset=fast、tune=stillimage、pix_fmt=yuv420p），
+音訊為 <code>aac</code>，比特率沿用 <code>MP4_BITRATE</code>。一般直接用 CLI 旗標即可，無需設這些變數：
+<code>bun run to-youtube --input=&lt;目錄&gt; --output=&lt;目錄&gt; [--cover=&lt;圖&gt;]</code></p>
+</blockquote>
+<pre><code class="language-bash"># .env 範例（YouTube 1080p）
+MP4_OUTPUT_FORMAT=mp4
+MP4_VIDEO_BACKGROUND=black
+MP4_VIDEO_WIDTH=1920
+MP4_VIDEO_HEIGHT=1080
+</code></pre>
+<hr>
+<h2 id="完整-env-範例"><a class="anchor" href="#完整-env-範例">#</a>完整 .env 範例</h2>
+<p>複製以下內容到 <code>.env</code> 並依需求修改：</p>
+<pre><code class="language-bash"># ================================================
+# KinetiText 環境變數配置
+# ================================================
+
+# --- Phase 1: 重試機制 ---
+RETRY_MAX_ATTEMPTS=3
+RETRY_BASE_DELAY_MS=100
+RETRY_MAX_DELAY_MS=10000
+RETRY_BACKOFF_MULTIPLIER=2
+RETRY_JITTER_ENABLED=true
+
+# --- Phase 2: 音頻轉換 ---
+AUDIO_BITRATE=128k
+AUDIO_SAMPLE_RATE=44100
+AUDIO_CHANNELS=2
+AUDIO_CONVERT_MAX_CONCURRENCY=2
+
+# --- Phase 3: 音頻合併 ---
+AUDIO_MERGE_TARGET_DURATION=39600
+AUDIO_MERGE_TOLERANCE_PERCENT=10
+AUDIO_MERGE_MAX_CONCURRENCY=2
+
+# --- Phase 2.5: TTS（多數情況留空）---
+# MICROSOFT_TTS_TOKEN=
+# MICROSOFT_TOKEN_REFRESH_URL=
+
+# --- Phase 4: MP4 轉換 ---
+MP4_BITRATE=256
+MP4_OUTPUT_FORMAT=m4a
+MP4_MAX_CONCURRENCY=2
+
+# --- Phase 4.5: YouTube 影片匯出（選用）---
+# MP4_OUTPUT_FORMAT=mp4
+# MP4_VIDEO_BACKGROUND=black
+# MP4_VIDEO_WIDTH=1920
+# MP4_VIDEO_HEIGHT=1080
+</code></pre>
+<hr>
+<h2 id="運行時環境變數覆蓋"><a class="anchor" href="#運行時環境變數覆蓋">#</a>運行時環境變數覆蓋</h2>
+<p>可在執行命令時直接覆蓋環境變數（優先於 <code>.env</code>）：</p>
+<pre><code class="language-bash"># 單次高品質轉換
+AUDIO_BITRATE=256k bun run audiobook &quot;小說名稱&quot;
+
+# 增加重試次數
+RETRY_MAX_ATTEMPTS=5 bun run start &quot;https://example.com/novel&quot;
+
+# 低並行度（穩定性優先）
+AUDIO_CONVERT_MAX_CONCURRENCY=1 bun run audiobook &quot;小說名稱&quot;
+
+# 自訂目標時長（8 小時）
+AUDIO_MERGE_TARGET_DURATION=28800 bun run merge-mp3 --input=...
+</code></pre>
+<hr>
+<h2 id="常見配置場景"><a class="anchor" href="#常見配置場景">#</a>常見配置場景</h2>
+<h3 id="1-快速處理低品質速度優先"><a class="anchor" href="#1-快速處理低品質速度優先">#</a>1. 快速處理（低品質，速度優先）</h3>
+<pre><code class="language-bash">AUDIO_BITRATE=64k
+AUDIO_CONVERT_MAX_CONCURRENCY=8
+AUDIO_MERGE_TOLERANCE_PERCENT=20
+MP4_BITRATE=96k
+MP4_MAX_CONCURRENCY=4
+</code></pre>
+<h3 id="2-標準品質均衡適合大多數用例"><a class="anchor" href="#2-標準品質均衡適合大多數用例">#</a>2. 標準品質（均衡，適合大多數用例）</h3>
+<pre><code class="language-bash">AUDIO_BITRATE=128k
+AUDIO_CONVERT_MAX_CONCURRENCY=4
+AUDIO_MERGE_TARGET_DURATION=39600
+AUDIO_MERGE_TOLERANCE_PERCENT=10
+MP4_BITRATE=192k
+MP4_MAX_CONCURRENCY=2
+</code></pre>
+<h3 id="3-高品質品質優先處理較慢"><a class="anchor" href="#3-高品質品質優先處理較慢">#</a>3. 高品質（品質優先，處理較慢）</h3>
+<pre><code class="language-bash">AUDIO_BITRATE=256k
+AUDIO_CONVERT_MAX_CONCURRENCY=2
+AUDIO_MERGE_TOLERANCE_PERCENT=5
+MP4_BITRATE=320k
+MP4_MAX_CONCURRENCY=1
+</code></pre>
+<h3 id="4-穩定處理高重試低並行適合不穩定網路"><a class="anchor" href="#4-穩定處理高重試低並行適合不穩定網路">#</a>4. 穩定處理（高重試，低並行，適合不穩定網路）</h3>
+<pre><code class="language-bash">RETRY_MAX_ATTEMPTS=7
+RETRY_BASE_DELAY_MS=500
+RETRY_MAX_DELAY_MS=60000
+AUDIO_CONVERT_MAX_CONCURRENCY=1
+AUDIO_MERGE_MAX_CONCURRENCY=1
+MP4_MAX_CONCURRENCY=1
+</code></pre>
+<h3 id="5-音頻書-podcast-集合每集-2-小時"><a class="anchor" href="#5-音頻書-podcast-集合每集-2-小時">#</a>5. 音頻書 Podcast 集合（每集 2 小時）</h3>
+<pre><code class="language-bash">AUDIO_BITRATE=128k
+AUDIO_MERGE_TARGET_DURATION=7200
+AUDIO_MERGE_TOLERANCE_PERCENT=15
+MP4_BITRATE=192k
+</code></pre>
+<hr>
+<h2 id="驗證配置"><a class="anchor" href="#驗證配置">#</a>驗證配置</h2>
+<p>確認環境變數已正確載入：</p>
+<pre><code class="language-bash"># 乾跑模式查看配置
+bun run audiobook &quot;測試&quot; --dry-run
+
+# 查看日誌輸出中的配置值
+bun run start --help
+</code></pre>
+<p>配置值會在日誌的初始化階段顯示。</p>
+<hr>
+<h2 id="重設為預設值"><a class="anchor" href="#重設為預設值">#</a>重設為預設值</h2>
+<h3 id="方法-1刪除-env-檔案"><a class="anchor" href="#方法-1刪除-env-檔案">#</a>方法 1：刪除 .env 檔案</h3>
+<pre><code class="language-bash">rm .env
+</code></pre>
+<h3 id="方法-2註解掉特定變數"><a class="anchor" href="#方法-2註解掉特定變數">#</a>方法 2：註解掉特定變數</h3>
+<pre><code class="language-bash"># AUDIO_BITRATE=256k
+AUDIO_BITRATE=128k  # 改回預設值
+</code></pre>
+<h3 id="方法-3使用空字串部分變數"><a class="anchor" href="#方法-3使用空字串部分變數">#</a>方法 3：使用空字串（部分變數）</h3>
+<pre><code class="language-bash">RETRY_MAX_ATTEMPTS=
+# 此時會使用程式碼中的預設值
+</code></pre>
+<hr>
+<h2 id="配置優先級"><a class="anchor" href="#配置優先級">#</a>配置優先級</h2>
+<p>環境變數的讀取優先順序（由高到低）：</p>
+<ol>
+<li><strong>命令行直接設置</strong>（<code>KEY=VALUE bun run ...</code>）</li>
+<li><strong><code>.env</code> 檔案</strong>（專案根目錄）</li>
+<li><strong>程式碼預設值</strong></li>
+</ol>
+<hr>
+<blockquote>
+<p>詳細 API 說明請參閱 <a href="API.html">API.md</a>。
+常見問題解決請參閱 <a href="TROUBLESHOOTING.html">TROUBLESHOOTING.md</a>。</p>
+</blockquote>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>docs/CONFIGURATION.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

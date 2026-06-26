@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>API 參考 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li class="active"><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="kinetitext-api-參考"><a class="anchor" href="#kinetitext-api-參考">#</a>KinetiText API 參考</h1>
+<p>本文檔涵蓋所有核心服務類的完整 API 說明，包含方法簽名、參數、回傳值與使用範例。</p>
+<h2 id="目錄"><a class="anchor" href="#目錄">#</a>目錄</h2>
+<ul>
+<li><a href="#retryservice">RetryService</a></li>
+<li><a href="#errorclassifier--audioerrorclassifier">ErrorClassifier / AudioErrorClassifier</a></li>
+<li><a href="#audioconvertservice">AudioConvertService</a></li>
+<li><a href="#audiomergeservice">AudioMergeService</a></li>
+<li><a href="#durationservice">DurationService</a></li>
+<li><a href="#ttsprovider--microsoftedgettsprovider">TTSProvider / MicrosoftEdgeTTSProvider</a></li>
+<li><a href="#mp4conversionservice">MP4ConversionService</a></li>
+<li><a href="#mp4pipeline">MP4Pipeline</a></li>
+<li><a href="#%E9%8C%AF%E8%AA%A4%E8%99%95%E7%90%86">錯誤處理</a></li>
+<li><a href="#%E5%AE%8C%E6%95%B4%E7%AB%AF%E5%88%B0%E7%AB%AF%E7%AF%84%E4%BE%8B">完整端到端範例</a></li>
+</ul>
+<hr>
+<h2 id="retryservice"><a class="anchor" href="#retryservice">#</a>RetryService</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>自動重試失敗的操作，支援指數退避、隨機抖動、錯誤分類與結構化日誌記錄。</p>
+<h3 id="建構子"><a class="anchor" href="#建構子">#</a>建構子</h3>
+<pre><code class="language-typescript">constructor(
+  config?: Partial&lt;RetryConfig&gt;,
+  errorClassifier?: ErrorClassifier
+)
+</code></pre>
+<p><strong>參數</strong>:</p>
+<ul>
+<li><code>config</code>: 可選重試配置（若未提供，則從環境變數讀取）</li>
+<li><code>errorClassifier</code>: 可選錯誤分類器（依注入錯誤分類決定是否重試）</li>
+</ul>
+<h3 id="方法"><a class="anchor" href="#方法">#</a>方法</h3>
+<h4 id="executeoperation-options-promise"><a class="anchor" href="#executeoperation-options-promise">#</a>execute&lt;T&gt;(operation, options?): Promise&lt;T&gt;</h4>
+<p>執行操作並在失敗時自動重試。</p>
+<p><strong>參數</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>名稱</th>
+<th>型別</th>
+<th>必需</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>operation</code></td>
+<td><code>() =&gt; Promise&lt;T&gt;</code></td>
+<td>是</td>
+<td>要執行的異步函數</td>
+</tr>
+<tr>
+<td><code>options</code></td>
+<td><code>Partial&lt;RetryConfig&gt;</code></td>
+<td>否</td>
+<td>覆蓋預設重試配置</td>
+</tr>
+</tbody></table>
+<p><strong>回傳</strong>: <code>Promise&lt;T&gt;</code> — 操作的結果；失敗時拋出 <code>Error</code></p>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">import { RetryService } from &quot;./src/core/retry/RetryService&quot;
+
+const retryService = new RetryService()
+
+// 基本用法
+const result = await retryService.execute(
+  () =&gt; fetch(&quot;https://example.com&quot;)
+)
+
+// 指定最大重試次數
+const data = await retryService.execute(
+  () =&gt; downloadChapter(url),
+  { maxRetries: 5, baseDelayMs: 200 }
+)
+</code></pre>
+<h3 id="retryconfig-介面"><a class="anchor" href="#retryconfig-介面">#</a>RetryConfig 介面</h3>
+<pre><code class="language-typescript">interface RetryConfig {
+  maxRetries: number        // 最大重試次數 (預設: 3)
+  baseDelayMs: number       // 初始延遲毫秒 (預設: 100)
+  maxDelayMs: number        // 最大延遲毫秒 (預設: 10000)
+  backoffMultiplier: number // 指數退避倍數 (預設: 2)
+  jitterEnabled: boolean    // 啟用隨機抖動 (預設: true)
+}
+</code></pre>
+<h3 id="配置環境變數"><a class="anchor" href="#配置環境變數">#</a>配置（環境變數）</h3>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>RETRY_MAX_ATTEMPTS</code></td>
+<td>3</td>
+<td>1-10</td>
+<td>最大重試次數</td>
+</tr>
+<tr>
+<td><code>RETRY_BASE_DELAY_MS</code></td>
+<td>100</td>
+<td>1-1000</td>
+<td>初始延遲（毫秒）</td>
+</tr>
+<tr>
+<td><code>RETRY_MAX_DELAY_MS</code></td>
+<td>10000</td>
+<td>1000-60000</td>
+<td>最大延遲（毫秒）</td>
+</tr>
+<tr>
+<td><code>RETRY_BACKOFF_MULTIPLIER</code></td>
+<td>2</td>
+<td>1.5-3</td>
+<td>指數退避倍數</td>
+</tr>
+<tr>
+<td><code>RETRY_JITTER_ENABLED</code></td>
+<td>true</td>
+<td>true/false</td>
+<td>啟用隨機抖動</td>
+</tr>
+</tbody></table>
+<p><strong>延遲計算公式</strong>: <code>min(baseDelay * (multiplier ^ attempt), maxDelay) + jitter</code></p>
+<hr>
+<h2 id="errorclassifier--audioerrorclassifier"><a class="anchor" href="#errorclassifier--audioerrorclassifier">#</a>ErrorClassifier / AudioErrorClassifier</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>將錯誤分類為「可重試」（瞬時錯誤）或「不可重試」（永久錯誤），決定重試策略。</p>
+<h3 id="errorclassifier-方法"><a class="anchor" href="#errorclassifier-方法">#</a>ErrorClassifier 方法</h3>
+<h4 id="istransienterror-boolean"><a class="anchor" href="#istransienterror-boolean">#</a>isTransient(error): boolean</h4>
+<p><strong>參數</strong>: <code>error: Error</code>
+<strong>回傳</strong>: <code>true</code> 若為瞬時錯誤（可重試），否則 <code>false</code></p>
+<h4 id="classifyerror-errorcategory"><a class="anchor" href="#classifyerror-errorcategory">#</a>classify(error): ErrorCategory</h4>
+<p><strong>參數</strong>: <code>error: Error</code>
+<strong>回傳</strong>: <code>&#39;transient&#39; | &#39;permanent&#39; | &#39;unknown&#39;</code></p>
+<h3 id="audioerrorclassifier-方法"><a class="anchor" href="#audioerrorclassifier-方法">#</a>AudioErrorClassifier 方法</h3>
+<p>繼承 <code>ErrorClassifier</code>，針對音頻轉換錯誤進行特化分類。</p>
+<pre><code class="language-typescript">const audioErrorClassifier = new AudioErrorClassifier()
+const retryService = new RetryService({}, audioErrorClassifier)
+</code></pre>
+<hr>
+<h2 id="audioconvertservice"><a class="anchor" href="#audioconvertservice">#</a>AudioConvertService</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>將音頻檔案轉換為 MP3 格式，支援 WAV, AAC, OGG, FLAC 等輸入格式。整合 RetryService 自動重試失敗轉換。</p>
+<h3 id="建構子"><a class="anchor" href="#建構子">#</a>建構子</h3>
+<pre><code class="language-typescript">constructor(retryService: RetryService)
+</code></pre>
+<h3 id="方法"><a class="anchor" href="#方法">#</a>方法</h3>
+<h4 id="convertinputpath-outputpath-config-promise"><a class="anchor" href="#convertinputpath-outputpath-config-promise">#</a>convert(inputPath, outputPath, config?): Promise&lt;AudioConvertResult&gt;</h4>
+<p>轉換單個音頻檔案。</p>
+<p><strong>參數</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>名稱</th>
+<th>型別</th>
+<th>必需</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputPath</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>輸入檔案路徑</td>
+</tr>
+<tr>
+<td><code>outputPath</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>輸出 MP3 路徑</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td><code>Partial&lt;AudioConvertConfig&gt;</code></td>
+<td>否</td>
+<td>轉換配置</td>
+</tr>
+</tbody></table>
+<p><strong>回傳</strong>:</p>
+<pre><code class="language-typescript">interface AudioConvertResult {
+  success: boolean
+  outputPath: string
+  inputFormat?: string
+  duration?: number       // 秒
+  fileSizeBytes?: number
+  error?: string
+}
+</code></pre>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">import { AudioConvertService } from &quot;./src/audio/AudioConvertService&quot;
+import { RetryService } from &quot;./src/core/retry/RetryService&quot;
+
+const retryService = new RetryService()
+const audioConvertService = new AudioConvertService(retryService)
+
+const result = await audioConvertService.convert(
+  &quot;input.wav&quot;,
+  &quot;output.mp3&quot;,
+  { bitrate: &quot;192k&quot; }
+)
+
+if (result.success) {
+  console.log(`轉換完成: ${result.outputPath}`)
+  console.log(`時長: ${result.duration}秒`)
+}
+</code></pre>
+<h4 id="convertbatchoptions-promise"><a class="anchor" href="#convertbatchoptions-promise">#</a>convertBatch(options): Promise&lt;AudioConvertResult[]&gt;</h4>
+<p>批量轉換多個音頻檔案。</p>
+<p><strong>參數</strong>:</p>
+<pre><code class="language-typescript">interface BatchConvertOptions {
+  inputFiles: string[]                  // 輸入檔案陣列
+  outputDir: string                     // 輸出目錄
+  config?: Partial&lt;AudioConvertConfig&gt;  // 批量配置
+}
+</code></pre>
+<p><strong>回傳</strong>: <code>AudioConvertResult[]</code></p>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">const results = await audioConvertService.convertBatch({
+  inputFiles: [&quot;ch1.wav&quot;, &quot;ch2.wav&quot;, &quot;ch3.wav&quot;],
+  outputDir: &quot;./output/mp3&quot;,
+  config: { bitrate: &quot;128k&quot; }
+})
+
+const succeeded = results.filter(r =&gt; r.success).length
+console.log(`成功: ${succeeded}/${results.length}`)
+</code></pre>
+<h3 id="audioconvertconfig-介面"><a class="anchor" href="#audioconvertconfig-介面">#</a>AudioConvertConfig 介面</h3>
+<pre><code class="language-typescript">interface AudioConvertConfig {
+  bitrate: string       // 例如 &quot;128k&quot;, &quot;192k&quot;, &quot;256k&quot;
+  sampleRate: number    // 例如 44100
+  channels: number      // 1 或 2
+  format: string        // 輸出格式 (預設 &quot;mp3&quot;)
+}
+</code></pre>
+<h3 id="配置環境變數"><a class="anchor" href="#配置環境變數">#</a>配置（環境變數）</h3>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AUDIO_BITRATE</code></td>
+<td>128k</td>
+<td>64k-320k</td>
+<td>MP3 比特率</td>
+</tr>
+<tr>
+<td><code>AUDIO_SAMPLE_RATE</code></td>
+<td>44100</td>
+<td>8000-48000</td>
+<td>採樣率 (Hz)</td>
+</tr>
+<tr>
+<td><code>AUDIO_CHANNELS</code></td>
+<td>2</td>
+<td>1-2</td>
+<td>聲道數</td>
+</tr>
+<tr>
+<td><code>AUDIO_CONVERT_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>1-8</td>
+<td>並行轉換數</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="audiomergeservice"><a class="anchor" href="#audiomergeservice">#</a>AudioMergeService</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>合併多個 MP3 檔案，支援按時長或按數量分組，自動計算時長並生成分組報告。</p>
+<h3 id="建構子"><a class="anchor" href="#建構子">#</a>建構子</h3>
+<pre><code class="language-typescript">constructor(durationService: DurationService)
+</code></pre>
+<h3 id="方法"><a class="anchor" href="#方法">#</a>方法</h3>
+<h4 id="mergefiles-outputpath-promise"><a class="anchor" href="#mergefiles-outputpath-promise">#</a>merge(files, outputPath): Promise&lt;MergeResult&gt;</h4>
+<p>合併多個 MP3 檔案為單個輸出。</p>
+<p><strong>參數</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>名稱</th>
+<th>型別</th>
+<th>必需</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>files</code></td>
+<td><code>string[]</code></td>
+<td>是</td>
+<td>輸入檔案路徑陣列（按順序合併）</td>
+</tr>
+<tr>
+<td><code>outputPath</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>輸出 MP3 路徑</td>
+</tr>
+</tbody></table>
+<p><strong>回傳</strong>:</p>
+<pre><code class="language-typescript">interface MergeResult {
+  outputPaths: string[]
+  totalDuration: number   // 秒
+}
+</code></pre>
+<h4 id="mergebatchoptions-promise"><a class="anchor" href="#mergebatchoptions-promise">#</a>mergeBatch(options): Promise&lt;GroupingReport&gt;</h4>
+<p>根據配置分組並合併音頻檔案（主要 API）。</p>
+<p><strong>參數</strong>:</p>
+<pre><code class="language-typescript">interface MergeBatchOptions {
+  files: string[]                          // 輸入檔案陣列
+  targetDuration?: number                  // 目標時長（秒）
+  outputDir: string                        // 輸出目錄
+  groupingStrategy?: &#39;duration&#39; | &#39;count&#39; // 分組策略（預設 &#39;count&#39;）
+  filesPerGroup?: number                   // count 策略時每組檔案數
+  maxConcurrency?: number                  // 並行讀取數
+}
+</code></pre>
+<p><strong>回傳</strong>:</p>
+<pre><code class="language-typescript">interface GroupingReport {
+  readonly groups: readonly GroupSummary[]
+  readonly totalDuration: number
+  readonly actualDuration: number
+  readonly oversizedSingleFile?: {
+    readonly filename: string
+    readonly duration: number
+  }
+}
+
+interface GroupSummary {
+  readonly groupId: string
+  readonly fileCount: number
+  readonly estimatedDuration: number
+  readonly actualDuration: number
+  readonly mergeResult: {
+    readonly outputPaths: string[]
+    readonly totalDuration: number
+  }
+}
+</code></pre>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">import { AudioMergeService } from &quot;./src/audio/AudioMergeService&quot;
+import { DurationService } from &quot;./src/audio/DurationService&quot;
+
+const durationService = new DurationService()
+const audioMergeService = new AudioMergeService(durationService)
+
+// 按時長分組（11 小時）
+const report = await audioMergeService.mergeBatch({
+  files: mp3Files,
+  targetDuration: 39600,   // 11 小時 = 39600 秒
+  outputDir: &quot;./merged&quot;,
+  groupingStrategy: &quot;duration&quot;
+})
+
+console.log(`共 ${report.groups.length} 組`)
+console.log(`總時長: ${report.totalDuration}秒`)
+</code></pre>
+<h4 id="formatreportreport-string"><a class="anchor" href="#formatreportreport-string">#</a>formatReport(report): string</h4>
+<p>將分組報告格式化為人類可讀的中文文本。</p>
+<p><strong>參數</strong>: <code>report: GroupingReport</code>
+<strong>回傳</strong>: <code>string</code></p>
+<h3 id="配置環境變數"><a class="anchor" href="#配置環境變數">#</a>配置（環境變數）</h3>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AUDIO_MERGE_TARGET_DURATION</code></td>
+<td>39600</td>
+<td>1800-86400</td>
+<td>目標時長（秒）</td>
+</tr>
+<tr>
+<td><code>AUDIO_MERGE_TOLERANCE_PERCENT</code></td>
+<td>10</td>
+<td>1-50</td>
+<td>容差百分比</td>
+</tr>
+<tr>
+<td><code>AUDIO_MERGE_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>1-8</td>
+<td>並行合併數</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="durationservice"><a class="anchor" href="#durationservice">#</a>DurationService</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>計算音頻檔案的精確時長（精度 &lt; 1%），使用 music-metadata 函式庫支援多種格式。</p>
+<h3 id="建構子"><a class="anchor" href="#建構子">#</a>建構子</h3>
+<pre><code class="language-typescript">constructor()
+</code></pre>
+<h3 id="方法"><a class="anchor" href="#方法">#</a>方法</h3>
+<h4 id="getdurationfilepath-promise"><a class="anchor" href="#getdurationfilepath-promise">#</a>getDuration(filePath): Promise&lt;number&gt;</h4>
+<p>取得音頻檔案時長。</p>
+<p><strong>參數</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>名稱</th>
+<th>型別</th>
+<th>必需</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>filePath</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>音頻檔案路徑</td>
+</tr>
+</tbody></table>
+<p><strong>回傳</strong>: <code>Promise&lt;number&gt;</code> — 時長（秒）；檔案無效時拋出 <code>Error</code></p>
+<p><strong>支援格式</strong>: MP3, MP4, M4A, WAV, FLAC, OGG, AAC</p>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">import { DurationService } from &quot;./src/audio/DurationService&quot;
+
+const durationService = new DurationService()
+
+const duration = await durationService.getDuration(&quot;chapter1.mp3&quot;)
+const hours = Math.floor(duration / 3600)
+const minutes = Math.floor((duration % 3600) / 60)
+console.log(`時長: ${hours}小時${minutes}分`)
+</code></pre>
+<h4 id="getdurationsfilepaths-promise"><a class="anchor" href="#getdurationsfilepaths-promise">#</a>getDurations(filePaths): Promise&lt;Map&lt;string, number&gt;&gt;</h4>
+<p>批量取得多個檔案的時長。</p>
+<p><strong>參數</strong>: <code>filePaths: string[]</code>
+<strong>回傳</strong>: <code>Promise&lt;Map&lt;string, number&gt;&gt;</code> — 路徑 → 時長（秒）的 Map</p>
+<hr>
+<h2 id="ttsprovider--microsoftedgettsprovider"><a class="anchor" href="#ttsprovider--microsoftedgettsprovider">#</a>TTSProvider / MicrosoftEdgeTTSProvider</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>將章節文字檔合成為 MP3 音檔。<code>MicrosoftEdgeTTSProvider</code> 透過 WebSocket 直連
+Microsoft Edge 線上 TTS 端點（需連網、免費、不需自備金鑰）。</p>
+<h3 id="ttsprovider-介面"><a class="anchor" href="#ttsprovider-介面">#</a>TTSProvider 介面</h3>
+<pre><code class="language-typescript">interface TTSProvider {
+  // 讀取 .txt 文字檔，合成後寫出 .mp3
+  generateAudioFromFile(inputFilePath: string, outputFilePath: string): Promise&lt;void&gt;
+}
+</code></pre>
+<h3 id="建構子"><a class="anchor" href="#建構子">#</a>建構子</h3>
+<pre><code class="language-typescript">constructor(
+  voice: string = &#39;zh-CN-YunxiNeural&#39;,
+  rate: string = &#39;+0%&#39;,
+  volume: string = &#39;+0%&#39;
+)
+</code></pre>
+<p><strong>參數</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>名稱</th>
+<th>預設</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>voice</code></td>
+<td><code>zh-CN-YunxiNeural</code></td>
+<td>TTS 聲音名稱</td>
+</tr>
+<tr>
+<td><code>rate</code></td>
+<td><code>+0%</code></td>
+<td>語速調整（如 <code>+20%</code>、<code>-10%</code>）</td>
+</tr>
+<tr>
+<td><code>volume</code></td>
+<td><code>+0%</code></td>
+<td>音量調整（如 <code>+50%</code>、<code>-20%</code>）</td>
+</tr>
+</tbody></table>
+<h3 id="方法"><a class="anchor" href="#方法">#</a>方法</h3>
+<h4 id="generateaudiofromfileinputfilepath-outputfilepath-promise"><a class="anchor" href="#generateaudiofromfileinputfilepath-outputfilepath-promise">#</a>generateAudioFromFile(inputFilePath, outputFilePath): Promise&lt;void&gt;</h4>
+<p>讀取文字檔、分段合成並串接寫出 MP3。內部以併發分塊合成，並對每塊套用重試。</p>
+<h4 id="settokentoken-expiresinseconds-void"><a class="anchor" href="#settokentoken-expiresinseconds-void">#</a>setToken(token, expiresInSeconds?): void</h4>
+<p>手動設定信任用戶端 token 及其有效秒數（預設 600 秒）。</p>
+<h4 id="gettokenstatus--isvalid-boolean-expiresin-number-"><a class="anchor" href="#gettokenstatus--isvalid-boolean-expiresin-number-">#</a>getTokenStatus(): { isValid: boolean; expiresIn: number }</h4>
+<p>回傳目前 token 是否有效與剩餘秒數。</p>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">import { MicrosoftEdgeTTSProvider } from &quot;./src/tts/MicrosoftEdgeTTSProvider&quot;
+
+const tts = new MicrosoftEdgeTTSProvider(&quot;zh-CN-YunxiNeural&quot;, &quot;+10%&quot;, &quot;+0%&quot;)
+await tts.generateAudioFromFile(
+  &quot;output/小說名稱/txt/chapter_001.txt&quot;,
+  &quot;output/小說名稱/audio/chapter_001.mp3&quot;
+)
+</code></pre>
+<h3 id="配置環境變數"><a class="anchor" href="#配置環境變數">#</a>配置（環境變數）</h3>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MICROSOFT_TTS_TOKEN</code></td>
+<td>（內建預設 token）</td>
+<td>信任用戶端 token；通常無需設定</td>
+</tr>
+<tr>
+<td><code>MICROSOFT_TOKEN_REFRESH_URL</code></td>
+<td>（空）</td>
+<td>選用：遠端 token 更新端點</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>輸出固定為 <code>audio-24khz-48kbitrate-mono-mp3</code>。CLI 入口為 <code>bun run audiobook</code>，
+詳見 README 與 <a href="ARCHITECTURE.html">ARCHITECTURE.md §3.3</a>。</p>
+</blockquote>
+<hr>
+<h2 id="mp4conversionservice"><a class="anchor" href="#mp4conversionservice">#</a>MP4ConversionService</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>將 MP3 轉換為 M4A（音頻 MP4 容器），使用 AAC 編碼，支援元資料嵌入與批量轉換。</p>
+<h3 id="建構子"><a class="anchor" href="#建構子">#</a>建構子</h3>
+<pre><code class="language-typescript">constructor(retryService: RetryService, config?: Partial&lt;MP4ConversionConfig&gt;)
+</code></pre>
+<h3 id="方法"><a class="anchor" href="#方法">#</a>方法</h3>
+<h4 id="convertinputpath-outputpath-metadata-promise"><a class="anchor" href="#convertinputpath-outputpath-metadata-promise">#</a>convert(inputPath, outputPath, metadata?): Promise&lt;MP4ConversionResult&gt;</h4>
+<p>轉換單個音頻檔案。</p>
+<p><strong>參數</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>名稱</th>
+<th>型別</th>
+<th>必需</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inputPath</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>輸入 MP3 路徑</td>
+</tr>
+<tr>
+<td><code>outputPath</code></td>
+<td><code>string</code></td>
+<td>是</td>
+<td>輸出 M4A 路徑</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td><code>AudioMetadata</code></td>
+<td>否</td>
+<td>嵌入元資料</td>
+</tr>
+</tbody></table>
+<p><strong>AudioMetadata 介面</strong>:</p>
+<pre><code class="language-typescript">interface AudioMetadata {
+  title?: string
+  artist?: string
+  album?: string
+  date?: string
+}
+</code></pre>
+<p><strong>回傳</strong>:</p>
+<pre><code class="language-typescript">interface MP4ConversionResult {
+  success: boolean
+  outputPath: string
+  duration?: number       // 秒
+  fileSizeBytes?: number
+  error?: string
+}
+</code></pre>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">import { MP4ConversionService } from &quot;./src/audio/MP4ConversionService&quot;
+import { RetryService } from &quot;./src/core/retry/RetryService&quot;
+
+const retryService = new RetryService()
+const mp4Service = new MP4ConversionService(retryService)
+
+const result = await mp4Service.convert(
+  &quot;merged_001.mp3&quot;,
+  &quot;output_001.m4a&quot;,
+  {
+    title: &quot;第一部分&quot;,
+    artist: &quot;作者名&quot;,
+    album: &quot;書籍名&quot;,
+    date: &quot;2024&quot;
+  }
+)
+</code></pre>
+<h4 id="convertbatchoptions-promise"><a class="anchor" href="#convertbatchoptions-promise">#</a>convertBatch(options): Promise&lt;MP4ConversionResult[]&gt;</h4>
+<p>批量轉換多個音頻檔案。</p>
+<p><strong>參數</strong>:</p>
+<pre><code class="language-typescript">interface BatchMP4Options {
+  inputFiles: string[]                     // 輸入 MP3 陣列
+  outputDir: string                        // 輸出目錄
+  metadata?: Record&lt;string, AudioMetadata&gt; // filename → metadata 對應
+  config?: Partial&lt;MP4ConversionConfig&gt;
+}
+</code></pre>
+<p><strong>回傳</strong>: <code>MP4ConversionResult[]</code></p>
+<h3 id="mp4conversionconfig-介面"><a class="anchor" href="#mp4conversionconfig-介面">#</a>MP4ConversionConfig 介面</h3>
+<pre><code class="language-typescript">interface MP4ConversionConfig {
+  bitrate: string       // AAC 比特率，例如 &quot;256k&quot; (96k-320k)
+  outputFormat: string  // 輸出格式（預設 &quot;m4a&quot;）
+  maxConcurrency: number // 並行轉換數 (1-8)
+}
+</code></pre>
+<h3 id="配置環境變數"><a class="anchor" href="#配置環境變數">#</a>配置（環境變數）</h3>
+<table>
+<thead>
+<tr>
+<th>變數名稱</th>
+<th>預設值</th>
+<th>範圍</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MP4_BITRATE</code></td>
+<td>256</td>
+<td>96-320</td>
+<td>AAC 比特率（kbps）</td>
+</tr>
+<tr>
+<td><code>MP4_OUTPUT_FORMAT</code></td>
+<td>m4a</td>
+<td>m4a / mp4</td>
+<td>輸出格式；<code>mp4</code> 走 H.264 影片路徑</td>
+</tr>
+<tr>
+<td><code>MP4_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>1-8</td>
+<td>並行轉換數</td>
+</tr>
+<tr>
+<td><code>MP4_OUTPUT_DIRECTORY</code></td>
+<td>./output/m4a</td>
+<td>路徑</td>
+<td>預設輸出目錄</td>
+</tr>
+<tr>
+<td><code>MP4_RETRY_MAX_ATTEMPTS</code></td>
+<td>3</td>
+<td>1-10</td>
+<td>轉換重試次數</td>
+</tr>
+<tr>
+<td><code>MP4_VIDEO_BACKGROUND</code></td>
+<td>none</td>
+<td>none/black/image</td>
+<td>視訊背景（YouTube 匯出用）</td>
+</tr>
+<tr>
+<td><code>MP4_VIDEO_WIDTH</code></td>
+<td>1920</td>
+<td>320-7680</td>
+<td>視訊寬度（px）</td>
+</tr>
+<tr>
+<td><code>MP4_VIDEO_HEIGHT</code></td>
+<td>1080</td>
+<td>240-4320</td>
+<td>視訊高度（px）</td>
+</tr>
+<tr>
+<td><code>MP4_COVER_IMAGE</code></td>
+<td>（空）</td>
+<td>路徑</td>
+<td>封面圖路徑</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>YouTube 影片匯出</strong>：CLI <code>bun run to-youtube</code> 是 <code>to-mp4</code> 的薄包裝，注入 <code>--youtube</code>
+後強制輸出 H.264（<code>libx264</code> + <code>tune=stillimage</code>）+ AAC 的 <code>.mp4</code>，解析度
+預設 1920×1080。詳見 <a href="ARCHITECTURE.html">ARCHITECTURE.md §3.4</a> 與 <a href="CONFIGURATION.html">CONFIGURATION.md Phase 4.5</a>。</p>
+</blockquote>
+<hr>
+<h2 id="mp4pipeline"><a class="anchor" href="#mp4pipeline">#</a>MP4Pipeline</h2>
+<h3 id="用途"><a class="anchor" href="#用途">#</a>用途</h3>
+<p>協調完整的 MP3 → M4A 轉換工作流程，包含目錄掃描、批量轉換與報告生成。</p>
+<h3 id="建構子"><a class="anchor" href="#建構子">#</a>建構子</h3>
+<pre><code class="language-typescript">constructor(mp4ConversionService: MP4ConversionService)
+</code></pre>
+<h3 id="方法"><a class="anchor" href="#方法">#</a>方法</h3>
+<h4 id="executeoptions-promise"><a class="anchor" href="#executeoptions-promise">#</a>execute(options): Promise&lt;MP4PipelineReport&gt;</h4>
+<p>執行完整轉換管道。</p>
+<p><strong>參數</strong>:</p>
+<pre><code class="language-typescript">interface MP4PipelineOptions {
+  inputDir: string                         // 輸入 MP3 目錄
+  outputDir: string                        // 輸出 M4A 目錄
+  metadata?: Record&lt;string, AudioMetadata&gt; // filename → metadata 元資料對應
+  dryRun?: boolean                         // 預覽模式（不實際轉換）
+}
+</code></pre>
+<p><strong>回傳</strong>:</p>
+<pre><code class="language-typescript">interface MP4PipelineReport {
+  timestamp: string
+  inputDir: string
+  outputDir: string
+  fileCount: number
+  successCount: number
+  failureCount: number
+  dryRun: boolean
+  errors: Array&lt;{
+    filename: string
+    error: string
+  }&gt;
+}
+</code></pre>
+<p><strong>範例</strong>:</p>
+<pre><code class="language-typescript">import { MP4Pipeline } from &quot;./src/audio/MP4Pipeline&quot;
+import { MP4ConversionService } from &quot;./src/audio/MP4ConversionService&quot;
+import { RetryService } from &quot;./src/core/retry/RetryService&quot;
+
+const retryService = new RetryService()
+const mp4Service = new MP4ConversionService(retryService)
+const pipeline = new MP4Pipeline(mp4Service)
+
+// 乾跑預覽
+const dryReport = await pipeline.execute({
+  inputDir: &quot;./merged&quot;,
+  outputDir: &quot;./m4a&quot;,
+  dryRun: true
+})
+console.log(`預計轉換 ${dryReport.fileCount} 個檔案`)
+
+// 實際執行（含元資料）
+const report = await pipeline.execute({
+  inputDir: &quot;./merged&quot;,
+  outputDir: &quot;./m4a&quot;,
+  metadata: {
+    &quot;merged_001.mp3&quot;: { title: &quot;第一部分&quot;, artist: &quot;作者&quot;, album: &quot;書名&quot; },
+    &quot;merged_002.mp3&quot;: { title: &quot;第二部分&quot;, artist: &quot;作者&quot;, album: &quot;書名&quot; }
+  }
+})
+
+console.log(`完成: ${report.successCount}/${report.fileCount}`)
+if (report.errors.length &gt; 0) {
+  report.errors.forEach(e =&gt; console.error(`失敗: ${e.filename} - ${e.error}`))
+}
+</code></pre>
+<hr>
+<h2 id="錯誤處理"><a class="anchor" href="#錯誤處理">#</a>錯誤處理</h2>
+<p>所有服務在操作失敗時都會拋出 <code>Error</code>，建議使用 try-catch 包裝。</p>
+<h3 id="錯誤類型"><a class="anchor" href="#錯誤類型">#</a>錯誤類型</h3>
+<pre><code class="language-typescript">// 一般操作錯誤
+class ServiceError extends Error {
+  constructor(message: string, cause?: Error) {
+    super(message)
+    this.cause = cause
+  }
+}
+
+// 重試耗盡錯誤
+class RetryExhaustedError extends Error {
+  constructor(
+    public readonly attempts: number,
+    public readonly lastError: Error
+  ) {
+    super(`重試 ${attempts} 次後仍失敗: ${lastError.message}`)
+  }
+}
+</code></pre>
+<h3 id="捕捉範例"><a class="anchor" href="#捕捉範例">#</a>捕捉範例</h3>
+<pre><code class="language-typescript">try {
+  const result = await audioConvertService.convert(inputPath, outputPath)
+  if (!result.success) {
+    console.warn(`轉換未成功: ${result.error}`)
+  }
+} catch (error) {
+  if (error instanceof Error) {
+    console.error(`服務錯誤: ${error.message}`)
+    if (error.cause instanceof Error) {
+      console.error(`原因: ${error.cause.message}`)
+    }
+  }
+}
+</code></pre>
+<h3 id="結果檢查模式"><a class="anchor" href="#結果檢查模式">#</a>結果檢查模式</h3>
+<p>所有服務回傳的結果物件都包含 <code>success</code> 欄位，可在不使用 try-catch 的情況下檢查：</p>
+<pre><code class="language-typescript">const results = await audioConvertService.convertBatch(options)
+const failures = results.filter(r =&gt; !r.success)
+if (failures.length &gt; 0) {
+  failures.forEach(f =&gt; console.error(`失敗: ${f.error}`))
+}
+</code></pre>
+<hr>
+<h2 id="完整端到端範例"><a class="anchor" href="#完整端到端範例">#</a>完整端到端範例</h2>
+<p>以下範例展示完整的音頻書製作流程：</p>
+<pre><code class="language-typescript">import { RetryService } from &quot;./src/core/retry/RetryService&quot;
+import { AudioErrorClassifier } from &quot;./src/audio/AudioErrorClassifier&quot;
+import { AudioConvertService } from &quot;./src/audio/AudioConvertService&quot;
+import { DurationService } from &quot;./src/audio/DurationService&quot;
+import { AudioMergeService } from &quot;./src/audio/AudioMergeService&quot;
+import { MP4ConversionService } from &quot;./src/audio/MP4ConversionService&quot;
+import { MP4Pipeline } from &quot;./src/audio/MP4Pipeline&quot;
+
+async function processAudioBook(novelName: string) {
+  // 1. 初始化服務
+  const audioErrorClassifier = new AudioErrorClassifier()
+  const retryService = new RetryService({
+    maxRetries: 3,
+    baseDelayMs: 100
+  }, audioErrorClassifier)
+
+  const durationService = new DurationService()
+  const audioConvertService = new AudioConvertService(retryService)
+  const audioMergeService = new AudioMergeService(durationService)
+  const mp4ConversionService = new MP4ConversionService(retryService)
+  const mp4Pipeline = new MP4Pipeline(mp4ConversionService)
+
+  // 2. Phase 2: WAV → MP3 批量轉換
+  const wavFiles = await glob(`output/${novelName}/wav/*.wav`)
+  const convertResults = await audioConvertService.convertBatch({
+    inputFiles: wavFiles,
+    outputDir: `output/${novelName}/mp3`,
+    config: { bitrate: &quot;192k&quot; }
+  })
+  console.log(`轉換完成: ${convertResults.filter(r =&gt; r.success).length}/${convertResults.length}`)
+
+  // 3. Phase 3: MP3 → 按 11 小時分組合併
+  const mp3Files = convertResults
+    .filter(r =&gt; r.success)
+    .map(r =&gt; r.outputPath)
+
+  const mergeReport = await audioMergeService.mergeBatch({
+    files: mp3Files,
+    targetDuration: 39600,   // 11 小時
+    outputDir: `output/${novelName}/merged`,
+    groupingStrategy: &quot;duration&quot;
+  })
+
+  // 輸出中文報告
+  console.log(audioMergeService.formatReport(mergeReport))
+
+  // 4. Phase 4: 合併 MP3 → M4A（附元資料）
+  const metadata: Record&lt;string, { title: string; artist: string; album: string }&gt; = {}
+  mergeReport.groups.forEach((group, index) =&gt; {
+    group.mergeResult.outputPaths.forEach(path =&gt; {
+      const filename = path.split(&quot;/&quot;).pop()!
+      metadata[filename] = {
+        title: `第 ${index + 1} 部分`,
+        artist: &quot;作者名&quot;,
+        album: novelName
+      }
+    })
+  })
+
+  const mp4Report = await mp4Pipeline.execute({
+    inputDir: `output/${novelName}/merged`,
+    outputDir: `output/${novelName}/m4a`,
+    metadata
+  })
+
+  console.log(`M4A 轉換完成: ${mp4Report.successCount}/${mp4Report.fileCount}`)
+  if (mp4Report.errors.length &gt; 0) {
+    mp4Report.errors.forEach(e =&gt; console.error(`失敗: ${e.filename}`))
+  }
+}
+
+// 執行
+processAudioBook(&quot;我的小說&quot;).catch(console.error)
+</code></pre>
+<hr>
+<h2 id="版本資訊"><a class="anchor" href="#版本資訊">#</a>版本資訊</h2>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1.0</td>
+<td>Phase 1: RetryService 核心</td>
+</tr>
+<tr>
+<td>1.1</td>
+<td>Phase 2: AudioConvertService</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td>Phase 3: AudioMergeService + DurationService</td>
+</tr>
+<tr>
+<td>1.3</td>
+<td>Phase 4: MP4ConversionService + MP4Pipeline</td>
+</tr>
+<tr>
+<td>1.4</td>
+<td>TTSProvider（Microsoft Edge）、YouTube 影片匯出、novel543 / zhys Adapter</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>詳細配置說明請參閱 <a href="CONFIGURATION.html">CONFIGURATION.md</a>。
+常見問題解決請參閱 <a href="TROUBLESHOOTING.html">TROUBLESHOOTING.md</a>。</p>
+</blockquote>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>docs/API.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

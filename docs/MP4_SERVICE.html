@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>MP4 服務 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li class="active"><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="mp4-go-backend-developer-guide"><a class="anchor" href="#mp4-go-backend-developer-guide">#</a>MP4 Go Backend Developer Guide</h1>
+<p><strong>Phase</strong>: 8 (MP4ConversionService Go Migration)
+<strong>Version</strong>: 1.0
+<strong>Last Updated</strong>: 2026-03-26
+<strong>Status</strong>: Production Ready</p>
+<hr>
+<h2 id="table-of-contents"><a class="anchor" href="#table-of-contents">#</a>Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#quick-start-4-methods">Quick Start (4 Methods)</a></li>
+<li><a href="#configuration-options">Configuration Options</a></li>
+<li><a href="#performance-comparison">Performance Comparison</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#developer-guide">Developer Guide</a></li>
+<li><a href="#faq">FAQ</a></li>
+<li><a href="#next-steps">Next Steps</a></li>
+</ol>
+<hr>
+<h2 id="overview"><a class="anchor" href="#overview">#</a>Overview</h2>
+<p>Phase 8 introduces an optional Go backend for MP3→M4A (AAC audio) conversion, complementing the existing Bun FFmpeg implementation. This guide helps developers understand, configure, and extend the MP4 Go backend.</p>
+<h3 id="what-changed"><a class="anchor" href="#what-changed">#</a>What Changed</h3>
+<p><strong>Before (Bun only)</strong>:</p>
+<pre><code class="language-typescript">const service = new MP4ConversionService(config, retryService, errorClassifier)
+const result = await service.convert(inputMp3, outputM4a, metadata)
+// Uses: Bun subprocess + FFmpeg
+</code></pre>
+<p><strong>Now (Optional Go backend)</strong>:</p>
+<pre><code class="language-typescript">const goConfig: MP4ConvertGoConfig = {
+  enabled: true,
+  goBinaryPath: &#39;../kinetitext-go/bin/kinetitext-mp4convert&#39;,
+  timeout: 60000
+}
+const service = new MP4ConversionService(config, retryService, errorClassifier, goConfig)
+await service.initGoBackend()  // Optional, lazy initialization
+const result = await service.convert(inputMp3, outputM4a, metadata)
+// Uses: Go subprocess + FFmpeg (if available), fallback to Bun
+</code></pre>
+<h3 id="key-features"><a class="anchor" href="#key-features">#</a>Key Features</h3>
+<p>✅ <strong>Backward Compatible</strong>: Existing code works unchanged (Go backend optional)
+✅ <strong>Graceful Degradation</strong>: Go binary unavailable → automatic fallback to Bun
+✅ <strong>Metadata Support</strong>: All 7 fields (title, artist, album, date, genre, trackNumber, comment)
+✅ <strong>UTF-8 Native</strong>: Chinese/multilingual metadata supported natively
+✅ <strong>Performance</strong>: 20-30% improvement for audiobook chapters (&gt;30s)</p>
+<hr>
+<h2 id="quick-start-4-methods"><a class="anchor" href="#quick-start-4-methods">#</a>Quick Start (4 Methods)</h2>
+<h3 id="method-1-environment-variables"><a class="anchor" href="#method-1-environment-variables">#</a>Method 1: Environment Variables</h3>
+<p>Simplest for development and system-wide configuration.</p>
+<pre><code class="language-bash"># Enable Go backend via environment variable
+export MP4_GO_ENABLED=true
+export MP4_GO_BINARY_PATH=../kinetitext-go/bin/kinetitext-mp4convert
+export MP4_GO_TIMEOUT_MS=60000
+
+# Run your crawler
+bun run src/index.ts --crawl https://example.com
+</code></pre>
+<p><strong>Verification</strong>:</p>
+<pre><code class="language-bash"># Check logs for &quot;Go backend initialized successfully&quot;
+# Or time the conversion (Go should be ~20-30% faster)
+</code></pre>
+<h3 id="method-2-env-file"><a class="anchor" href="#method-2-env-file">#</a>Method 2: .env File</h3>
+<p>Recommended for project setup, tracked in git (without secrets).</p>
+<pre><code class="language-env"># .env (at project root)
+MP4_GO_ENABLED=true
+MP4_GO_BINARY_PATH=../kinetitext-go/bin/kinetitext-mp4convert
+MP4_GO_TIMEOUT_MS=120000
+</code></pre>
+<p><strong>How it works</strong>:</p>
+<ul>
+<li>Bun automatically loads <code>.env</code> at startup</li>
+<li>No code changes needed</li>
+<li>Environment variables take precedence over .env values</li>
+</ul>
+<h3 id="method-3-cli-flag"><a class="anchor" href="#method-3-cli-flag">#</a>Method 3: CLI Flag</h3>
+<p>For one-off runs or CI/CD pipelines.</p>
+<pre><code class="language-bash">bun run src/index.ts \
+  --use-go-mp4 \
+  --go-mp4-binary-path=../kinetitext-go/bin/kinetitext-mp4convert \
+  --go-mp4-timeout=120000 \
+  --crawl https://example.com
+</code></pre>
+<p><strong>How it works</strong>:</p>
+<ul>
+<li>CrawlerEngine CLI parser recognizes Go-specific flags</li>
+<li>Overrides environment variable settings</li>
+<li>Useful for testing different configurations</li>
+</ul>
+<h3 id="method-4-code-configuration"><a class="anchor" href="#method-4-code-configuration">#</a>Method 4: Code Configuration</h3>
+<p>For programmatic control (recommended for library users).</p>
+<pre><code class="language-typescript">import { CrawlerEngine } from &#39;./src/core/CrawlerEngine&#39;
+import { MP4ConversionService } from &#39;./src/core/services/MP4ConversionService&#39;
+import { MP4ConvertGoConfig } from &#39;./src/config/MP4ConvertGoConfig&#39;
+
+const goConfig: MP4ConvertGoConfig = {
+  enabled: true,
+  goBinaryPath: &#39;../kinetitext-go/bin/kinetitext-mp4convert&#39;,
+  timeout: 120000  // 2 minutes for long chapters
+}
+
+const engine = new CrawlerEngine({
+  crawlUrl: &#39;https://example.com&#39;,
+  mp4GoConfig: goConfig  // Pass to engine constructor
+})
+
+await engine.crawl()
+</code></pre>
+<p><strong>How it works</strong>:</p>
+<ul>
+<li>Explicit configuration passed to services</li>
+<li>Type-safe (TypeScript validates config shape)</li>
+<li>Best for reusable library integration</li>
+</ul>
+<hr>
+<h2 id="configuration-options"><a class="anchor" href="#configuration-options">#</a>Configuration Options</h2>
+<h3 id="environment-variables"><a class="anchor" href="#environment-variables">#</a>Environment Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Type</th>
+<th>Default</th>
+<th>Valid Range</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MP4_GO_ENABLED</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td><code>true</code> | <code>false</code></td>
+<td>Enable Go backend for MP4 conversion</td>
+</tr>
+<tr>
+<td><code>MP4_GO_BINARY_PATH</code></td>
+<td><code>string</code></td>
+<td>auto-detect</td>
+<td>Filesystem path</td>
+<td>Absolute or relative path to <code>kinetitext-mp4convert</code> binary</td>
+</tr>
+<tr>
+<td><code>MP4_GO_TIMEOUT_MS</code></td>
+<td><code>number</code></td>
+<td><code>60000</code></td>
+<td><code>1000-300000</code></td>
+<td>Conversion timeout in milliseconds (1s to 5m)</td>
+</tr>
+</tbody></table>
+<h3 id="type-definition-mp4convertgoconfig"><a class="anchor" href="#type-definition-mp4convertgoconfig">#</a>Type Definition: MP4ConvertGoConfig</h3>
+<pre><code class="language-typescript">export interface MP4ConvertGoConfig {
+  /**
+   * Enable or disable Go backend delegation
+   * When false, all conversions use Bun FFmpeg
+   * @default false
+   */
+  enabled: boolean
+
+  /**
+   * Absolute or relative path to kinetitext-mp4convert binary
+   * Relative paths resolved from project root
+   * @default &#39;../kinetitext-go/bin/kinetitext-mp4convert&#39;
+   */
+  goBinaryPath: string
+
+  /**
+   * Timeout for Go subprocess conversion in milliseconds
+   * Single conversion must complete within this time
+   * @default 60000 (60 seconds)
+   * @min 1000 (1 second)
+   * @max 300000 (5 minutes)
+   */
+  timeout: number
+}
+</code></pre>
+<h3 id="mp4conversionconfig-unchanged"><a class="anchor" href="#mp4conversionconfig-unchanged">#</a>MP4ConversionConfig (Unchanged)</h3>
+<p>Configuration for conversion parameters (applies to both Bun and Go backends):</p>
+<pre><code class="language-typescript">export interface MP4ConversionConfig {
+  bitrate: number              // 96-320 kbps (default: 256)
+  outputFormat: &#39;m4a&#39; | &#39;mp4&#39;  // Output container (m4a for audio)
+  videoBackground: string      // &#39;none&#39; | &#39;color&#39; | &#39;image&#39;
+  videoWidth: number           // 1920
+  videoHeight: number          // 1080
+  maxConcurrency: number       // 1-8 (default: 2)
+  outputDirectory: string      // Where to save outputs
+  retryMaxAttempts: number     // 2-5 (default: 3)
+}
+</code></pre>
+<h3 id="metadata-fields-all-optional"><a class="anchor" href="#metadata-fields-all-optional">#</a>Metadata Fields (All Optional)</h3>
+<pre><code class="language-typescript">export interface MP4Metadata {
+  title?: string              // Chapter or book title (max 100 chars)
+  artist?: string             // Author name (max 100 chars)
+  album?: string              // Book name (max 100 chars)
+  date?: string               // Publication date (YYYY-MM-DD format)
+  genre?: string              // Category (e.g., &quot;Audiobook&quot;, &quot;Fiction&quot;)
+  trackNumber?: number        // Chapter number (1-999)
+  comment?: string            // Additional metadata (max 500 chars)
+}
+</code></pre>
+<p><strong>Example with metadata</strong>:</p>
+<pre><code class="language-typescript">const metadata: MP4Metadata = {
+  title: &#39;Chapter 5: The Quest Begins&#39;,
+  artist: &#39;林念慈&#39;,  // UTF-8 Chinese name supported
+  album: &#39;魔戒: 魔戒同盟&#39;,
+  date: &#39;2026-03-26&#39;,
+  genre: &#39;Fantasy Audiobook&#39;,
+  trackNumber: 5,
+  comment: &#39;Narrated by Morgan Freeman&#39;
+}
+
+await service.convert(inputMp3, outputM4a, metadata)
+</code></pre>
+<hr>
+<h2 id="performance-comparison"><a class="anchor" href="#performance-comparison">#</a>Performance Comparison</h2>
+<h3 id="benchmarks-from-phase-8-testing"><a class="anchor" href="#benchmarks-from-phase-8-testing">#</a>Benchmarks from Phase 8 Testing</h3>
+<table>
+<thead>
+<tr>
+<th>Duration</th>
+<th>Bun FFmpeg</th>
+<th>Go Backend</th>
+<th>Speedup</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5 seconds</td>
+<td>120ms</td>
+<td>135ms</td>
+<td>-13% ⚠️</td>
+<td>Startup overhead &gt; conversion time</td>
+</tr>
+<tr>
+<td>10 seconds</td>
+<td>145ms</td>
+<td>140ms</td>
+<td>+3%</td>
+<td>Near parity</td>
+</tr>
+<tr>
+<td>30 seconds</td>
+<td>310ms</td>
+<td>265ms</td>
+<td><strong>+15%</strong> ✅</td>
+<td>Go advantage begins</td>
+</tr>
+<tr>
+<td>1 minute</td>
+<td>570ms</td>
+<td>460ms</td>
+<td><strong>+19%</strong> ✅</td>
+<td>Typical short chapter</td>
+</tr>
+<tr>
+<td>5 minutes</td>
+<td>2.8s</td>
+<td>1.95s</td>
+<td><strong>+30%</strong> ✅</td>
+<td>Typical long chapter</td>
+</tr>
+</tbody></table>
+<h3 id="decision-tree-when-to-enable-go-backend"><a class="anchor" href="#decision-tree-when-to-enable-go-backend">#</a>Decision Tree: When to Enable Go Backend</h3>
+<pre><code>Is your typical chapter duration &gt; 30 seconds?
+  ├─ YES → Enable Go backend (MP4_GO_ENABLED=true)
+  │         Expected 15-30% faster processing
+  │         Perfect for audiobook crawlers
+  │
+  └─ NO → Keep Bun only (MP4_GO_ENABLED=false, default)
+          Minimal difference in speed
+          Simpler deployment (no Go binary needed)
+</code></pre>
+<h3 id="real-world-example-audiobook-crawler"><a class="anchor" href="#real-world-example-audiobook-crawler">#</a>Real-World Example: Audiobook Crawler</h3>
+<p><strong>Scenario</strong>: Crawling 200 chapters, 30 minutes each</p>
+<pre><code>Bun only:  200 × 570ms = 114 seconds
+Go backend: 200 × 460ms = 92 seconds
+                          ↓
+                    Saves 22 seconds (19% faster!)
+</code></pre>
+<p><strong>Multiplied over 1000+ chapters</strong>: 2-4 minutes saved per book.</p>
+<hr>
+<h2 id="troubleshooting"><a class="anchor" href="#troubleshooting">#</a>Troubleshooting</h2>
+<h3 id="issue-1-mp4_go_enabledtrue-but-go-backend-not-used"><a class="anchor" href="#issue-1-mp4_go_enabledtrue-but-go-backend-not-used">#</a>Issue 1: &quot;MP4_GO_ENABLED=true but Go backend not used&quot;</h3>
+<p><strong>Symptom</strong>: Environment variable set, but logs show &quot;回退至 Bun FFmpeg&quot; (falling back to Bun).</p>
+<p><strong>Diagnosis</strong>:</p>
+<ol>
+<li><p>Check if binary exists and is executable:</p>
+<pre><code class="language-bash">ls -la ../kinetitext-go/bin/kinetitext-mp4convert
+# Should output: -rwxr-xr-x (executable)
+
+file ../kinetitext-go/bin/kinetitext-mp4convert
+# Should output: Mach-O 64-bit executable arm64 (macOS)
+</code></pre>
+</li>
+<li><p>Verify binary compatibility:</p>
+<pre><code class="language-bash">../kinetitext-go/bin/kinetitext-mp4convert --version
+# Should output version or accept --help
+</code></pre>
+</li>
+<li><p>Check logs for specific error:</p>
+<pre><code class="language-bash">grep -i &quot;二進制&quot; application.log
+# Look for &quot;MP4 Go 二進制不可用&quot; with specific path
+</code></pre>
+</li>
+</ol>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li><strong>Wrong path</strong>: Update <code>MP4_GO_BINARY_PATH</code> to correct location</li>
+<li><strong>Binary missing</strong>: Rebuild: <code>cd kinetitext-go &amp;&amp; make build-mp4convert</code></li>
+<li><strong>Wrong architecture</strong>: Recompile for your system: <code>GOOS=darwin GOARCH=arm64 go build</code></li>
+</ul>
+<hr>
+<h3 id="issue-2-go-backend-fails-fallback-to-bun-works"><a class="anchor" href="#issue-2-go-backend-fails-fallback-to-bun-works">#</a>Issue 2: &quot;Go backend fails, fallback to Bun works&quot;</h3>
+<p><strong>Symptom</strong>: Conversion succeeds but slower (using Bun fallback).</p>
+<p><strong>Root causes</strong>:</p>
+<ol>
+<li>Binary path invalid (see Issue 1)</li>
+<li>Go runtime error (FFmpeg not installed on Go system)</li>
+<li>Permission denied (binary not executable)</li>
+<li>Timeout exceeded (file larger than timeout allows)</li>
+</ol>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Test Go binary in isolation
+echo &#39;{&quot;input_file&quot;:&quot;test.mp3&quot;,&quot;output_file&quot;:&quot;out.m4a&quot;,&quot;bitrate&quot;:256}&#39; | \
+  ../kinetitext-go/bin/kinetitext-mp4convert
+
+# Should return JSON: {&quot;success&quot;:true,&quot;output_file&quot;:&quot;out.m4a&quot;}
+# If error: {&quot;success&quot;:false,&quot;error&quot;:&quot;...&quot;}
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li><strong>Permission</strong>: <code>chmod +x ../kinetitext-go/bin/kinetitext-mp4convert</code></li>
+<li><strong>FFmpeg missing on Go system</strong>: Install: <code>brew install ffmpeg</code></li>
+<li><strong>Timeout</strong>: Increase <code>MP4_GO_TIMEOUT_MS</code> (e.g., <code>300000</code> for 5m)</li>
+</ul>
+<hr>
+<h3 id="issue-3-metadata-not-embedded-in-m4a-file"><a class="anchor" href="#issue-3-metadata-not-embedded-in-m4a-file">#</a>Issue 3: &quot;Metadata not embedded in M4A file&quot;</h3>
+<p><strong>Symptom</strong>: Conversion succeeds, but ffprobe shows no metadata.</p>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Verify metadata was passed to service
+console.log(&#39;Metadata:&#39;, metadata)  // Add to code before convert()
+
+# Check M4A file with ffprobe
+ffprobe -show_format output.m4a | grep TAG
+# Should show tags like TAG:title, TAG:artist, etc.
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li><p><strong>Metadata not provided</strong>: Pass metadata object:</p>
+<pre><code class="language-typescript">const metadata: MP4Metadata = { title: &#39;Chapter 1&#39; }
+await service.convert(input, output, metadata)
+</code></pre>
+</li>
+<li><p><strong>Metadata field nil</strong>: Check for undefined fields:</p>
+<pre><code class="language-typescript">if (metadata.title === undefined) {
+  console.warn(&#39;Title not provided&#39;)
+}
+</code></pre>
+</li>
+<li><p><strong>FFmpeg not embedding</strong>: Verify command-line args generated correctly (check logs)</p>
+</li>
+</ul>
+<hr>
+<h3 id="issue-4-timeout-during-conversion"><a class="anchor" href="#issue-4-timeout-during-conversion">#</a>Issue 4: &quot;Timeout during conversion&quot;</h3>
+<p><strong>Symptom</strong>: Error message: &quot;Go subprocess timeout after Xms&quot;</p>
+<p><strong>Root cause</strong>: Audio file larger than timeout allows.</p>
+<p><strong>Calculation</strong>:</p>
+<pre><code>Estimated conversion time = file_duration × 0.5-1.0
+Example: 60-minute chapter × 0.7 = 42 seconds conversion time
+Minimum timeout needed: 42,000 ms (42 seconds)
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li><p><strong>Increase timeout</strong> for specific scenario:</p>
+<pre><code class="language-bash">export MP4_GO_TIMEOUT_MS=180000  # 3 minutes
+</code></pre>
+</li>
+<li><p><strong>Disable Go backend</strong> for very long files:</p>
+<pre><code class="language-typescript">const goConfig = {
+  enabled: audioFile.duration &lt; 3600,  // Disable for &gt;1 hour
+  goBinaryPath: &#39;...&#39;,
+  timeout: 120000
+}
+</code></pre>
+</li>
+</ul>
+<hr>
+<h3 id="issue-5-utf-8-metadata-corrupted-chinese-characters"><a class="anchor" href="#issue-5-utf-8-metadata-corrupted-chinese-characters">#</a>Issue 5: &quot;UTF-8 metadata corrupted (Chinese characters)&quot;</h3>
+<p><strong>Symptom</strong>: ffprobe shows garbled characters instead of Chinese.</p>
+<p><strong>Diagnosis</strong>:</p>
+<pre><code class="language-bash"># Check terminal encoding
+echo $LANG
+# Should show: en_US.UTF-8 or zh_TW.UTF-8
+
+# Verify file encoding
+file -i output.m4a
+# Should show: audio/x-m4a; charset=utf-8
+</code></pre>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li><p><strong>Terminal encoding</strong>: Set environment:</p>
+<pre><code class="language-bash">export LANG=en_US.UTF-8
+</code></pre>
+</li>
+<li><p><strong>Input string validation</strong>: Ensure metadata is valid UTF-8:</p>
+<pre><code class="language-typescript">const title = &#39;測試&#39;
+console.assert(/^[\p{L}\p{N}\s]+$/u.test(title), &#39;Invalid UTF-8&#39;)
+</code></pre>
+</li>
+<li><p><strong>Go binary Unicode</strong>: Verify with test:</p>
+<pre><code class="language-bash">echo &#39;{&quot;input_file&quot;:&quot;test.mp3&quot;,&quot;output_file&quot;:&quot;out.m4a&quot;,&quot;bitrate&quot;:256,&quot;metadata&quot;:{&quot;title&quot;:&quot;測試&quot;}}&#39; | \
+  ../kinetitext-go/bin/kinetitext-mp4convert
+</code></pre>
+</li>
+</ul>
+<hr>
+<h3 id="issue-6-binary-not-found-on-different-system"><a class="anchor" href="#issue-6-binary-not-found-on-different-system">#</a>Issue 6: &quot;Binary not found on different system&quot;</h3>
+<p><strong>Symptom</strong>: Works on macOS but fails on Linux.</p>
+<p><strong>Root cause</strong>: Binary compiled for different OS.</p>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li><p><strong>Recompile for target system</strong>:</p>
+<pre><code class="language-bash">cd ../kinetitext-go
+make build-mp4convert GOOS=linux GOARCH=amd64
+# Output: bin/kinetitext-mp4convert-linux-amd64
+</code></pre>
+</li>
+<li><p><strong>Use absolute path</strong>:</p>
+<pre><code class="language-bash">export MP4_GO_BINARY_PATH=/opt/kinetitext-go/bin/kinetitext-mp4convert
+</code></pre>
+</li>
+<li><p><strong>Check system compatibility</strong>:</p>
+<pre><code class="language-bash">uname -m  # arm64 vs x86_64 vs aarch64
+uname -s  # Darwin (macOS) vs Linux
+</code></pre>
+</li>
+</ul>
+<hr>
+<h3 id="issue-7-performance-worse-than-expected"><a class="anchor" href="#issue-7-performance-worse-than-expected">#</a>Issue 7: &quot;Performance worse than expected&quot;</h3>
+<p><strong>Symptom</strong>: Go backend only 5-10% faster, not 20-30%.</p>
+<p><strong>Diagnosis</strong>:</p>
+<ol>
+<li><p>Verify Go backend actually enabled:</p>
+<pre><code class="language-typescript">// Add to code temporarily
+console.log(&#39;goBackendInitialized:&#39;, true)  // Check logs
+</code></pre>
+</li>
+<li><p>Check system load:</p>
+<pre><code class="language-bash">top -bn 1 | head -n 5
+# High CPU% or load average suggests CPU bottleneck (expected for FFmpeg)
+</code></pre>
+</li>
+<li><p>Review file size:</p>
+<pre><code class="language-bash">ls -lh input.mp3 output.m4a
+# Compare with benchmark files (5s, 30s, 1m, 5m test durations)
+</code></pre>
+</li>
+</ol>
+<p><strong>Solutions</strong>:</p>
+<ul>
+<li><strong>Small test files</strong>: Use 30-second+ files to see Go advantage</li>
+<li><strong>System overload</strong>: Close other apps, check CPU/memory</li>
+<li><strong>Concurrent conversions</strong>: Go shine is cumulative; test with 10+ files</li>
+<li><strong>Expected behavior</strong>: 5-10 second files show minimal improvement (see benchmark)</li>
+</ul>
+<hr>
+<h2 id="developer-guide"><a class="anchor" href="#developer-guide">#</a>Developer Guide</h2>
+<h3 id="modifying-go-code"><a class="anchor" href="#modifying-go-code">#</a>Modifying Go Code</h3>
+<p>The Go backend lives in the sibling <code>kinetitext-go</code> project.</p>
+<h4 id="step-1-edit-go-source"><a class="anchor" href="#step-1-edit-go-source">#</a>Step 1: Edit Go Source</h4>
+<pre><code class="language-bash">cd ../kinetitext-go
+vi src/mp4-convert/converter.go
+</code></pre>
+<p>Key files:</p>
+<ul>
+<li><code>src/mp4-convert/types.go</code> — Data structures (MP4ConvertRequest, MP4Metadata)</li>
+<li><code>src/mp4-convert/converter.go</code> — Core logic (ConvertMP4, buildMetadataArgs)</li>
+<li><code>src/mp4-convert/main.go</code> — Entry point (stdin/stdout JSON handling)</li>
+<li><code>src/mp4-convert/converter_test.go</code> — Unit tests</li>
+</ul>
+<h4 id="step-2-run-go-tests"><a class="anchor" href="#step-2-run-go-tests">#</a>Step 2: Run Go Tests</h4>
+<pre><code class="language-bash">cd src/mp4-convert
+go test -v
+
+# Example output:
+# === RUN   TestBuildM4AKwArgs_DefaultBitrate
+# --- PASS: TestBuildM4AKwArgs_DefaultBitrate (0.00s)
+# === RUN   TestBuildMetadataArgs_UTF8
+# --- PASS: TestBuildMetadataArgs_UTF8 (0.00s)
+# OK  github.com/kinetitext/mp4-convert
+</code></pre>
+<h4 id="step-3-recompile-binary"><a class="anchor" href="#step-3-recompile-binary">#</a>Step 3: Recompile Binary</h4>
+<pre><code class="language-bash">cd ../..  # Back to kinetitext-go root
+make build-mp4convert
+
+# Output should show:
+# go build -o bin/kinetitext-mp4convert ./src/mp4-convert
+</code></pre>
+<h4 id="step-4-test-bun-integration"><a class="anchor" href="#step-4-test-bun-integration">#</a>Step 4: Test Bun Integration</h4>
+<pre><code class="language-bash">cd ../../KinetiText  # Back to main project
+bun test ./src/tests/integration/MP4ConvertGo.test.ts --bail
+
+# Should see: &quot;11 pass&quot;
+</code></pre>
+<h4 id="step-5-update-bun-types-if-needed"><a class="anchor" href="#step-5-update-bun-types-if-needed">#</a>Step 5: Update Bun Types (if needed)</h4>
+<p>If you add new metadata fields or request parameters:</p>
+<pre><code class="language-typescript">// src/core/services/MP4ConvertGoWrapper.ts
+export interface MP4ConvertGoRequest {
+  input_file: string
+  output_file: string
+  bitrate: number
+  metadata?: {
+    title?: string
+    artist?: string
+    album?: string
+    date?: string
+    genre?: string
+    track_number?: number
+    comment?: string
+  }
+}
+</code></pre>
+<h3 id="adding-new-metadata-fields"><a class="anchor" href="#adding-new-metadata-fields">#</a>Adding New Metadata Fields</h3>
+<p><strong>Example</strong>: Add &quot;language&quot; field to metadata.</p>
+<h4 id="1-go-side-kinetitext-go"><a class="anchor" href="#1-go-side-kinetitext-go">#</a>1. Go Side (kinetitext-go)</h4>
+<pre><code class="language-go">// src/mp4-convert/types.go
+type MP4MetadataGo struct {
+  Title       string `json:&quot;title,omitempty&quot;`
+  Artist      string `json:&quot;artist,omitempty&quot;`
+  Album       string `json:&quot;album,omitempty&quot;`
+  Date        string `json:&quot;date,omitempty&quot;`
+  Genre       string `json:&quot;genre,omitempty&quot;`
+  TrackNumber int    `json:&quot;track_number,omitempty&quot;`
+  Comment     string `json:&quot;comment,omitempty&quot;`
+  Language    string `json:&quot;language,omitempty&quot;`  // NEW
+}
+
+// src/mp4-convert/converter.go
+func buildMetadataArgs(metadata *MP4MetadataGo) []string {
+  if metadata.Language != &quot;&quot; {
+    args = append(args, &quot;-metadata&quot;, fmt.Sprintf(&quot;language=%s&quot;, metadata.Language))
+  }
+  // ... existing fields
+}
+</code></pre>
+<h4 id="2-bun-side"><a class="anchor" href="#2-bun-side">#</a>2. Bun Side</h4>
+<pre><code class="language-typescript">// src/core/types/audio.ts
+export interface MP4Metadata {
+  title?: string
+  artist?: string
+  album?: string
+  date?: string
+  genre?: string
+  trackNumber?: number
+  comment?: string
+  language?: string  // NEW
+}
+
+// src/core/services/MP4ConvertGoWrapper.ts
+// Map Bun camelCase to Go snake_case
+const req: MP4ConvertGoRequest = {
+  ...existing fields...,
+  metadata: {
+    ...existing metadata...,
+    language: metadata.language  // Add field mapping
+  }
+}
+</code></pre>
+<h4 id="3-tests"><a class="anchor" href="#3-tests">#</a>3. Tests</h4>
+<pre><code class="language-typescript">// Add test for new field
+test(&#39;handles language metadata&#39;, async () =&gt; {
+  const metadata: MP4Metadata = {
+    title: &#39;Chapter 1&#39;,
+    language: &#39;en-US&#39;  // NEW
+  }
+
+  await service.convert(input, output, metadata)
+
+  const ffprobeOutput = await parseFile(output)
+  // Verify language tag is present
+  expect(ffprobeOutput.common?.language).toBeDefined()
+})
+</code></pre>
+<h3 id="testing-go-code-in-isolation"><a class="anchor" href="#testing-go-code-in-isolation">#</a>Testing Go Code in Isolation</h3>
+<p>You can test the Go binary directly without Bun:</p>
+<pre><code class="language-bash"># Test basic conversion
+echo &#39;{
+  &quot;input_file&quot;:&quot;/tmp/test.mp3&quot;,
+  &quot;output_file&quot;:&quot;/tmp/out.m4a&quot;,
+  &quot;bitrate&quot;:256
+}&#39; | ../kinetitext-go/bin/kinetitext-mp4convert
+
+# Test with metadata
+echo &#39;{
+  &quot;input_file&quot;:&quot;/tmp/test.mp3&quot;,
+  &quot;output_file&quot;:&quot;/tmp/out.m4a&quot;,
+  &quot;bitrate&quot;:256,
+  &quot;metadata&quot;:{
+    &quot;title&quot;:&quot;Test&quot;,
+    &quot;artist&quot;:&quot;Author&quot;,
+    &quot;album&quot;:&quot;Book&quot;
+  }
+}&#39; | ../kinetitext-go/bin/kinetitext-mp4convert
+
+# Expected output:
+# {&quot;success&quot;:true,&quot;output_file&quot;:&quot;/tmp/out.m4a&quot;}
+#
+# Or on error:
+# {&quot;success&quot;:false,&quot;error&quot;:&quot;FFmpeg error: ...&quot;}
+</code></pre>
+<h3 id="debugging-integration-issues"><a class="anchor" href="#debugging-integration-issues">#</a>Debugging Integration Issues</h3>
+<p>Enable detailed logging in Bun:</p>
+<pre><code class="language-typescript">// src/core/utils/logger.ts
+const logger = getLogger(&#39;MP4ConvertGoWrapper&#39;)
+
+// During conversion
+logger.debug({ request }, &#39;Sending to Go backend&#39;)
+logger.debug({ response }, &#39;Received from Go backend&#39;)
+</code></pre>
+<p>Review logs:</p>
+<pre><code class="language-bash">grep -i &quot;mp4convert&quot; application.log | jq &#39;.&#39;
+# Will show JSON logs with request/response details
+</code></pre>
+<hr>
+<h2 id="faq"><a class="anchor" href="#faq">#</a>FAQ</h2>
+<h3 id="q-will-go-backend-become-mandatory"><a class="anchor" href="#q-will-go-backend-become-mandatory">#</a>Q: Will Go backend become mandatory?</h3>
+<p><strong>A</strong>: No. Bun FFmpeg will remain as fallback. Go backend is always optional (default: disabled).</p>
+<hr>
+<h3 id="q-can-i-switch-between-bun-and-go-at-runtime"><a class="anchor" href="#q-can-i-switch-between-bun-and-go-at-runtime">#</a>Q: Can I switch between Bun and Go at runtime?</h3>
+<p><strong>A</strong>: No. Go backend must be initialized once at startup via <code>initGoBackend()</code>. For runtime switching, create separate service instances:</p>
+<pre><code class="language-typescript">const bunService = new MP4ConversionService(config, retry, classifier)
+const goService = new MP4ConversionService(config, retry, classifier, goConfig)
+await goService.initGoBackend()
+
+// Use goService for long files, bunService for short
+</code></pre>
+<hr>
+<h3 id="q-is-metadata-embedding-mandatory"><a class="anchor" href="#q-is-metadata-embedding-mandatory">#</a>Q: Is metadata embedding mandatory?</h3>
+<p><strong>A</strong>: No. Metadata is fully optional:</p>
+<pre><code class="language-typescript">// Works without metadata
+await service.convert(input, output)  // Empty metadata
+await service.convert(input, output, {})  // Explicit empty
+await service.convert(input, output, { title: &#39;Chapter 1&#39; })  // Partial metadata
+</code></pre>
+<hr>
+<h3 id="q-what-if-kinetitext-go-repository-is-not-available"><a class="anchor" href="#q-what-if-kinetitext-go-repository-is-not-available">#</a>Q: What if kinetitext-go repository is not available?</h3>
+<p><strong>A</strong>: Go backend gracefully disables. Service logs warning and continues with Bun FFmpeg. Zero service interruption.</p>
+<hr>
+<h3 id="q-how-do-i-know-if-go-backend-is-active"><a class="anchor" href="#q-how-do-i-know-if-go-backend-is-active">#</a>Q: How do I know if Go backend is active?</h3>
+<p><strong>A</strong>: Check logs for &quot;Go backend initialized successfully&quot;:</p>
+<pre><code class="language-bash">grep &quot;Go backend initialized successfully&quot; logs.json | jq .
+</code></pre>
+<p>Or time conversions:</p>
+<pre><code class="language-bash"># Time Bun: ~570ms for 1-minute file
+# Time Go: ~460ms for 1-minute file
+# If Go is 20-30% faster, backend is active
+</code></pre>
+<hr>
+<h3 id="q-is-there-performance-cost-for-metadata"><a class="anchor" href="#q-is-there-performance-cost-for-metadata">#</a>Q: Is there performance cost for metadata?</h3>
+<p><strong>A</strong>: Minimal. Metadata embedding adds ~1-2ms regardless of backend. No significant impact on conversion time.</p>
+<hr>
+<h3 id="q-can-i-use-go-backend-on-windows"><a class="anchor" href="#q-can-i-use-go-backend-on-windows">#</a>Q: Can I use Go backend on Windows?</h3>
+<p><strong>A</strong>: Yes, but requires subprocess JSON IPC (not Bun FFI). Windows support planned for Milestone 3.</p>
+<p>Current status: macOS/Linux only (FFI works on these platforms).</p>
+<hr>
+<h3 id="q-whats-next-after-phase-8"><a class="anchor" href="#q-whats-next-after-phase-8">#</a>Q: What&#39;s next after Phase 8?</h3>
+<p><strong>A</strong>: Phase 9 (Milestone 3, planned):</p>
+<ul>
+<li>ContentCleaner Go migration (if ROI sufficient)</li>
+<li>Persistent daemon mode (eliminate 50-80ms startup overhead)</li>
+<li>Direct Bun FFI binding (replace subprocess JSON IPC, gain ~1-2ms)</li>
+<li>Windows binary distribution</li>
+</ul>
+<p>See ROADMAP.md for full timeline.</p>
+<hr>
+<h2 id="next-steps"><a class="anchor" href="#next-steps">#</a>Next Steps</h2>
+<h3 id="for-developers"><a class="anchor" href="#for-developers">#</a>For Developers</h3>
+<ol>
+<li>✅ Review ARCHITECTURE.md (Chapter 6: Bun-Go hybrid design)</li>
+<li>✅ Read PERF_REPORT.md (performance baseline and rationale)</li>
+<li>✅ Run E2E tests: <code>bun test ./src/tests/e2e/MP4ConvertGo.e2e.ts</code></li>
+<li>✅ Explore Go code: <code>cd ../kinetitext-go/src/mp4-convert</code></li>
+</ol>
+<h3 id="for-integrators"><a class="anchor" href="#for-integrators">#</a>For Integrators</h3>
+<ol>
+<li><p>Enable Go backend in production:</p>
+<pre><code class="language-bash">export MP4_GO_ENABLED=true
+export MP4_GO_BINARY_PATH=../kinetitext-go/bin/kinetitext-mp4convert
+</code></pre>
+</li>
+<li><p>Increase timeout for long chapters (&gt;60 min):</p>
+<pre><code class="language-bash">export MP4_GO_TIMEOUT_MS=300000  # 5 minutes
+</code></pre>
+</li>
+<li><p>Monitor conversion speeds and adjust concurrency as needed.</p>
+</li>
+</ol>
+<h3 id="for-researchers"><a class="anchor" href="#for-researchers">#</a>For Researchers</h3>
+<ul>
+<li>Phase 8 PERF_REPORT.md contains detailed performance analysis</li>
+<li>Phase 6 MIGRATION_GUIDE.md shows audio conversion patterns</li>
+<li>Phase 7 DURATION_SERVICE.md demonstrates Go backend patterns</li>
+</ul>
+<hr>
+<h2 id="support--resources"><a class="anchor" href="#support--resources">#</a>Support &amp; Resources</h2>
+<ul>
+<li><strong>Phase 8 Summary</strong>: <code>.planning/phases/08-mp4conversionservice-go/08-02-SUMMARY.md</code></li>
+<li><strong>ARCHITECTURE.md</strong>: System design and Bun-Go boundary</li>
+<li><strong>PERF_REPORT.md</strong>: Performance benchmarks and root cause analysis</li>
+<li><strong>Integration Tests</strong>: <code>src/tests/integration/MP4ConvertGo.test.ts</code></li>
+<li><strong>E2E Tests</strong>: <code>src/tests/e2e/MP4ConvertGo.e2e.ts</code></li>
+</ul>
+<hr>
+<p><strong>Document Version</strong>: 1.0
+<strong>Status</strong>: Production Ready
+<strong>Maintained by</strong>: Development Team
+<strong>Last Updated</strong>: 2026-03-26</p>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>docs/MP4_SERVICE.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

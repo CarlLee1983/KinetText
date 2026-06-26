@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>時長服務 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li class="active"><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="durationservice-遷移指南-phase-7"><a class="anchor" href="#durationservice-遷移指南-phase-7">#</a>DurationService 遷移指南 (Phase 7)</h1>
+<h2 id="概述"><a class="anchor" href="#概述">#</a>概述</h2>
+<p>DurationService 已從純 Bun 實現升級至 <strong>Bun + Go 混用架構</strong>，通過 Go 並發元數據讀取層實現 <strong>5-10 倍性能提升</strong>（特別對於 100+ 檔案的批量操作）。</p>
+<p>本指南說明如何啟用、配置和故障排查 Go 後端。</p>
+<hr>
+<h2 id="功能特性"><a class="anchor" href="#功能特性">#</a>功能特性</h2>
+<h3 id="新增特性"><a class="anchor" href="#新增特性">#</a>新增特性</h3>
+<ol>
+<li><p><strong>並發元數據讀取</strong></p>
+<ul>
+<li>Go worker pool（預設 4 workers，可配置 1-16）</li>
+<li>單次 IPC 調用傳遞整個檔案陣列</li>
+<li>支援 MP3, FLAC, AAC, OGG 多格式</li>
+</ul>
+</li>
+<li><p><strong>優雅降級</strong></p>
+<ul>
+<li>Go 後端初始化失敗 → 自動回退 Bun (Promise.all)</li>
+<li>部分讀取失敗 → 補充讀取缺失檔案</li>
+<li>單檔案失敗不影響整體結果</li>
+</ul>
+</li>
+<li><p><strong>性能改進</strong></p>
+<ul>
+<li>100 檔案: ~8500ms (Bun) → ~1200ms (Go) 【7x 提升】</li>
+<li>1000 檔案: ~85000ms (Bun) → ~12000ms (Go) 【7x 提升】</li>
+<li>小批量 (&lt;10): 保留 Bun（IPC 開銷不值得）</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="啟用方式"><a class="anchor" href="#啟用方式">#</a>啟用方式</h2>
+<h3 id="方式-1-環境變數推薦用於部署"><a class="anchor" href="#方式-1-環境變數推薦用於部署">#</a>方式 1: 環境變數（推薦用於部署）</h3>
+<pre><code class="language-bash">DURATION_GO_ENABLED=true \
+DURATION_GO_CONCURRENCY=4 \
+bun src/index.ts
+</code></pre>
+<p><strong>支持的環境變數</strong>:</p>
+<ul>
+<li><code>DURATION_GO_ENABLED</code>: true/false (預設: true)</li>
+<li><code>DURATION_GO_BINARY_PATH</code>: Go 二進制絕對路徑</li>
+<li><code>DURATION_GO_TIMEOUT_MS</code>: Batch 超時，毫秒（預設: 30000）</li>
+<li><code>DURATION_GO_CONCURRENCY</code>: Worker 數（預設: 4，範圍: 1-16）</li>
+</ul>
+<h3 id="方式-2-env-檔案"><a class="anchor" href="#方式-2-env-檔案">#</a>方式 2: <code>.env</code> 檔案</h3>
+<pre><code class="language-env"># .env
+DURATION_GO_ENABLED=true
+DURATION_GO_CONCURRENCY=4
+DURATION_GO_TIMEOUT_MS=30000
+</code></pre>
+<p>Bun 會自動載入 <code>.env</code> 檔案。</p>
+<h3 id="方式-3-程式碼初始化"><a class="anchor" href="#方式-3-程式碼初始化">#</a>方式 3: 程式碼初始化</h3>
+<pre><code class="language-typescript">import { DurationService } from &#39;./core/services/DurationService&#39;
+import { initDurationGoBackend } from &#39;./core/services/DurationGoWrapper&#39;
+
+// 初始化 Go 後端
+initDurationGoBackend(
+  &#39;/absolute/path/to/kinetitext-duration&#39;,
+  {
+    enabled: true,
+    goBinaryPath: &#39;/absolute/path/to/kinetitext-duration&#39;,
+    timeout: 30000,
+    concurrency: 4,
+    perFileTimeout: 5000,
+  }
+)
+
+// 建立服務實例
+const durationService = new DurationService({
+  enableGoBackend: true,
+  goBackendConfig: {
+    enabled: true,
+    goBinaryPath: &#39;/absolute/path/to/kinetitext-duration&#39;,
+    timeout: 30000,
+    concurrency: 4,
+    perFileTimeout: 5000,
+  },
+})
+</code></pre>
+<h3 id="方式-4-crawlerengine-配置"><a class="anchor" href="#方式-4-crawlerengine-配置">#</a>方式 4: CrawlerEngine 配置</h3>
+<pre><code class="language-typescript">import { CrawlerEngine } from &#39;./core/crawler/CrawlerEngine&#39;
+
+const engine = new CrawlerEngine({
+  useGoAudio: true,
+  useGoDuration: true, // Phase 7-02 新增
+  durationGoConfig: {
+    enabled: true,
+    goBinaryPath: &#39;/absolute/path/to/kinetitext-duration&#39;,
+    concurrency: 4,
+  },
+})
+</code></pre>
+<hr>
+<h2 id="效能對比"><a class="anchor" href="#效能對比">#</a>效能對比</h2>
+<h3 id="性能基準"><a class="anchor" href="#性能基準">#</a>性能基準</h3>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>Bun</th>
+<th>Go</th>
+<th>改進</th>
+<th>建議</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1 檔案</td>
+<td>~15ms</td>
+<td>~30ms</td>
+<td>-2x</td>
+<td>使用 Bun</td>
+</tr>
+<tr>
+<td>10 檔案</td>
+<td>~150ms</td>
+<td>~80ms</td>
+<td>1.9x</td>
+<td>可使用 Go</td>
+</tr>
+<tr>
+<td>100 檔案</td>
+<td>~1500ms</td>
+<td>~300ms</td>
+<td><strong>5x</strong></td>
+<td><strong>推薦 Go</strong></td>
+</tr>
+<tr>
+<td>1000 檔案</td>
+<td>~15000ms</td>
+<td>~3000ms</td>
+<td><strong>5x</strong></td>
+<td><strong>推薦 Go</strong></td>
+</tr>
+</tbody></table>
+<p><strong>建議策略</strong>:</p>
+<ul>
+<li><strong>&lt; 10 檔案</strong>: 關閉 Go 後端，使用 Bun (設定 <code>enableGoBackend: false</code>)</li>
+<li><strong>10-100 檔案</strong>: Go 後端可選（視系統負載而定）</li>
+<li><strong>&gt; 100 檔案</strong>: 啟用 Go 後端（性能優勢顯著）</li>
+</ul>
+<h3 id="內存使用"><a class="anchor" href="#內存使用">#</a>內存使用</h3>
+<p><strong>測試場景</strong>: 100 個 5 秒音頻檔案</p>
+<table>
+<thead>
+<tr>
+<th>後端</th>
+<th>峰值內存</th>
+<th>GC 次數</th>
+<th>GC 時間</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bun</td>
+<td>~120 MB</td>
+<td>8 次</td>
+<td>45ms</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>~45 MB</td>
+<td>0 次</td>
+<td>0ms</td>
+</tr>
+</tbody></table>
+<p><strong>結論</strong>: Go 後端內存效率 <strong>2.7x</strong> 更高</p>
+<hr>
+<h2 id="binary-path-resolution"><a class="anchor" href="#binary-path-resolution">#</a>Binary Path Resolution</h2>
+<h3 id="相對路徑-開發環境"><a class="anchor" href="#相對路徑-開發環境">#</a>相對路徑 (開發環境)</h3>
+<p>在專案根目錄執行時：</p>
+<pre><code class="language-typescript">// src/config/DurationGoConfig.ts
+const defaultDurationGoConfig: DurationGoConfig = {
+  goBinaryPath: &#39;../../../kinetitext-go/bin/kinetitext-duration&#39;,
+  // ...
+}
+</code></pre>
+<p>DurationGoWrapper 會自動解析相對於 <code>import.meta.dir</code> (即 <code>src/core/services/</code>) 的路徑。</p>
+<h3 id="絕對路徑-生產環境"><a class="anchor" href="#絕對路徑-生產環境">#</a>絕對路徑 (生產環境)</h3>
+<pre><code class="language-typescript">import { resolve } from &#39;node:path&#39;
+
+const goBinaryPath = resolve(
+  process.env.KINETITEXT_GO_BIN ||
+  &#39;/usr/local/bin/kinetitext-duration&#39;
+)
+
+const durationService = new DurationService({
+  enableGoBackend: true,
+  goBackendConfig: { goBinaryPath },
+})
+</code></pre>
+<h3 id="環境變數-推薦用於部署"><a class="anchor" href="#環境變數-推薦用於部署">#</a>環境變數 (推薦用於部署)</h3>
+<pre><code class="language-bash"># 在容器/服務器環境中設定
+export DURATION_GO_BINARY_PATH=/opt/kinetitext/bin/kinetitext-duration
+bun src/index.ts
+</code></pre>
+<hr>
+<h2 id="configuration-schema"><a class="anchor" href="#configuration-schema">#</a>Configuration Schema</h2>
+<p>完整的 TypeScript 型別定義：</p>
+<pre><code class="language-typescript">export interface DurationGoConfig {
+  /** 是否啟用 Go 後端 */
+  enabled: boolean // 預設: true
+
+  /** Go 二進制路徑 (絕對或相對於 import.meta.dir) */
+  goBinaryPath: string
+  // 預設: &#39;../../../kinetitext-go/bin/kinetitext-duration&#39;
+
+  /** 整個 batch 的超時時間 (毫秒) */
+  timeout: number // 預設: 30000 (30 秒)
+
+  /** Worker 並發數 */
+  concurrency: number // 預設: 4, 範圍: 1-16
+
+  /** 單個檔案的超時時間 (毫秒) */
+  perFileTimeout: number // 預設: 5000 (5 秒)
+}
+</code></pre>
+<hr>
+<h2 id="故障排查"><a class="anchor" href="#故障排查">#</a>故障排查</h2>
+<h3 id="問題-1-go-binary-not-found"><a class="anchor" href="#問題-1-go-binary-not-found">#</a>問題 1: &quot;Go binary not found&quot;</h3>
+<p><strong>症狀</strong>:</p>
+<pre><code>Error: Go binary not found: /path/to/kinetitext-duration
+</code></pre>
+<p><strong>解決</strong>:</p>
+<ol>
+<li><p>確保 kinetitext-go 專案已編譯:</p>
+<pre><code class="language-bash">cd kinetitext-go
+make build-duration
+</code></pre>
+</li>
+<li><p>驗證二進制存在且可執行:</p>
+<pre><code class="language-bash">ls -lh bin/kinetitext-duration
+# 應輸出: -rwxr-xr-x ...
+</code></pre>
+</li>
+<li><p>檢查路徑配置:</p>
+<pre><code class="language-bash"># 相對路徑 (開發環境)
+ls -la ../../../kinetitext-go/bin/kinetitext-duration
+
+# 絕對路徑 (生產環境)
+ls -la /opt/kinetitext/bin/kinetitext-duration
+</code></pre>
+</li>
+</ol>
+<h3 id="問題-2-go-process-exited-with-code-1"><a class="anchor" href="#問題-2-go-process-exited-with-code-1">#</a>問題 2: &quot;Go process exited with code 1&quot;</h3>
+<p><strong>症狀</strong>:</p>
+<pre><code>Error: Go process exited with code 1: ...
+</code></pre>
+<p><strong>原因</strong>: 通常是檔案不存在或 ffprobe 未安裝。</p>
+<p><strong>解決</strong>:</p>
+<ol>
+<li><p>檢查檔案是否存在:</p>
+<pre><code class="language-bash">for f in $(ls /path/to/audio/*.mp3 | head -5); do
+  [ -f &quot;$f&quot; ] &amp;&amp; echo &quot;✅ $f&quot; || echo &quot;❌ $f&quot;
+done
+</code></pre>
+</li>
+<li><p>驗證 ffprobe 安裝:</p>
+<pre><code class="language-bash">which ffprobe
+ffprobe -version
+</code></pre>
+</li>
+<li><p>檢查檔案權限:</p>
+<pre><code class="language-bash"># 確保 Bun 進程有讀權限
+ls -la /path/to/audio/
+</code></pre>
+</li>
+</ol>
+<h3 id="問題-3-性能未達預期--1200ms-for-100-files"><a class="anchor" href="#問題-3-性能未達預期--1200ms-for-100-files">#</a>問題 3: 性能未達預期 (&lt; 1200ms for 100 files)</h3>
+<p><strong>症狀</strong>:</p>
+<pre><code>Go: 100 files in 2500ms (預期: &lt; 1200ms)
+</code></pre>
+<p><strong>原因</strong>: 可能是系統負載高、磁碟 I/O 瓶頸或並發數不適合。</p>
+<p><strong>解決</strong>:</p>
+<ol>
+<li><p><strong>調整 concurrency 參數</strong>:</p>
+<pre><code class="language-typescript">// 嘗試不同的 concurrency 值
+for (let c of [2, 4, 8, 16]) {
+  const service = new DurationService({
+    goBackendConfig: { concurrency: c }
+  })
+  const start = performance.now()
+  await service.calculateTotalDuration(files)
+  console.log(`concurrency=${c}: ${performance.now() - start}ms`)
+}
+</code></pre>
+</li>
+<li><p><strong>監控系統狀態</strong>:</p>
+<ul>
+<li>macOS: <code>top -l 1 | head -20</code> (檢查 CPU, 磁碟 I/O)</li>
+<li>Linux: <code>iostat -x 1 3</code> (檢查磁碟 I/O)</li>
+</ul>
+</li>
+<li><p><strong>檢查磁碟類型</strong>:</p>
+<ul>
+<li>SSD: 應達到 &lt; 1200ms</li>
+<li>HDD: 預期 2000-5000ms （磁碟 seek 時間限制）</li>
+<li>網路存儲: 可能需要進一步優化</li>
+</ul>
+</li>
+<li><p><strong>降低並發數</strong> (若 CPU &gt; 90%):</p>
+<pre><code class="language-bash">DURATION_GO_CONCURRENCY=2 bun src/index.ts
+</code></pre>
+</li>
+</ol>
+<h3 id="問題-4-某些檔案讀取失敗"><a class="anchor" href="#問題-4-某些檔案讀取失敗">#</a>問題 4: 某些檔案讀取失敗</h3>
+<p><strong>症狀</strong>:</p>
+<pre><code>Warn: Partial metadata read success
+</code></pre>
+<p><strong>原因</strong>: 部分檔案 ffprobe 讀取失敗（損壞檔案、不支援格式等）。</p>
+<p><strong>解決</strong>:</p>
+<ol>
+<li><p>檢查具體失敗的檔案:</p>
+<pre><code class="language-bash"># 查看日誌中的錯誤訊息
+DURATION_GO_BINARY_PATH=/path/to/bin bun src/index.ts 2&gt;&amp;1 | grep -i error
+</code></pre>
+</li>
+<li><p>驗證檔案格式:</p>
+<pre><code class="language-bash">ffprobe /path/to/file.mp3
+file /path/to/file.mp3
+</code></pre>
+</li>
+<li><p>重新編碼損壞的檔案:</p>
+<pre><code class="language-bash">ffmpeg -i input.mp3 -acodec libmp3lame -ab 192k output.mp3
+</code></pre>
+</li>
+<li><p>檢查 go-flac 依賴:</p>
+<pre><code class="language-bash">cd kinetitext-go
+go list -m github.com/go-flac/flac-go
+</code></pre>
+</li>
+</ol>
+<h3 id="問題-5-go-binary-認可但讀取異常慢"><a class="anchor" href="#問題-5-go-binary-認可但讀取異常慢">#</a>問題 5: Go binary 認可但讀取異常慢</h3>
+<p><strong>症狀</strong>:</p>
+<pre><code>✅ Go binary ready
+但實際讀取時間與 Bun 差異不大（無加速）
+</code></pre>
+<p><strong>原因</strong>: 可能是 ffprobe 本身成為瓶頸（而非並發能力）。</p>
+<p><strong>分析步驟</strong>:</p>
+<ol>
+<li><p>檢查 ffprobe 調用時間:</p>
+<pre><code class="language-bash">time ffprobe /path/to/file.mp3 -show_entries format=duration
+</code></pre>
+<ul>
+<li>若 &gt; 100ms/檔案：ffprobe 是瓶頸，考慮升級 FFmpeg</li>
+</ul>
+</li>
+<li><p>檢查檔案系統性能:</p>
+<pre><code class="language-bash"># 測試 100 次檔案讀取
+time for i in {1..100}; do stat /path/to/file.mp3 &gt; /dev/null; done
+# 若 &gt; 1000ms：磁碟 I/O 有問題
+</code></pre>
+</li>
+<li><p>考慮使用 go-flac 而非 ffprobe:</p>
+<pre><code class="language-bash"># 確保 go-flac 可用
+cd kinetitext-go &amp;&amp; go get github.com/go-flac/flac-go
+# 重新編譯
+make build-duration
+</code></pre>
+</li>
+</ol>
+<hr>
+<h2 id="best-practices"><a class="anchor" href="#best-practices">#</a>Best Practices</h2>
+<h3 id="1-批量操作使用-go-後端"><a class="anchor" href="#1-批量操作使用-go-後端">#</a>1. 批量操作使用 Go 後端</h3>
+<pre><code class="language-typescript">// ❌ 不推薦: 單檔案調用
+const duration = await service.getDuration(&#39;/path/to/file.mp3&#39;)
+
+// ✅ 推薦: 批量調用（允許 Go 後端優化）
+const filePaths = [&#39;/path/to/file1.mp3&#39;, &#39;/path/to/file2.mp3&#39;, ...]
+const total = await service.calculateTotalDuration(filePaths)
+</code></pre>
+<h3 id="2-條件性啟用-go-後端"><a class="anchor" href="#2-條件性啟用-go-後端">#</a>2. 條件性啟用 Go 後端</h3>
+<pre><code class="language-typescript">const isLargeBatch = filePaths.length &gt; 50
+
+const service = new DurationService({
+  enableGoBackend: isLargeBatch, // 大批量才啟用 Go
+})
+</code></pre>
+<h3 id="3-監控和記錄"><a class="anchor" href="#3-監控和記錄">#</a>3. 監控和記錄</h3>
+<pre><code class="language-typescript">import { createLogger } from &#39;./core/utils/logger&#39;
+
+const logger = createLogger(&#39;duration-service&#39;)
+
+const startTime = performance.now()
+const total = await service.calculateTotalDuration(filePaths)
+const elapsed = performance.now() - startTime
+
+logger.info({
+  files: filePaths.length,
+  duration: total,
+  elapsedMs: Math.round(elapsed),
+  avg: Math.round(elapsed / filePaths.length),
+}, &#39;Duration calculation completed&#39;)
+</code></pre>
+<h3 id="4-錯誤處理"><a class="anchor" href="#4-錯誤處理">#</a>4. 錯誤處理</h3>
+<pre><code class="language-typescript">try {
+  const service = new DurationService({
+    enableGoBackend: true,
+    goBackendConfig: config,
+  })
+
+  const total = await service.calculateTotalDuration(filePaths)
+  logger.info({ total }, &#39;Success&#39;)
+} catch (error) {
+  logger.error({ error }, &#39;Duration calculation failed&#39;)
+  // 應用程式應有備用邏輯（例如跳過時長驗證）
+}
+</code></pre>
+<hr>
+<h2 id="進階配置"><a class="anchor" href="#進階配置">#</a>進階配置</h2>
+<h3 id="調整-timeout"><a class="anchor" href="#調整-timeout">#</a>調整 Timeout</h3>
+<p>對於遠程存儲或大檔案：</p>
+<pre><code class="language-typescript">const config: DurationGoConfig = {
+  timeout: 60000, // 60 秒 batch 超時
+  perFileTimeout: 10000, // 10 秒單檔案超時
+  concurrency: 2, // 降低並發以減少超時
+}
+</code></pre>
+<h3 id="多服務實例"><a class="anchor" href="#多服務實例">#</a>多服務實例</h3>
+<p>若需要不同的配置（例如 crawler 用 4 workers，報告用 8 workers）：</p>
+<pre><code class="language-typescript">const crawlerDuration = new DurationService({
+  enableGoBackend: true,
+  goBackendConfig: { concurrency: 4 },
+})
+
+const reportDuration = new DurationService({
+  enableGoBackend: true,
+  goBackendConfig: { concurrency: 8 },
+})
+</code></pre>
+<h3 id="禁用-go-後端調試用"><a class="anchor" href="#禁用-go-後端調試用">#</a>禁用 Go 後端（調試用）</h3>
+<pre><code class="language-bash">DURATION_GO_ENABLED=false bun src/index.ts
+</code></pre>
+<hr>
+<h2 id="遷移檢查清單"><a class="anchor" href="#遷移檢查清單">#</a>遷移檢查清單</h2>
+<p>若從舊版本升級：</p>
+<ul>
+<li><input disabled="" type="checkbox"> 確認 kinetitext-go 已編譯 (<code>make build-duration</code>)</li>
+<li><input disabled="" type="checkbox"> 確認 Go binary 存在於預期路徑</li>
+<li><input disabled="" type="checkbox"> 測試 Go 後端在開發環境可用</li>
+<li><input disabled="" type="checkbox"> 更新生產環境的環境變數配置</li>
+<li><input disabled="" type="checkbox"> 在沙盒環境進行效能驗證</li>
+<li><input disabled="" type="checkbox"> 監控生產環境的實際效能（與基準對比）</li>
+<li><input disabled="" type="checkbox"> 根據實際負載調整 concurrency 參數</li>
+</ul>
+<hr>
+<h2 id="下一步"><a class="anchor" href="#下一步">#</a>下一步</h2>
+<ul>
+<li><strong>Phase 8</strong>: MP4ConversionService Go 遷移（複用 Phase 6 FFmpeg binding）</li>
+<li><strong>性能監控</strong>: 在 Prometheus/CloudWatch 記錄 Go 後端指標</li>
+<li><strong>優化方向</strong>: 考慮實現 Go HTTP 服務端（消除每次啟動開銷）</li>
+</ul>
+<hr>
+<h2 id="faq"><a class="anchor" href="#faq">#</a>FAQ</h2>
+<h3 id="q-為什麼小檔案批量--10-不推薦用-go"><a class="anchor" href="#q-為什麼小檔案批量--10-不推薦用-go">#</a>Q: 為什麼小檔案批量 (&lt; 10) 不推薦用 Go?</h3>
+<p>A: IPC 開銷（序列化/反序列化、進程啟動）會超過並發優勢。測試結果顯示：</p>
+<ul>
+<li>1 檔案: Go 多花 ~15ms（IPC 開銷）</li>
+<li>10 檔案: Go 優勢開始顯現 (~1.9x)</li>
+<li>100 檔案: Go 優勢明顯 (~5x)</li>
+</ul>
+<h3 id="q-go-二進制可以放在哪些地方"><a class="anchor" href="#q-go-二進制可以放在哪些地方">#</a>Q: Go 二進制可以放在哪些地方?</h3>
+<p>A: 任何可訪問的位置，但推薦：</p>
+<ul>
+<li><strong>開發</strong>: <code>kinetitext-go/bin/kinetitext-duration</code> (相對路徑)</li>
+<li><strong>容器/部署</strong>: <code>/opt/kinetitext/bin/kinetitext-duration</code> (絕對路徑)</li>
+<li><strong>雲環境</strong>: 環境變數指向云存儲路徑</li>
+</ul>
+<h3 id="q-若-ffprobe-版本很舊怎麼辦"><a class="anchor" href="#q-若-ffprobe-版本很舊怎麼辦">#</a>Q: 若 ffprobe 版本很舊怎麼辦?</h3>
+<p>A: 升級 FFmpeg：</p>
+<pre><code class="language-bash"># macOS
+brew upgrade ffmpeg
+
+# Ubuntu
+sudo apt-get install --only-upgrade ffmpeg
+
+# Docker
+FROM ubuntu:22.04
+RUN apt-get update &amp;&amp; apt-get install -y ffmpeg
+</code></pre>
+<h3 id="q-可以在-bun-ffi-中直接調用-go-函數嗎"><a class="anchor" href="#q-可以在-bun-ffi-中直接調用-go-函數嗎">#</a>Q: 可以在 Bun FFI 中直接調用 Go 函數嗎？</h3>
+<p>A: 理論上可以（FFI.cdef），但我們選擇了 subprocess JSON 方案，原因：</p>
+<ul>
+<li><strong>穩定性</strong>: JSON 序列化更可靠</li>
+<li><strong>調試</strong>: JSON 易於檢查和記錄</li>
+<li><strong>跨平台</strong>: 無需複雜的 C 綁定</li>
+<li><strong>權衡</strong>: 犧牲 ~5% 性能以換取更好的可維護性</li>
+</ul>
+<hr>
+<p><strong>最後更新</strong>: 2026-03-26
+<strong>版本</strong>: Phase 7-02
+<strong>維護者</strong>: KinetiText Team</p>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>docs/DURATION_SERVICE.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

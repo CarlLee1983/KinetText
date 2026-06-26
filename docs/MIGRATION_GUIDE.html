@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>遷移指南 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li class="active"><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="audioconvert-go-後端遷移指南"><a class="anchor" href="#audioconvert-go-後端遷移指南">#</a>AudioConvert Go 後端遷移指南</h1>
+<p><strong>目標讀者</strong>: KinetiText 開發者、系統管理員、爬蟲配置工程師</p>
+<p><strong>更新日期</strong>: 2026-03-26
+<strong>版本</strong>: v1.1 (Phase 6)</p>
+<hr>
+<h2 id="目錄"><a class="anchor" href="#目錄">#</a>目錄</h2>
+<ul>
+<li><a href="#1-%E6%A6%82%E8%A6%BD">1. 概覽</a></li>
+<li><a href="#2-%E5%BF%AB%E9%80%9F%E9%96%8B%E5%A7%8B">2. 快速開始</a></li>
+<li><a href="#3-%E9%85%8D%E7%BD%AE%E9%81%B8%E9%A0%85">3. 配置選項</a></li>
+<li><a href="#4-%E6%80%A7%E8%83%BD%E5%B0%8D%E6%AF%94">4. 性能對比</a></li>
+<li><a href="#5-%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5">5. 故障排查</a></li>
+<li><a href="#6-%E9%96%8B%E7%99%BC%E8%80%85%E6%8C%87%E5%8D%97">6. 開發者指南</a></li>
+<li><a href="#7-%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C-faq">7. 常見問題 FAQ</a></li>
+<li><a href="#8-%E4%B8%8B%E4%B8%80%E6%AD%A5%E8%A8%88%E5%8A%83">8. 下一步計劃</a></li>
+</ul>
+<hr>
+<h2 id="1-概覽"><a class="anchor" href="#1-概覽">#</a>1. 概覽</h2>
+<p>KinetiText v1.1 引入了可選的 Go 後端，用於加速音頻轉換操作。</p>
+<p><strong>關鍵特性</strong>:</p>
+<ul>
+<li><strong>可選啟用</strong>: 預設使用 Bun FFmpeg 後端，Go 後端需明確啟用</li>
+<li><strong>優雅降級</strong>: Go 初始化失敗時自動回退 Bun 後端，無中斷</li>
+<li><strong>配置靈活</strong>: 支持環境變數、配置文件、CLI 旗標三種啟用方式</li>
+<li><strong>格式覆蓋</strong>: WAV、AAC、OGG、FLAC → MP3 全格式支持</li>
+</ul>
+<p><strong>架構說明</strong>:</p>
+<pre><code>啟用 Go 後端後的調用路徑:
+Bun → AudioConvertGoWrapper → kinetitext-audio (Go) → FFmpeg → MP3
+
+未啟用（預設）的調用路徑:
+Bun → AudioConvertService → FFmpeg (Bun.$) → MP3
+</code></pre>
+<hr>
+<h2 id="2-快速開始"><a class="anchor" href="#2-快速開始">#</a>2. 快速開始</h2>
+<h3 id="21-系統要求"><a class="anchor" href="#21-系統要求">#</a>2.1 系統要求</h3>
+<table>
+<thead>
+<tr>
+<th>組件</th>
+<th>版本要求</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bun</td>
+<td>1.0+</td>
+<td>KinetiText 運行時</td>
+</tr>
+<tr>
+<td>FFmpeg</td>
+<td>4.0+</td>
+<td>音頻轉換（系統安裝）</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>1.20+</td>
+<td>僅編譯 Go 後端時需要</td>
+</tr>
+</tbody></table>
+<p>確認系統依賴:</p>
+<pre><code class="language-bash"># 確認 FFmpeg 可用
+ffmpeg -version
+
+# 確認 Bun 版本
+bun --version
+
+# 確認 Go 版本（如需重新編譯）
+go version
+</code></pre>
+<h3 id="22-編譯-go-後端"><a class="anchor" href="#22-編譯-go-後端">#</a>2.2 編譯 Go 後端</h3>
+<p>Go 後端位於獨立倉庫 <code>kinetitext-go</code>（與 KinetiText 並列）:</p>
+<pre><code class="language-bash"># 進入 Go 專案目錄
+cd ../kinetitext-go
+
+# 安裝 Go 依賴
+go mod tidy
+
+# 編譯二進制（輸出到 bin/ 目錄）
+make build
+
+# 或直接使用 go build
+go build -o bin/kinetitext-audio ./src/audio-convert/
+
+# 驗證編譯成功
+ls -la bin/kinetitext-audio
+# 預期: -rwxr-xr-x ... kinetitext-audio
+
+# 測試二進制功能（應輸出 JSON 錯誤回應）
+echo &#39;{}&#39; | ./bin/kinetitext-audio
+# 預期: {&quot;success&quot;:false,&quot;error&quot;:&quot;...&quot;}
+</code></pre>
+<h3 id="23-啟用-go-後端"><a class="anchor" href="#23-啟用-go-後端">#</a>2.3 啟用 Go 後端</h3>
+<p><strong>方式 1: 環境變數（推薦用於生產環境）</strong></p>
+<pre><code class="language-bash"># 啟用 Go 後端（使用預設二進制路徑）
+export KINETITEXT_USE_GO_AUDIO=true
+bun run src/index.ts --crawl https://example.com
+
+# 同時指定自定義二進制路徑
+export KINETITEXT_USE_GO_AUDIO=true
+export KINETITEXT_GO_AUDIO_BIN=/absolute/path/to/kinetitext-audio
+bun run src/index.ts --crawl https://example.com
+</code></pre>
+<p><strong>方式 2: .env 配置文件</strong></p>
+<p>在專案根目錄創建或編輯 <code>.env</code>:</p>
+<pre><code class="language-env"># 啟用 Go 後端
+KINETITEXT_USE_GO_AUDIO=true
+
+# 可選：自定義 Go 二進制路徑（預設自動推導）
+# KINETITEXT_GO_AUDIO_BIN=../kinetitext-go/bin/kinetitext-audio
+
+# 可選：Go 超時設置（毫秒，預設 60000）
+# AUDIO_GO_TIMEOUT_MS=60000
+</code></pre>
+<p>Bun 會自動加載 <code>.env</code> 文件，無需額外配置。</p>
+<p><strong>方式 3: CLI 旗標</strong></p>
+<pre><code class="language-bash">bun run src/index.ts --use-go-audio --crawl https://example.com
+</code></pre>
+<p><strong>方式 4: 代碼配置（在自定義腳本中）</strong></p>
+<pre><code class="language-typescript">import { AudioConvertService } from &#39;./src/core/services/AudioConvertService&#39;
+import { AudioConvertConfig } from &#39;./src/config/AudioConvertConfig&#39;
+
+const service = new AudioConvertService(
+  new AudioConvertConfig({
+    useGoBackend: true,
+    goBinaryPath: &#39;../kinetitext-go/bin/kinetitext-audio&#39;,
+    bitrate: &#39;192k&#39;,
+    goTimeout: 60000,
+  })
+)
+
+// 必須在使用前初始化 Go 後端
+await service.initGoBackend()
+
+// 開始轉換
+const result = await service.convertToMp3(&#39;input.wav&#39;, &#39;output.mp3&#39;)
+</code></pre>
+<h3 id="24-驗證-go-後端工作"><a class="anchor" href="#24-驗證-go-後端工作">#</a>2.4 驗證 Go 後端工作</h3>
+<p>執行基準測試（比較 Bun vs Go 性能）:</p>
+<pre><code class="language-bash">bun run bench:convert
+</code></pre>
+<p>預期輸出:</p>
+<pre><code>📊 Benchmarking wav...
+  ✅ bun: 120ms (avg of 3 runs)
+  ✅ go: 114ms (avg of 3 runs)
+📊 Benchmarking aac...
+  ...
+✅ Benchmark complete! Report saved to PERF_REPORT.md
+</code></pre>
+<p>執行 Go 後端 E2E 測試:</p>
+<pre><code class="language-bash">bun test ./src/tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
+# 預期: 17 tests passing
+</code></pre>
+<p>查看性能報告:</p>
+<pre><code class="language-bash">cat .planning/phases/06-audio-convert-go/PERF_REPORT.md
+</code></pre>
+<hr>
+<h2 id="3-配置選項"><a class="anchor" href="#3-配置選項">#</a>3. 配置選項</h2>
+<h3 id="31-audioconvertconfig-go-後端選項"><a class="anchor" href="#31-audioconvertconfig-go-後端選項">#</a>3.1 AudioConvertConfig Go 後端選項</h3>
+<table>
+<thead>
+<tr>
+<th>選項</th>
+<th>型別</th>
+<th>預設</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>useGoBackend</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>啟用 Go 後端</td>
+</tr>
+<tr>
+<td><code>goBinaryPath</code></td>
+<td><code>string?</code></td>
+<td><code>undefined</code></td>
+<td>Go 二進制絕對路徑</td>
+</tr>
+<tr>
+<td><code>goTimeout</code></td>
+<td><code>number</code></td>
+<td><code>60000</code></td>
+<td>Go 轉換超時（毫秒）</td>
+</tr>
+</tbody></table>
+<p><strong>注意</strong>: <code>goBinaryPath</code> 未設置時，<code>AudioConvertGoWrapper</code> 會使用相對於原始碼的預設路徑（<code>../../../../../kinetitext-go/bin/kinetitext-audio</code>）。建議在生產環境明確指定絕對路徑。</p>
+<h3 id="32-環境變數完整列表"><a class="anchor" href="#32-環境變數完整列表">#</a>3.2 環境變數完整列表</h3>
+<table>
+<thead>
+<tr>
+<th>環境變數</th>
+<th>值示例</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>KINETITEXT_USE_GO_AUDIO</code></td>
+<td><code>true</code> / <code>false</code></td>
+<td>啟用 Go 後端</td>
+</tr>
+<tr>
+<td><code>KINETITEXT_GO_AUDIO_BIN</code></td>
+<td><code>/path/to/binary</code></td>
+<td>Go 二進制路徑</td>
+</tr>
+<tr>
+<td><code>AUDIO_GO_TIMEOUT_MS</code></td>
+<td><code>60000</code></td>
+<td>Go 超時（毫秒）</td>
+</tr>
+<tr>
+<td><code>AUDIO_BITRATE</code></td>
+<td><code>192k</code></td>
+<td>MP3 輸出位速率</td>
+</tr>
+<tr>
+<td><code>AUDIO_MAX_CONCURRENCY</code></td>
+<td><code>4</code></td>
+<td>最大並行轉換數</td>
+</tr>
+</tbody></table>
+<h3 id="33-crawlerengine-集成配置"><a class="anchor" href="#33-crawlerengine-集成配置">#</a>3.3 CrawlerEngine 集成配置</h3>
+<p>在 <code>CrawlerEngine</code> 中使用 Go 後端:</p>
+<pre><code class="language-typescript">import CrawlerEngine from &#39;./src/core/CrawlerEngine&#39;
+import type { CrawlerConfig } from &#39;./src/core/CrawlerEngine&#39;
+
+const config: CrawlerConfig = {
+  concurrency: 4,
+  audio: {
+    bitrate: &#39;192k&#39;,
+    maxConcurrency: 4,
+    useGoBackend: true,
+    goBinaryPath: &#39;/absolute/path/to/kinetitext-audio&#39;,
+    goTimeout: 60000,
+  }
+}
+
+const engine = new CrawlerEngine(config)
+</code></pre>
+<h3 id="34-完整-env-配置示例"><a class="anchor" href="#34-完整-env-配置示例">#</a>3.4 完整 .env 配置示例</h3>
+<pre><code class="language-env"># === Go 後端配置 ===
+KINETITEXT_USE_GO_AUDIO=true
+KINETITEXT_GO_AUDIO_BIN=/Users/username/Dev/Carl/kinetitext-go/bin/kinetitext-audio
+AUDIO_GO_TIMEOUT_MS=60000
+
+# === 音頻轉換配置 ===
+AUDIO_BITRATE=192k
+AUDIO_SAMPLE_RATE=44100
+AUDIO_MAX_CONCURRENCY=4
+AUDIO_FFMPEG_TIMEOUT_MS=120000
+
+# === 爬蟲配置 ===
+CRAWLER_CONCURRENCY=4
+</code></pre>
+<hr>
+<h2 id="4-性能對比"><a class="anchor" href="#4-性能對比">#</a>4. 性能對比</h2>
+<h3 id="41-基準數據5-秒靜音音頻"><a class="anchor" href="#41-基準數據5-秒靜音音頻">#</a>4.1 基準數據（5 秒靜音音頻）</h3>
+<p><strong>平台</strong>: macOS 14.2, Apple Silicon M2</p>
+<table>
+<thead>
+<tr>
+<th>格式</th>
+<th>Bun 後端</th>
+<th>Go 後端</th>
+<th>差異</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WAV → MP3</td>
+<td>120ms</td>
+<td>114ms</td>
+<td>Go 快 5%</td>
+</tr>
+<tr>
+<td>AAC → MP3</td>
+<td>74ms</td>
+<td>82ms</td>
+<td>Go 慢 11%</td>
+</tr>
+<tr>
+<td>OGG → MP3</td>
+<td>77ms</td>
+<td>83ms</td>
+<td>Go 慢 8%</td>
+</tr>
+<tr>
+<td>FLAC → MP3</td>
+<td>66ms</td>
+<td>109ms</td>
+<td>Go 慢 65%</td>
+</tr>
+</tbody></table>
+<p><strong>結論</strong>: 短音頻文件測試中，Go 運行時啟動開銷（~50-80ms）主導結果，Go 後端略慢。</p>
+<h3 id="42-預期真實場景性能"><a class="anchor" href="#42-預期真實場景性能">#</a>4.2 預期真實場景性能</h3>
+<p>對於長音頻文件（例如有聲書章節，30-60 分鐘）:</p>
+<table>
+<thead>
+<tr>
+<th>場景</th>
+<th>預期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Go 運行時啟動開銷</td>
+<td>~80ms（可忽略）</td>
+</tr>
+<tr>
+<td>FFmpeg 轉換時間</td>
+<td>主要耗時（數十秒）</td>
+</tr>
+<tr>
+<td>Go 後端預期提升</td>
+<td>10-20%</td>
+</tr>
+</tbody></table>
+<p><strong>原因</strong>: Go 的 ffmpeg-go 綁定比 Bun <code>$\</code>ffmpeg...`` 調用方式有更優的管道 I/O 和記憶體緩衝優化。</p>
+<h3 id="43-進程啟動開銷對比"><a class="anchor" href="#43-進程啟動開銷對比">#</a>4.3 進程啟動開銷對比</h3>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>進程啟動開銷</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bun FFmpeg（當前）</td>
+<td>~100-150ms</td>
+<td>直接啟動 FFmpeg 子進程</td>
+</tr>
+<tr>
+<td>Go 後端（無狀態）</td>
+<td>~50-80ms</td>
+<td>Go 運行時啟動 + IPC</td>
+</tr>
+<tr>
+<td>Go 後端（常駐模式，未來）</td>
+<td>~1ms</td>
+<td>長連接，無啟動開銷</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="5-故障排查"><a class="anchor" href="#5-故障排查">#</a>5. 故障排查</h2>
+<h3 id="51-go-二進制文件不存在-錯誤"><a class="anchor" href="#51-go-二進制文件不存在-錯誤">#</a>5.1 &quot;Go 二進制文件不存在&quot; 錯誤</h3>
+<p><strong>症狀</strong>:</p>
+<pre><code>Failed to init Go backend, falling back to Bun FFmpeg
+Error: Go 二進制文件不存在: /path/to/kinetitext-audio
+</code></pre>
+<p><strong>注意</strong>: 此錯誤會優雅降級至 Bun 後端，不會中斷服務。</p>
+<p><strong>解決方案</strong>:</p>
+<pre><code class="language-bash"># 1. 檢查二進制是否存在
+ls -la ../kinetitext-go/bin/kinetitext-audio
+
+# 2. 二進制不存在則重新編譯
+cd ../kinetitext-go
+make build
+
+# 3. 驗證編譯成功
+./bin/kinetitext-audio &lt; /dev/null
+# 應輸出: {&quot;success&quot;:false,&quot;error&quot;:&quot;...&quot;}
+
+# 4. 確認路徑設置正確
+echo $KINETITEXT_GO_AUDIO_BIN
+</code></pre>
+<h3 id="52-go-二進制非零退出碼-錯誤"><a class="anchor" href="#52-go-二進制非零退出碼-錯誤">#</a>5.2 &quot;Go 二進制非零退出碼&quot; 錯誤</h3>
+<p><strong>症狀</strong>:</p>
+<pre><code>Go 二進制錯誤 (退出碼 1): ...
+</code></pre>
+<p><strong>診斷步驟</strong>:</p>
+<pre><code class="language-bash"># 直接測試 Go 二進制
+echo &#39;{&quot;input_file&quot;:&quot;test.wav&quot;,&quot;output_file&quot;:&quot;out.mp3&quot;,&quot;format&quot;:&quot;mp3&quot;,&quot;bitrate&quot;:192}&#39; | \
+  ../kinetitext-go/bin/kinetitext-audio
+
+# 查看錯誤詳情（Go 二進制錯誤輸出到 stderr）
+echo &#39;{&quot;input_file&quot;:&quot;test.wav&quot;,&quot;output_file&quot;:&quot;out.mp3&quot;,&quot;format&quot;:&quot;mp3&quot;,&quot;bitrate&quot;:192}&#39; | \
+  ../kinetitext-go/bin/kinetitext-audio 2&gt;&amp;1
+</code></pre>
+<p><strong>常見原因與解決</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>原因</th>
+<th>症狀</th>
+<th>解決</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FFmpeg 未安裝</td>
+<td><code>exec: &quot;ffmpeg&quot;: not found</code></td>
+<td><code>brew install ffmpeg</code></td>
+</tr>
+<tr>
+<td>輸入文件不存在</td>
+<td><code>no such file or directory</code></td>
+<td>確認輸入路徑</td>
+</tr>
+<tr>
+<td>輸出目錄不存在</td>
+<td><code>mkdir ...</code> 錯誤</td>
+<td>提前創建輸出目錄</td>
+</tr>
+<tr>
+<td>格式不支持</td>
+<td><code>Invalid codec</code></td>
+<td>確認 FFmpeg 版本支持</td>
+</tr>
+</tbody></table>
+<h3 id="53-go-後端性能未達預期"><a class="anchor" href="#53-go-後端性能未達預期">#</a>5.3 Go 後端性能未達預期</h3>
+<p><strong>症狀</strong>: Go 後端轉換時間比 Bun 後端慢</p>
+<p><strong>分析</strong>:</p>
+<pre><code class="language-bash"># 運行基準測試查看詳情
+bun run bench:convert
+
+# 比較輸出結果
+cat .planning/phases/06-audio-convert-go/PERF_REPORT.md
+</code></pre>
+<p><strong>可能原因</strong>:</p>
+<ol>
+<li>測試音頻文件過短（&lt; 60 秒），Go 啟動開銷主導</li>
+<li>系統 CPU 繁忙，影響 Go 進程調度</li>
+<li>磁盤 I/O 瓶頸</li>
+</ol>
+<p><strong>優化方案</strong>:</p>
+<pre><code class="language-typescript">// 增加並行度（適用於批量轉換）
+const config = new AudioConvertConfig({
+  useGoBackend: true,
+  maxConcurrency: 8,  // 預設 4，可調高
+})
+</code></pre>
+<h3 id="54-回滾至-bun-後端"><a class="anchor" href="#54-回滾至-bun-後端">#</a>5.4 回滾至 Bun 後端</h3>
+<p>若 Go 後端出現問題，可快速回滾:</p>
+<pre><code class="language-bash"># 方式 1: 清除環境變數
+unset KINETITEXT_USE_GO_AUDIO
+
+# 方式 2: 顯式禁用
+export KINETITEXT_USE_GO_AUDIO=false
+bun run src/index.ts
+
+# 方式 3: 修改 .env
+# 將 KINETITEXT_USE_GO_AUDIO=true 改為 KINETITEXT_USE_GO_AUDIO=false
+</code></pre>
+<p>回滾後所有功能保持不變，僅後端切換至 Bun FFmpeg。</p>
+<h3 id="55-使用-go-binary-進行詳細除錯"><a class="anchor" href="#55-使用-go-binary-進行詳細除錯">#</a>5.5 使用 Go binary 進行詳細除錯</h3>
+<p><strong>直接測試轉換</strong>:</p>
+<pre><code class="language-bash"># 準備測試文件（使用 FFmpeg 生成靜音音頻）
+ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 5 /tmp/test.wav
+
+# 執行 Go 轉換並查看詳細輸出
+echo &#39;{
+  &quot;input_file&quot;: &quot;/tmp/test.wav&quot;,
+  &quot;output_file&quot;: &quot;/tmp/test-out.mp3&quot;,
+  &quot;format&quot;: &quot;mp3&quot;,
+  &quot;bitrate&quot;: 192
+}&#39; | ../kinetitext-go/bin/kinetitext-audio
+
+# 預期成功輸出:
+# {&quot;success&quot;:true,&quot;output_file&quot;:&quot;/tmp/test-out.mp3&quot;,&quot;duration&quot;:5.000}
+
+# 驗證輸出文件
+ls -la /tmp/test-out.mp3
+</code></pre>
+<hr>
+<h2 id="6-開發者指南"><a class="anchor" href="#6-開發者指南">#</a>6. 開發者指南</h2>
+<h3 id="61-修改-go-代碼後重新部署"><a class="anchor" href="#61-修改-go-代碼後重新部署">#</a>6.1 修改 Go 代碼後重新部署</h3>
+<pre><code class="language-bash"># 進入 Go 專案目錄
+cd ../kinetitext-go
+
+# 修改代碼後清理並重新編譯
+make clean &amp;&amp; make build
+
+# 運行 Go 單元測試
+go test ./...
+
+# 回到 KinetiText 目錄，運行集成測試
+cd ../KinetiText
+bun test ./src/tests/integration/AudioConvertGo.test.ts
+
+# 運行完整 E2E 測試套件
+bun test ./src/tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
+</code></pre>
+<h3 id="62-添加新的輸出格式支持"><a class="anchor" href="#62-添加新的輸出格式支持">#</a>6.2 添加新的輸出格式支持</h3>
+<p>如需 Go 後端支持新的輸出格式（例如 M4A）:</p>
+<p><strong>1. 修改 Go 端</strong> (<code>kinetitext-go/src/audio-convert/converter.go</code>):</p>
+<pre><code class="language-go">// 在 ConvertAudio 函數中添加新格式處理
+switch req.Format {
+case &quot;mp3&quot;:
+    // 現有 MP3 處理
+case &quot;m4a&quot;:
+    // 新增 M4A 處理
+    return convertToM4A(req)
+}
+</code></pre>
+<p><strong>2. 重新編譯並測試</strong>:</p>
+<pre><code class="language-bash">cd ../kinetitext-go &amp;&amp; make build
+echo &#39;{&quot;input_file&quot;:&quot;test.wav&quot;,&quot;output_file&quot;:&quot;out.m4a&quot;,&quot;format&quot;:&quot;m4a&quot;,&quot;bitrate&quot;:192}&#39; | \
+  ./bin/kinetitext-audio
+</code></pre>
+<p><strong>3. 修改 Bun 端</strong>（如需驗證新格式輸出）:</p>
+<p>在 <code>src/core/services/AudioConvertGoWrapper.ts</code> 的介面中更新支持的格式文檔。</p>
+<h3 id="63-除錯-go-側問題"><a class="anchor" href="#63-除錯-go-側問題">#</a>6.3 除錯 Go 側問題</h3>
+<p><strong>方法 1: 標準 stderr 日誌</strong></p>
+<p>Go 二進制的所有日誌都輸出到 stderr，不干擾 JSON stdout:</p>
+<pre><code class="language-bash"># 查看 Go 二進制的詳細日誌（stderr）
+echo &#39;{&quot;input_file&quot;:&quot;test.wav&quot;,&quot;output_file&quot;:&quot;out.mp3&quot;,&quot;format&quot;:&quot;mp3&quot;,&quot;bitrate&quot;:192}&#39; | \
+  ../kinetitext-go/bin/kinetitext-audio 2&gt;&amp;1 | cat
+</code></pre>
+<p><strong>方法 2: 添加臨時日誌（kinetitext-go/src/audio-convert/main.go）</strong>:</p>
+<pre><code class="language-go">import (
+    &quot;fmt&quot;
+    &quot;os&quot;
+)
+
+func main() {
+    // 讀取請求...
+
+    // 添加調試日誌（輸出到 stderr，不影響 JSON 輸出）
+    fmt.Fprintf(os.Stderr, &quot;[DEBUG] Converting: %s -&gt; %s\n&quot;, req.InputFile, req.OutputFile)
+
+    resp, err := ConvertAudio(req)
+
+    fmt.Fprintf(os.Stderr, &quot;[DEBUG] Result: success=%v, error=%v\n&quot;, resp.Success, resp.Error)
+
+    respond(*resp)
+}
+</code></pre>
+<p>重新編譯後使用。</p>
+<h3 id="64-測試-go-後端依賴注入"><a class="anchor" href="#64-測試-go-後端依賴注入">#</a>6.4 測試 Go 後端依賴注入</h3>
+<p>在單元測試中 mock Go 後端（避免依賴真實二進制）:</p>
+<pre><code class="language-typescript">import { AudioConvertService, type AudioConvertServiceDeps } from &#39;./AudioConvertService&#39;
+import { AudioConvertConfig } from &#39;../../config/AudioConvertConfig&#39;
+import type { AudioConvertGoWrapper } from &#39;./AudioConvertGoWrapper&#39;
+
+// 創建 mock Go wrapper
+const mockGoWrapper = {
+  convert: async (req: any) =&gt; ({
+    success: true,
+    outputFile: req.outputFile,
+    duration: 5.0,
+  }),
+  init: async (path: string) =&gt; {},
+  isAvailable: async () =&gt; true,
+  getBinaryPath: () =&gt; &#39;/mock/path&#39;,
+} as unknown as typeof AudioConvertGoWrapper
+
+// 注入 mock
+const service = new AudioConvertService(
+  new AudioConvertConfig({ useGoBackend: true }),
+  { goWrapper: mockGoWrapper }
+)
+</code></pre>
+<h3 id="65-性能分析工具"><a class="anchor" href="#65-性能分析工具">#</a>6.5 性能分析工具</h3>
+<p>使用 Bun 內建性能計時:</p>
+<pre><code class="language-typescript">import { AudioConvertService } from &#39;./AudioConvertService&#39;
+import { AudioConvertConfig } from &#39;../../config/AudioConvertConfig&#39;
+
+async function profileConversion(inputPath: string) {
+  const goService = new AudioConvertService(
+    new AudioConvertConfig({ useGoBackend: true, goBinaryPath: &#39;...&#39; })
+  )
+  await goService.initGoBackend()
+
+  const start = performance.now()
+  await goService.convertToMp3(inputPath, &#39;/tmp/profile-out.mp3&#39;)
+  const duration = performance.now() - start
+
+  console.log(`Conversion took: ${duration.toFixed(2)}ms`)
+}
+</code></pre>
+<hr>
+<h2 id="7-常見問題-faq"><a class="anchor" href="#7-常見問題-faq">#</a>7. 常見問題 FAQ</h2>
+<p><strong>Q: 啟用 Go 後端後，現有功能會受影響嗎？</strong></p>
+<p>A: 不會。所有現有功能（爬蟲、合併、MP4 轉換等）保持不變。Go 後端僅影響音頻轉換（WAV/AAC/OGG/FLAC → MP3）這個特定步驟。</p>
+<p><strong>Q: 可以混用 Bun 和 Go 後端嗎？</strong></p>
+<p>A: 目前支持全局配置（所有轉換使用相同後端）。若需要逐文件控制，可創建兩個 <code>AudioConvertService</code> 實例：一個啟用 Go，一個使用 Bun。</p>
+<p><strong>Q: Go 後端初始化失敗會中斷服務嗎？</strong></p>
+<p>A: 不會。<code>initGoBackend()</code> 失敗時，系統自動降級至 Bun FFmpeg 後端，並記錄警告日誌。轉換操作繼續正常進行。</p>
+<p><strong>Q: Go 後端支持哪些輸入格式？</strong></p>
+<p>A: 支持所有 FFmpeg 可解碼的格式。主要測試格式：WAV、AAC、OGG、FLAC。輸出格式目前為 MP3。</p>
+<p><strong>Q: 如果 Go 後端轉換失敗怎辦？</strong></p>
+<p>A: <code>RetryService</code> 會自動重試，最多 4 次（含指數退避）。若全部失敗，返回錯誤給調用方。系統<strong>不會</strong>自動切換到 Bun 後端（這是有意設計：如果你顯式啟用了 Go 後端，轉換失敗可能需要你調查原因）。</p>
+<p><strong>Q: 如何確認轉換使用的是 Go 還是 Bun 後端？</strong></p>
+<p>A: 查看結構化日誌（Pino JSON）:</p>
+<pre><code class="language-bash">bun run src/index.ts --crawl ... 2&gt;&amp;1 | grep -E &quot;(Go backend|Bun FFmpeg|audio-convert)&quot;
+</code></pre>
+<p>Go 後端成功初始化時會輸出:</p>
+<pre><code class="language-json">{&quot;level&quot;:30,&quot;name&quot;:&quot;audio-convert&quot;,&quot;msg&quot;:&quot;Go backend initialized successfully&quot;,&quot;binaryPath&quot;:&quot;...&quot;}
+</code></pre>
+<p><strong>Q: Go 後端的 kinetitext-go 倉庫在哪裡？</strong></p>
+<p>A: <code>kinetitext-go</code> 是與 <code>KinetiText</code> 並列的獨立倉庫，位於 <code>../kinetitext-go/</code>（相對於 KinetiText 根目錄）。</p>
+<p><strong>Q: 可以在 CI/CD 中使用 Go 後端嗎？</strong></p>
+<p>A: 可以。確保 CI 環境中:</p>
+<ol>
+<li>已安裝 Go 1.20+ 並編譯 <code>kinetitext-audio</code> 二進制</li>
+<li>設置環境變數 <code>KINETITEXT_GO_AUDIO_BIN</code> 指向二進制路徑</li>
+<li>或預先編譯二進制並提交到倉庫（需 .gitignore 豁免）</li>
+</ol>
+<hr>
+<h2 id="8-下一步計劃"><a class="anchor" href="#8-下一步計劃">#</a>8. 下一步計劃</h2>
+<h3 id="phase-7-durationservice-go-優化計劃中"><a class="anchor" href="#phase-7-durationservice-go-優化計劃中">#</a>Phase 7: DurationService Go 優化（計劃中）</h3>
+<p><strong>目標</strong>: 5-10x 元數據讀取速度提升</p>
+<p><strong>方案</strong>:</p>
+<ul>
+<li>使用 go-flac（純 Go FLAC 元數據讀取）</li>
+<li>使用 ffprobe 作為後備（支持所有格式）</li>
+<li>批量並發讀取（多文件同時讀取元數據）</li>
+</ul>
+<p><strong>預期收益</strong>:</p>
+<ul>
+<li>當前: 音頻合併前需序列讀取所有文件時長</li>
+<li>優化後: Go 並發讀取，速度 5-10x 提升</li>
+<li>影響場景: 大型有聲書合併（100+ 章節）</li>
+</ul>
+<h3 id="phase-8-mp4conversionservice-go-優化計劃中"><a class="anchor" href="#phase-8-mp4conversionservice-go-優化計劃中">#</a>Phase 8: MP4ConversionService Go 優化（計劃中）</h3>
+<p><strong>目標</strong>: 30-40% M4A 轉換速度提升</p>
+<p><strong>方案</strong>: 複用 Phase 6 的 FFmpeg binding 模式，添加 M4A/MP4 輸出格式支持</p>
+<hr>
+<p><strong>最後更新</strong>: 2026-03-26
+<strong>文檔狀態</strong>: 與 v1.1 實現同步</p>
+<p><strong>相關文檔</strong>:</p>
+<ul>
+<li><code>docs/ARCHITECTURE.md</code> — 完整架構說明</li>
+<li><code>docs/CONFIGURATION.md</code> — 完整配置選項</li>
+<li><code>docs/TROUBLESHOOTING.md</code> — 通用故障排查</li>
+<li><code>docs/API.md</code> — 完整 API 參考</li>
+</ul>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>docs/MIGRATION_GUIDE.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

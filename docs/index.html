@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>KinetiText 文件 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li class="active"><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="kinetitext"><a class="anchor" href="#kinetitext">#</a>KinetiText</h1>
+<p>KinetiText 是一個基於 Bun &amp; TypeScript 開發的模組化小說爬蟲系統。它支援高性能併發爬取、智慧浮水印清除、語音書（TTS）生成以及多點雲端備份。</p>
+<h2 id="-快速開始"><a class="anchor" href="#-快速開始">#</a>🚀 快速開始</h2>
+<h3 id="1-安裝環境"><a class="anchor" href="#1-安裝環境">#</a>1. 安裝環境</h3>
+<p>確保您的系統已安裝 <a href="https://bun.sh">Bun</a>。</p>
+<pre><code class="language-bash">bun install
+</code></pre>
+<h3 id="2-開始爬取小說"><a class="anchor" href="#2-開始爬取小說">#</a>2. 開始爬取小說</h3>
+<p>目前支援 8novel / wfxs / xsw / czbooks / hjwzw / twkan / uukanshu / zhys / novel543 共 9 個站點（依 URL 自動選擇 Adapter；完整主機對應見 <code>src/adapters/index.ts</code>）。</p>
+<pre><code class="language-bash">bun run start &quot;https://www.8novel.com/novelbooks/12345/&quot;
+bun run start --help
+</code></pre>
+<hr>
+<h2 id="-全指令功能說明"><a class="anchor" href="#-全指令功能說明">#</a>🛠 全指令功能說明</h2>
+<p>本專案提供了一系列的工具腳本，協助您從小說爬取到影音製作的完整流程。</p>
+<h3 id="1--小說爬取-crawler"><a class="anchor" href="#1--小說爬取-crawler">#</a>1. 🕷 小說爬取 (Crawler)</h3>
+<p>核心爬取引擎，負責下載章節內容並存為純文字檔。</p>
+<pre><code class="language-bash">bun run start &lt;URL&gt;
+bun run start --help
+bun run start &lt;URL&gt; --dry-run
+</code></pre>
+<p>執行完成後會額外輸出：</p>
+<ul>
+<li><code>run_report.json</code>: 結構化執行報告（成功/失敗/耗時/完整性檢查）。</li>
+<li><code>failed_chapters.json</code>: 抓取失敗章節清單（若有失敗時），可用於後續補抓。</li>
+</ul>
+<p>目前 crawler 已內建：</p>
+<ul>
+<li>站點級資源配置（不同 adapter 可限制自己的併發與請求間隔）。</li>
+<li>anti-bot / challenge 頁偵測與重試。</li>
+<li>Puppeteer page pool 與 axios session/cookie 重用，以降低長篇抓取成本。</li>
+</ul>
+<h3 id="15--adapter-效能分析-profile"><a class="anchor" href="#15--adapter-效能分析-profile">#</a>1.5. ⏱ Adapter 效能分析 (Profile)</h3>
+<p>快速量測單一站點 adapter 的 metadata、章節列表，以及抽樣章節抓取耗時。</p>
+<pre><code class="language-bash">bun run profile &quot;https://www.8novel.com/novelbooks/12345/&quot;
+bun run profile &quot;https://twkan.com/book/123.html&quot; --samples=5
+bun run profile &quot;https://twkan.com/book/123.html&quot; --samples=5 --json
+</code></pre>
+<p>參數說明：</p>
+<ul>
+<li><code>--samples=N</code>: 抽樣抓取的章節數量，預設為 <code>3</code>。</li>
+<li><code>--json</code>: 以 JSON 輸出 profiling 結果，方便後續分析或存檔。</li>
+</ul>
+<h3 id="2--智慧內容清理-noise-cleanup"><a class="anchor" href="#2--智慧內容清理-noise-cleanup">#</a>2. 🧹 智慧內容清理 (Noise Cleanup)</h3>
+<p>用於清除已存檔小說中的網站浮水印、廣告文字或干擾項。</p>
+<pre><code class="language-bash"># 自動識別所有書籍的來源並進行清理 (推薦)
+bun run clean
+
+# 指令語法: bun run clean [siteId] [小說名稱]
+bun run clean 8novel &quot;小說名稱&quot;
+bun run clean --dry-run
+</code></pre>
+<h3 id="25--失敗章節補抓-retry-failed"><a class="anchor" href="#25--失敗章節補抓-retry-failed">#</a>2.5. 🔁 失敗章節補抓 (Retry Failed)</h3>
+<p>依據 <code>output/&lt;書名&gt;/failed_chapters.json</code> 重試抓取失敗章節，成功後會覆寫章節檔，並更新失敗清單。</p>
+<pre><code class="language-bash">bun run retry-failed &quot;小說名稱&quot;
+bun run retry-failed &quot;小說名稱&quot; --dry-run
+</code></pre>
+<h3 id="3--批次標題結尾清理-file-cleanup"><a class="anchor" href="#3--批次標題結尾清理-file-cleanup">#</a>3. ✂️ 批次標題結尾清理 (File Cleanup)</h3>
+<p>專門用於大量移除文件開頭重複的「標題」以及特定的「網頁導覽尾綴」。適合處理爬取後格式不整齊的 txt 文件。</p>
+<pre><code class="language-bash"># 指令語法: bun run clean-files &lt;資料夾路徑&gt; [自定義尾綴]
+bun run clean-files &quot;output/小說名稱/txt&quot; &quot;自定義結尾文字&quot;
+bun run clean-files &quot;output/小說名稱/txt&quot; --dry-run
+</code></pre>
+<h3 id="4--生成語音書-audiobook"><a class="anchor" href="#4--生成語音書-audiobook">#</a>4. 🎧 生成語音書 (Audiobook)</h3>
+<p>使用 Microsoft Edge TTS 技術將小說轉為 MP3 章節音檔。</p>
+<pre><code class="language-bash"># 基本用法 (預設為前 50 章，不合併)
+bun run audiobook &quot;小說名稱&quot;
+
+# 進階用法：指定範圍、語速、音量、併發數以及「是否合併」
+# 語法: bun run audiobook &lt;書名&gt; [範圍] [語速] [音量] [併發數] [是否合併]
+bun run audiobook &quot;小說名稱&quot; 1-100 +0% +50% 5 true
+bun run audiobook &quot;小說名稱&quot; 1-50 +0% +0% 3 false --dry-run
+</code></pre>
+<ul>
+<li><strong>範圍</strong>: <code>all</code> (全部), <code>1-100</code> (區間), <code>2,4,10</code> (特定章節)。</li>
+<li><strong>語速</strong>: 如 <code>+20%</code>, <code>-10%</code>。</li>
+<li><strong>音量</strong>: 如 <code>+50%</code>, <code>-20%</code>。</li>
+<li><strong>併發數</strong>: 建議設定在 <code>5-10</code> 之間。</li>
+<li><strong>是否合併</strong>: 填入 <code>true</code> 則會將該次生成的章節合併為單個 MP3。</li>
+</ul>
+<blockquote class="callout note"><p class="callout-title"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7.4v3.4"/><circle cx="8" cy="5.2" r=".55" fill="currentColor" stroke="none"/></svg><span>注意</span></p><p><strong>關於 TTS 來源</strong>：本功能透過 WebSocket 直連 Microsoft Edge 的線上 TTS 端點
+（<code>wss://speech.platform.bing.com/...</code>，輸出 24kHz 單聲道 MP3），需連網但<strong>免費、不需自備金鑰</strong>。
+內建預設 token，可用環境變數 <code>MICROSOFT_TTS_TOKEN</code> 覆寫，或設定 <code>MICROSOFT_TOKEN_REFRESH_URL</code>
+讓程式自動向遠端取得最新 token。預設聲音為 <code>zh-CN-YunxiNeural</code>（於程式碼設定，CLI 未開放更改）。
+比特率由 <code>AUDIO_BITRATE</code> 控制（預設 <code>128k</code>，範圍 <code>64k</code>–<code>320k</code>）。</p>
+</blockquote>
+<h3 id="5--批次合併-mp3-merge-mp3"><a class="anchor" href="#5--批次合併-mp3-merge-mp3">#</a>5. 🎵 批次合併 MP3 (Merge MP3)</h3>
+<p>將大量的小說章節 MP3 檔案按指定數量進行分批合併。例如：每 20 章合併為一個大檔案。</p>
+<pre><code class="language-bash"># 基本用法 (預設每 20 個檔案合併為一檔，合併輸出至小說主目錄)
+bun run merge-mp3 &quot;output/小說名稱&quot;
+
+# 進階用法
+# 語法: bun run merge-mp3 &lt;目錄&gt; [--size &lt;數量&gt;] [--start &lt;索引&gt;] [--end &lt;索引&gt;] [--force]
+bun run merge-mp3 &quot;output/小說名稱&quot; --size 50 --force
+bun run merge-mp3 &quot;output/小說名稱&quot; --start 21 --end 100
+bun run merge-mp3 &quot;output/小說名稱&quot; --size 50 --dry-run
+</code></pre>
+<ul>
+<li><strong>--size</strong>: 指定每幾個檔案合併一次。</li>
+<li><strong>--start</strong>: 開始的檔案索引 (預設: 1，即第一個檔案)。</li>
+<li><strong>--end</strong>: 結束的檔案索引 (預設: 全部)。</li>
+<li><strong>--force</strong>: 強制重新合併，即使輸出檔案已存在。</li>
+</ul>
+<h3 id="6--mp3-轉-m4a--youtube-影片-to-mp4--to-youtube"><a class="anchor" href="#6--mp3-轉-m4a--youtube-影片-to-mp4--to-youtube">#</a>6. 🎬 MP3 轉 M4A / YouTube 影片 (to-mp4 / to-youtube)</h3>
+<p>兩個指令共用同一套轉檔引擎，差別只在輸出：</p>
+<ul>
+<li><strong><code>to-mp4</code></strong>：預設輸出純音訊 <code>.m4a</code>（AAC，<code>MP4_OUTPUT_FORMAT=m4a</code>），適合當有聲書音檔。</li>
+<li><strong><code>to-youtube</code></strong>：<code>to-mp4</code> 的薄包裝，自動帶 <code>--youtube</code>，輸出 H.264 + AAC 的 <code>.mp4</code>
+影片（黑底或封面圖，預設 1920×1080），可直接上傳 YouTube。</li>
+</ul>
+<pre><code class="language-bash"># 批量轉 M4A（純音訊）
+bun run to-mp4 --input=output/小說名稱/merged --output=output/小說名稱/m4a
+
+# 附元資料（title/artist/album）
+bun run to-mp4 \
+  --input=output/小說名稱/merged \
+  --output=output/小說名稱/m4a \
+  --metadata=output/小說名稱/metadata.json
+
+# 轉成 YouTube 可上傳影片（H.264 1080p 黑底）
+bun run to-youtube --input=output/小說名稱/merged --output=output/小說名稱/youtube
+
+# 附封面圖（上傳預覽更好看）
+bun run to-youtube --input=output/小說名稱/merged --output=output/小說名稱/youtube --cover=output/小說名稱/cover.jpg
+
+# 僅預覽，不實際呼叫 FFmpeg
+bun run to-mp4 --input=... --output=... --dry-run
+</code></pre>
+<p>可用旗標：<code>--input=</code>、<code>--output=</code>、<code>--metadata=</code>、<code>--cover=</code>、<code>--youtube</code>、<code>--dry-run</code>、<code>--help</code>。
+細部環境變數（比特率、解析度、背景）見下方 Phase 4 與 <a href="CONFIGURATION.html">docs/CONFIGURATION.md</a>。</p>
+<blockquote class="callout note"><p class="callout-title"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7.4v3.4"/><circle cx="8" cy="5.2" r=".55" fill="currentColor" stroke="none"/></svg><span>注意</span></p><p>此功能需要系統預先安裝 <code>ffmpeg</code>。</p>
+</blockquote>
+<h3 id="7--雲端備份-cloud-backup"><a class="anchor" href="#7--雲端備份-cloud-backup">#</a>7. ☁️ 雲端備份 (Cloud Backup)</h3>
+<p>使用 <code>rclone</code> 將 <code>output/</code> 目錄同步至雲端（如 Google Drive, OneDrive 等）。</p>
+<pre><code class="language-bash">bun run backup
+bun run backup --dry-run
+</code></pre>
+<blockquote class="callout note"><p class="callout-title"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7.4v3.4"/><circle cx="8" cy="5.2" r=".55" fill="currentColor" stroke="none"/></svg><span>注意</span></p><p>需先完成 <code>rclone config</code> 設定。備份目的地需在 <code>scripts/backup.ts</code> 中配置。</p>
+</blockquote>
+<h3 id="8--測試-tests"><a class="anchor" href="#8--測試-tests">#</a>8. ✅ 測試 (Tests)</h3>
+<pre><code class="language-bash">bun run test
+bun run profile --help
+</code></pre>
+<blockquote class="callout note"><p class="callout-title"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7.4v3.4"/><circle cx="8" cy="5.2" r=".55" fill="currentColor" stroke="none"/></svg><span>注意</span></p><p>CI 會在 <code>push(master)</code> 與 <code>pull_request</code> 自動執行 <code>bun test</code> 與 <code>bun run start --help</code> smoke check（見 <code>.github/workflows/test.yml</code>）。</p>
+</blockquote>
+<hr>
+<h2 id="-目錄結構"><a class="anchor" href="#-目錄結構">#</a>📂 目錄結構</h2>
+<ul>
+<li><code>src/core/</code>: 核心引擎與類型定義。</li>
+<li><code>src/adapters/</code>: 站點適配器。</li>
+<li><code>src/profiling/</code>: adapter profiling 與效能量測工具。</li>
+<li><code>src/utils/</code>: 工具類（含 <code>ContentCleaner.ts</code> 浮水印邏輯）。</li>
+<li><code>src/storage/</code>: 存檔邏輯。</li>
+<li><code>src/workflows/</code>: 跨腳本共用流程工具（路徑解析、章節檔案列舉、清理輔助）。</li>
+<li><code>src/cli/</code>: 共用 CLI 旗標與錯誤格式工具。</li>
+<li><code>rules/</code>: 外部化清理規則（<code>content-cleaner.json</code>）。</li>
+<li><code>output/</code>: 爬取結果與語音生成存放處。</li>
+<li><code>scripts/</code>: 所有的工具指令腳本。</li>
+<li><code>tests/</code>: Bun 測試（workflow helpers 與清理邏輯）。</li>
+</ul>
+<hr>
+<h2 id="-開發者手冊"><a class="anchor" href="#-開發者手冊">#</a>🛠 開發者手冊</h2>
+<h3 id="如何增加新的浮水印過濾"><a class="anchor" href="#如何增加新的浮水印過濾">#</a>如何增加新的浮水印過濾？</h3>
+<p>請修改 <code>rules/content-cleaner.json</code>。</p>
+<ul>
+<li><code>watermarks</code>: 字串替換規則</li>
+<li><code>noisePatterns</code>: 正則規則（<code>pattern</code> + <code>flags</code>）</li>
+</ul>
+<p><code>src/utils/ContentCleaner.ts</code> 會在執行時載入此規則檔（若讀取失敗會 fallback 到內建預設規則）。</p>
+<h3 id="如何支援新站點"><a class="anchor" href="#如何支援新站點">#</a>如何支援新站點？</h3>
+<ol>
+<li>實作 <code>src/adapters/NovelSiteAdapter.ts</code> 介面。</li>
+<li>在 <code>src/adapters/index.ts</code> 中註冊新的 Adapter。</li>
+</ol>
+<p>若站點有特殊資源需求，建議同時設定：</p>
+<ul>
+<li><code>resourceProfile.maxConcurrency</code></li>
+<li><code>resourceProfile.requestIntervalMs</code></li>
+<li><code>resourceProfile.postSuccessDelayMs</code></li>
+</ul>
+<hr>
+<h2 id="-媒體處理功能-phase-2-4"><a class="anchor" href="#-媒體處理功能-phase-2-4">#</a>🎧 媒體處理功能 (Phase 2-4)</h2>
+<h3 id="phase-2-mp3-轉換"><a class="anchor" href="#phase-2-mp3-轉換">#</a>Phase 2: MP3 轉換</h3>
+<h4 id="功能概述"><a class="anchor" href="#功能概述">#</a>功能概述</h4>
+<ul>
+<li>支援多格式轉換：WAV, AAC, OGG, FLAC → MP3</li>
+<li>可配置比特率（預設 128kbps，支援 64k-320k）</li>
+<li>自動重試失敗的轉換（指數退避）</li>
+<li>結構化日誌記錄（Pino）</li>
+</ul>
+<h4 id="使用範例"><a class="anchor" href="#使用範例">#</a>使用範例</h4>
+<pre><code class="language-bash"># 生成語音書 MP3（output/ 已爬取書籍）
+bun run audiobook &quot;小說名稱&quot; 1-50
+
+# 本地章節目錄（支援 .txt / .md，Markdown 會自動取 ## 正文 段落）
+bun run audiobook --input=/Users/carl/Dev/Fiction/Read-World/chapters
+bun run audiobook --input=/path/to/chapters --output=/path/to/mp3 1-10
+
+# 預覽將處理的章節
+bun run audiobook --input=/path/to/chapters --dry-run
+
+# 指定比特率（高品質）
+AUDIO_BITRATE=192k bun run audiobook &quot;小說名稱&quot;
+</code></pre>
+<h4 id="配置選項"><a class="anchor" href="#配置選項">#</a>配置選項</h4>
+<table>
+<thead>
+<tr>
+<th>環境變數</th>
+<th>預設值</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AUDIO_BITRATE</code></td>
+<td>128k</td>
+<td>MP3 比特率 (64k-320k)</td>
+</tr>
+<tr>
+<td><code>AUDIO_SAMPLE_RATE</code></td>
+<td>44100</td>
+<td>採樣率 (Hz)</td>
+</tr>
+<tr>
+<td><code>AUDIO_CHANNELS</code></td>
+<td>2</td>
+<td>聲道數</td>
+</tr>
+<tr>
+<td><code>AUDIO_CONVERT_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>並行轉換數</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="phase-3-音頻合併與分組"><a class="anchor" href="#phase-3-音頻合併與分組">#</a>Phase 3: 音頻合併與分組</h3>
+<h4 id="功能概述"><a class="anchor" href="#功能概述">#</a>功能概述</h4>
+<ul>
+<li>自動合併多個 MP3 檔案</li>
+<li>根據目標時長分組（預設 11 小時）</li>
+<li>時長計算精度 &lt; 1% 誤差</li>
+<li>支援乾跑預覽（dry-run）</li>
+<li>中文分組結果報告</li>
+</ul>
+<h4 id="使用範例"><a class="anchor" href="#使用範例">#</a>使用範例</h4>
+<pre><code class="language-bash"># 按時長分組合併（推薦：音頻書）
+bun run merge-mp3 \
+  --input=/path/to/mp3 \
+  --output=/path/to/merged \
+  --target=39600 \
+  --mode=duration
+
+# 預覽分組結果（不實際執行）
+bun run merge-mp3 --input=/path/to/mp3 --dry-run
+
+# 輸出人類可讀報告
+bun run merge-mp3 --input=/path/to/mp3 --report=human
+</code></pre>
+<h4 id="配置選項"><a class="anchor" href="#配置選項">#</a>配置選項</h4>
+<table>
+<thead>
+<tr>
+<th>環境變數 / 參數</th>
+<th>預設值</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--target</code></td>
+<td>39600</td>
+<td>目標時長（秒，或 11h / 660m 格式）</td>
+</tr>
+<tr>
+<td><code>--tolerance</code></td>
+<td>10</td>
+<td>容差百分比</td>
+</tr>
+<tr>
+<td><code>--mode</code></td>
+<td>count</td>
+<td><code>count</code>（按數量）或 <code>duration</code>（按時長）</td>
+</tr>
+<tr>
+<td><code>--report</code></td>
+<td>-</td>
+<td>報告格式：<code>json</code> 或 <code>human</code></td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>-</td>
+<td>預覽模式，不實際執行</td>
+</tr>
+<tr>
+<td><code>AUDIO_MERGE_TARGET_DURATION</code></td>
+<td>39600</td>
+<td>環境變數：目標時長（秒）</td>
+</tr>
+<tr>
+<td><code>AUDIO_MERGE_TOLERANCE_PERCENT</code></td>
+<td>10</td>
+<td>環境變數：容差百分比</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="phase-4-mp4m4a轉換"><a class="anchor" href="#phase-4-mp4m4a轉換">#</a>Phase 4: MP4（M4A）轉換</h3>
+<h4 id="功能概述"><a class="anchor" href="#功能概述">#</a>功能概述</h4>
+<ul>
+<li>將 MP3 轉換為 M4A（AAC 音頻 MP4 容器）</li>
+<li><strong><code>to-youtube</code></strong>：輸出 H.264 + AAC 的 <code>.mp4</code>（黑底或封面圖），可直接上傳 YouTube</li>
+<li>支援元資料嵌入（title, artist, album）</li>
+<li>AAC 編碼，比 MP3 更高效</li>
+<li>批量轉換支援</li>
+</ul>
+<h4 id="使用範例"><a class="anchor" href="#使用範例">#</a>使用範例</h4>
+<pre><code class="language-bash"># 批量轉換 MP3 → M4A
+bun run to-mp4 \
+  --input=/path/to/merged_mp3 \
+  --output=/path/to/m4a \
+  --metadata=/path/to/metadata.json \
+  --dry-run
+
+# YouTube 可上傳格式（H.264 1080p 黑底 + AAC）
+bun run to-youtube \
+  --input=/Users/carl/Dev/Fiction/Read-World/chapters \
+  --output=/Users/carl/Dev/Fiction/Read-World/chapters/youtube
+
+# 附封面圖（上傳 YouTube 時預覽圖更好看）
+bun run to-youtube \
+  --input=/path/to/mp3 \
+  --output=/path/to/youtube \
+  --cover=/path/to/cover.jpg
+
+# 高品質轉換
+MP4_BITRATE=320k bun run to-youtube --input=... --output=...
+</code></pre>
+<h4 id="元資料-json-格式"><a class="anchor" href="#元資料-json-格式">#</a>元資料 JSON 格式</h4>
+<pre><code class="language-json">{
+  &quot;merged_001.mp3&quot;: {
+    &quot;title&quot;: &quot;第一部分&quot;,
+    &quot;artist&quot;: &quot;作者名&quot;,
+    &quot;album&quot;: &quot;書籍名&quot;
+  },
+  &quot;merged_002.mp3&quot;: {
+    &quot;title&quot;: &quot;第二部分&quot;,
+    &quot;artist&quot;: &quot;作者名&quot;,
+    &quot;album&quot;: &quot;書籍名&quot;
+  }
+}
+</code></pre>
+<h4 id="配置選項"><a class="anchor" href="#配置選項">#</a>配置選項</h4>
+<table>
+<thead>
+<tr>
+<th>環境變數</th>
+<th>預設值</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>MP4_BITRATE</code></td>
+<td>256</td>
+<td>AAC 比特率（kbps，96-320）</td>
+</tr>
+<tr>
+<td><code>MP4_OUTPUT_FORMAT</code></td>
+<td>m4a</td>
+<td>輸出格式（<code>m4a</code> 純音訊 / <code>mp4</code> H.264 影片）</td>
+</tr>
+<tr>
+<td><code>MP4_MAX_CONCURRENCY</code></td>
+<td>2</td>
+<td>並行轉換數</td>
+</tr>
+<tr>
+<td><code>MP4_VIDEO_WIDTH</code> / <code>MP4_VIDEO_HEIGHT</code></td>
+<td>1920 / 1080</td>
+<td>YouTube 影片解析度</td>
+</tr>
+<tr>
+<td><code>MP4_VIDEO_BACKGROUND</code></td>
+<td>none</td>
+<td>視訊背景（<code>black</code> / <code>image</code>，YouTube 用）</td>
+</tr>
+<tr>
+<td><code>MP4_COVER_IMAGE</code></td>
+<td>（空）</td>
+<td>封面圖路徑（等同 <code>--cover</code>）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>元資料（title/artist/album）透過 <code>--metadata=&lt;json&gt;</code> 帶入，非由環境變數開關。
+完整視訊參數見 <a href="CONFIGURATION.html">docs/CONFIGURATION.md</a> Phase 4.5。</p>
+</blockquote>
+<hr>
+<h2 id="-完整工作流程從小說到音頻書"><a class="anchor" href="#-完整工作流程從小說到音頻書">#</a>🔄 完整工作流程：從小說到音頻書</h2>
+<pre><code class="language-bash"># 步驟 1: 爬取小說
+bun run start &quot;https://www.8novel.com/novelbooks/12345/&quot;
+
+# 步驟 2: 生成 MP3 章節（使用 Edge TTS）
+bun run audiobook &quot;小說名稱&quot; 1-200
+
+# 步驟 3: 按 11 小時分組合併
+bun run merge-mp3 \
+  --input=output/小說名稱/mp3 \
+  --output=output/小說名稱/merged \
+  --target=39600 \
+  --mode=duration
+
+# 步驟 4: 轉換為 M4A（附元資料）
+bun run to-mp4 \
+  --input=output/小說名稱/merged \
+  --output=output/小說名稱/m4a \
+  --metadata=output/小說名稱/metadata.json
+
+# 步驟 5: 生成 M4B 有聲書（含章節標記、按時長分卷，供 Apple Books 匯入）
+bun run build-m4b --title=小說名稱
+
+# 步驟 6: 上傳到雲端
+bun run backup
+</code></pre>
+<blockquote>
+<p>步驟 5 直接讀 <code>output/小說名稱/audio/</code> 的逐章 MP3，故步驟 3、4 的合併/轉檔可略過；
+若只想做有聲書，跑完步驟 2 後直接 <code>build-m4b</code> 即可。</p>
+</blockquote>
+<hr>
+<h2 id="-匯入-apple-books"><a class="anchor" href="#-匯入-apple-books">#</a>📲 匯入 Apple Books</h2>
+<p><code>build-m4b</code> 產物落在 <code>output/&lt;書名&gt;/m4b/&lt;書名&gt;_vol01.m4b …</code>，每卷內含章節標記可跳章。
+所謂「上傳 Apple Books」即把 <code>.m4b</code> <strong>匯入</strong> Apple Books App（Apple 無個人有聲書上傳 API，全靠手動匯入）。</p>
+<p><strong>macOS（建議：先在 Mac 匯入，再靠 iCloud 同步到手機）</strong></p>
+<ol>
+<li>開 <strong>Books</strong> App</li>
+<li>Finder 開 <code>output/&lt;書名&gt;/m4b/</code>，把 <code>.m4b</code> 全選<strong>拖進</strong> Books 視窗（或 Books 選單 → 檔案 → 加入資源庫）</li>
+<li>切到上方「<strong>有聲書</strong>」分頁即可看到，點開可跳章、自動記憶進度</li>
+<li>確認 系統設定 → Apple ID → iCloud → Books 已開「同步」，手機端會自動出現</li>
+</ol>
+<p><strong>iPhone / iPad（不經 Mac）</strong></p>
+<ul>
+<li><strong>AirDrop</strong>：從 Mac AirDrop <code>.m4b</code> → 手機選「用 Books 開啟」</li>
+<li>或把 <code>.m4b</code> 丟到 <strong>iCloud Drive / 檔案 App</strong>，長按檔案 → 分享 → <strong>Books</strong></li>
+</ul>
+<p><strong>注意事項</strong></p>
+<ul>
+<li>章節導覽與進度記憶要生效，<strong>必須是 M4B</strong>（含章節標記）——這正是捨棄黑底 MP4 上 YouTube、改走 M4B 的原因。</li>
+<li>分卷是刻意設計：每卷預設約 11 小時（<code>--target=39600</code>），太大的單檔 iCloud 同步容易失敗。</li>
+<li>若 <code>output/&lt;書名&gt;/cover.jpg|png</code> 存在會自動嵌封面，否則略過。</li>
+<li>這是<strong>個人資源庫匯入</strong>，非上架販售。公開販售有聲書須走 Apple Books Partner / 經銷商（如 Findaway Voices）且需自有版權，爬取內容不適用。</li>
+</ul>
+<hr>
+<h2 id="-互動式控制台推薦"><a class="anchor" href="#-互動式控制台推薦">#</a>🎛 互動式控制台（推薦）</h2>
+<p>不想記指令參數？直接開控制台，全程用方向鍵選：</p>
+<pre><code class="language-bash">bun run menu
+</code></pre>
+<ul>
+<li>📊 檢視狀態：一眼看完所有書的爬取/TTS/合併/轉檔進度與缺章</li>
+<li>🎙 生成語音書：選書、選範圍，不必打路徑或記 flag</li>
+<li>🎧 生成 M4B 有聲書：逐章標記、按時長分卷，丟進 Apple Books / 手機有聲書 App 即可跳章、記憶進度</li>
+<li>🚀 一鍵全跑：爬取 → TTS → 合併 → 轉檔 → 備份 自動接續</li>
+</ul>
+<p>底層仍呼叫下方各指令，兩種用法可混用。</p>
+<h2 id="-完整指令列表"><a class="anchor" href="#-完整指令列表">#</a>🔧 完整指令列表</h2>
+<table>
+<thead>
+<tr>
+<th>指令</th>
+<th>功能</th>
+<th>Phase</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bun run menu</code></td>
+<td>互動式控制台</td>
+<td>TUI</td>
+</tr>
+<tr>
+<td><code>bun run start &lt;URL&gt;</code></td>
+<td>爬取小說</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><code>bun run profile &lt;URL&gt;</code></td>
+<td>效能分析</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><code>bun run clean</code></td>
+<td>清理浮水印</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><code>bun run retry-failed &lt;書名&gt;</code></td>
+<td>重試失敗章節</td>
+<td>Phase 1</td>
+</tr>
+<tr>
+<td><code>bun run clean-files &lt;目錄&gt;</code></td>
+<td>批次清理檔案</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><code>bun run audiobook &lt;書名&gt;</code></td>
+<td>生成 MP3 語音書</td>
+<td>Phase 2</td>
+</tr>
+<tr>
+<td><code>bun run merge-mp3 --input=&lt;目錄&gt;</code></td>
+<td>合併 MP3（按數量）</td>
+<td>Phase 3</td>
+</tr>
+<tr>
+<td><code>bun run merge-mp3 --input=&lt;目錄&gt; --mode=duration</code></td>
+<td>合併 MP3（按時長）</td>
+<td>Phase 3</td>
+</tr>
+<tr>
+<td><code>bun run to-mp4 --input=&lt;目錄&gt;</code></td>
+<td>轉換為 M4A</td>
+<td>Phase 4</td>
+</tr>
+<tr>
+<td><code>bun run to-youtube --input=&lt;目錄&gt;</code></td>
+<td>轉為 H.264 + AAC 的 <code>.mp4</code>（可上傳 YouTube）</td>
+<td>Phase 4</td>
+</tr>
+<tr>
+<td><code>bun run build-m4b --title=&lt;書名&gt;</code></td>
+<td>生成 M4B 有聲書（含章節，按時長分卷）</td>
+<td>Phase 4</td>
+</tr>
+<tr>
+<td><code>bun run backup</code></td>
+<td>雲端備份</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><code>bun run verify &lt;書名&gt;</code></td>
+<td>檢查章節數量完整性</td>
+<td>核心</td>
+</tr>
+<tr>
+<td><code>bun run bench:convert</code></td>
+<td>轉檔效能基準測試</td>
+<td>開發</td>
+</tr>
+<tr>
+<td><code>bun run test</code></td>
+<td>執行測試</td>
+<td>開發</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="-完整文檔導覽"><a class="anchor" href="#-完整文檔導覽">#</a>📚 完整文檔導覽</h2>
+<ul>
+<li><a href="ARCHITECTURE.html">架構文檔</a> - 系統設計、模組分層、Adapter / TTS / 影音管線</li>
+<li><a href="API.html">API 參考</a> - 所有服務類的完整 API 說明</li>
+<li><a href="CONFIGURATION.html">配置指南</a> - 環境變數與配置選項</li>
+<li><a href="TROUBLESHOOTING.html">故障排查</a> - 常見問題與解決方案</li>
+<li><a href="MP4_SERVICE.html">MP4 服務</a> - MP4 / YouTube 轉檔的 Go 後端細節</li>
+<li><a href="DURATION_SERVICE.html">時長服務</a> - 音頻時長計算演算法</li>
+<li><a href="MIGRATION_GUIDE.html">遷移指南</a> - 版本升級與 Go 後端啟用</li>
+</ul>
+<h2 id="-需求"><a class="anchor" href="#-需求">#</a>📦 需求</h2>
+<ul>
+<li><a href="https://bun.sh">Bun</a> &gt;= 1.0</li>
+<li><a href="https://ffmpeg.org">FFmpeg</a> (Phase 2-4 需要)</li>
+<li>Node.js 相容環境（Bun 支援）</li>
+</ul>
+<h3 id="安裝-ffmpeg"><a class="anchor" href="#安裝-ffmpeg">#</a>安裝 FFmpeg</h3>
+<pre><code class="language-bash"># macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt-get install ffmpeg
+
+# Windows
+choco install ffmpeg
+</code></pre>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>README.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

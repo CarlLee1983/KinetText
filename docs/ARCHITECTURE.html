@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>架構文檔 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li class="active"><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="kinetitext-架構文檔"><a class="anchor" href="#kinetitext-架構文檔">#</a>KinetiText 架構文檔</h1>
+<p><strong>版本</strong>: v1.2 (Milestone 2)
+<strong>最後更新</strong>: 2026-06-26
+<strong>維護者</strong>: Carl</p>
+<hr>
+<h2 id="目錄"><a class="anchor" href="#目錄">#</a>目錄</h2>
+<ul>
+<li><a href="#%E7%AC%AC-1-%E7%AB%A0-%E7%B3%BB%E7%B5%B1%E6%A6%82%E8%A6%BD">第 1 章: 系統概覽</a></li>
+<li><a href="#%E7%AC%AC-2-%E7%AB%A0-%E6%A0%B8%E5%BF%83%E6%A8%A1%E7%B5%84%E8%A8%AD%E8%A8%88">第 2 章: 核心模組設計</a></li>
+<li><a href="#23-adapter-%E7%B3%BB%E7%B5%B1%E8%88%87%E8%A8%BB%E5%86%8A%E6%A9%9F%E5%88%B6">第 2.3 節: Adapter 系統與註冊機制</a></li>
+<li><a href="#%E7%AC%AC-3-%E7%AB%A0-%E9%9F%B3%E9%A0%BB%E8%99%95%E7%90%86%E7%AE%A1%E7%B7%9A-milestone-1">第 3 章: 音頻處理管線 (Milestone 1)</a></li>
+<li><a href="#33-%E6%96%87%E6%9C%AC%E8%BD%89%E8%AA%9E%E9%9F%B3tts%E7%AE%A1%E7%B7%9A">第 3.3 節: 文本轉語音（TTS）管線</a></li>
+<li><a href="#34-youtube-%E5%BD%B1%E7%89%87%E5%8C%AF%E5%87%BA">第 3.4 節: YouTube 影片匯出</a></li>
+<li><a href="#%E7%AC%AC-4-%E7%AB%A0-%E9%87%8D%E8%A9%A6%E6%A9%9F%E5%88%B6%E8%A8%AD%E8%A8%88">第 4 章: 重試機制設計</a></li>
+<li><a href="#%E7%AC%AC-5-%E7%AB%A0-%E6%B8%AC%E8%A9%A6%E7%AD%96%E7%95%A5">第 5 章: 測試策略</a></li>
+<li><a href="#%E7%AC%AC-6-%E7%AB%A0-bun-go-%E6%B7%B7%E7%94%A8%E5%84%AA%E5%8C%96%E6%9E%B6%E6%A7%8B-milestone-2">第 6 章: Bun-Go 混用優化架構 (Milestone 2)</a></li>
+</ul>
+<hr>
+<h2 id="第-1-章-系統概覽"><a class="anchor" href="#第-1-章-系統概覽">#</a>第 1 章: 系統概覽</h2>
+<p>KinetiText 是一個模組化且可擴展的網路爬蟲系統，專注於小說與書籍內容抓取，並支援音頻書（TTS）生成。</p>
+<h3 id="11-設計原則"><a class="anchor" href="#11-設計原則">#</a>1.1 設計原則</h3>
+<ul>
+<li><strong>模組化設計</strong>: 核心引擎、適配器（Adapter）、儲存層（Storage）三層分離</li>
+<li><strong>高並發安全</strong>: p-limit 控制並發度，避免目標網站過載</li>
+<li><strong>彈性擴展</strong>: 新增網站只需實現 <code>NovelSiteAdapter</code> 介面</li>
+<li><strong>不可變性</strong>: 所有配置物件使用 readonly 屬性，禁止直接修改狀態</li>
+<li><strong>分層架構</strong>: Bun 業務邏輯層 + Go 高效能數據處理層</li>
+</ul>
+<h3 id="12-技術棧"><a class="anchor" href="#12-技術棧">#</a>1.2 技術棧</h3>
+<table>
+<thead>
+<tr>
+<th>層次</th>
+<th>技術</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>運行時</td>
+<td>Bun 1.3+</td>
+<td>主要業務邏輯、爬蟲協調</td>
+</tr>
+<tr>
+<td>語言</td>
+<td>TypeScript</td>
+<td>型別安全、可維護性</td>
+</tr>
+<tr>
+<td>爬蟲</td>
+<td>axios + cheerio</td>
+<td>HTTP 請求、HTML 解析</td>
+</tr>
+<tr>
+<td>並發</td>
+<td>p-limit</td>
+<td>並發數量控制</td>
+</tr>
+<tr>
+<td>編碼</td>
+<td>iconv-lite</td>
+<td>繁體中文/Big5 支持</td>
+</tr>
+<tr>
+<td>音頻</td>
+<td>FFmpeg + music-metadata</td>
+<td>格式轉換、元數據讀取</td>
+</tr>
+<tr>
+<td>Go 層</td>
+<td>ffmpeg-go</td>
+<td>高效能 FFmpeg binding</td>
+</tr>
+<tr>
+<td>日誌</td>
+<td>pino</td>
+<td>結構化 JSON 日誌</td>
+</tr>
+<tr>
+<td>重試</td>
+<td>p-retry</td>
+<td>瞬時錯誤指數退避</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="第-2-章-核心模組設計"><a class="anchor" href="#第-2-章-核心模組設計">#</a>第 2 章: 核心模組設計</h2>
+<h3 id="21-目錄結構"><a class="anchor" href="#21-目錄結構">#</a>2.1 目錄結構</h3>
+<pre><code>src/
+├── core/
+│   ├── CrawlerEngine.ts          - 主爬蟲引擎（協調調度）
+│   ├── services/
+│   │   ├── AudioConvertService.ts   - 音頻轉換服務（支持 Go 後端）
+│   │   ├── AudioConvertGoWrapper.ts - Go 子進程 IPC 包裝層
+│   │   ├── AudioMergeService.ts     - 音頻合併服務
+│   │   ├── DurationService.ts       - 音頻時長提取服務
+│   │   ├── RetryService.ts          - 重試與指數退避服務
+│   │   ├── ErrorClassifier.ts       - 錯誤分類（瞬時 vs 永久）
+│   │   └── AudioErrorClassifier.ts  - 音頻特化錯誤分類
+│   ├── types/
+│   │   └── audio.ts              - 音頻相關型別定義
+│   └── utils/
+│       └── logger.ts             - Pino 日誌工廠
+├── adapters/                     - 網站特化 Adapter 實現
+├── config/
+│   ├── AudioConvertConfig.ts     - 音頻轉換配置（含 Go 後端選項）
+│   ├── AudioConvertGoConfig.ts   - Go 後端特化配置
+│   ├── RetryConfig.ts            - 重試策略配置
+│   └── defaults.ts               - 預設值常數
+├── storage/                      - 儲存適配器
+└── tests/
+    ├── unit/                     - 單元測試
+    ├── integration/              - 集成測試
+    └── e2e/                      - E2E 端對端測試
+</code></pre>
+<h3 id="22-crawlerengine-主引擎"><a class="anchor" href="#22-crawlerengine-主引擎">#</a>2.2 CrawlerEngine 主引擎</h3>
+<pre><code>CrawlerEngine
+├── fetchMetadata()     - 獲取小說元數據（標題、作者、章節列表）
+├── fetchChapterList()  - 獲取章節 URL 列表
+├── downloadChapters()  - 並發下載章節內容（p-limit）
+├── processAudio()      - 協調音頻轉換管線
+└── CrawlerConfig API   - 支持 number | CrawlerConfig 向後相容
+</code></pre>
+<h3 id="23-adapter-系統與註冊機制"><a class="anchor" href="#23-adapter-系統與註冊機制">#</a>2.3 Adapter 系統與註冊機制</h3>
+<p>每個來源站點對應一個實作 <code>NovelSiteAdapter</code> 介面的 Adapter，由 <code>src/adapters/index.ts</code>
+集中註冊。引擎收到 URL 後，依註冊順序呼叫各 Adapter 的 <code>matchUrl(url)</code>，命中即採用。</p>
+<p><strong><code>NovelSiteAdapter</code> 介面</strong>:</p>
+<pre><code class="language-typescript">interface NovelSiteAdapter {
+  siteName: string
+  resourceProfile?: AdapterResourceProfile   // 站點級併發與延遲設定
+  matchUrl(url: string): boolean
+  getBookMetadata(url: string): Promise&lt;Omit&lt;Book, &#39;chapters&#39;&gt;&gt;
+  getChapterList(url: string): Promise&lt;Chapter[]&gt;
+  getChapterContent(chapterUrl: string): Promise&lt;string&gt;
+  close?(): Promise&lt;void&gt;                     // 選用：清理（如關閉瀏覽器）
+}
+</code></pre>
+<p><strong>目前註冊的 Adapter（依 <code>src/adapters/index.ts</code> 順序）</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>siteName</th>
+<th>對應主機</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>8novel</code></td>
+<td><code>8novel.com</code>, <code>www.8novel.com</code>, <code>article.8novel.com</code></td>
+</tr>
+<tr>
+<td><code>wfxs</code></td>
+<td><code>wfxs.tw</code>, <code>www.wfxs.tw</code></td>
+</tr>
+<tr>
+<td><code>SampleNovelSite</code></td>
+<td><code>example-novel-site.com</code>（參考實作範本，非真實站點）</td>
+</tr>
+<tr>
+<td><code>xsw</code></td>
+<td><code>m.xsw.tw</code>, <code>www.xsw.tw</code>, <code>xsw.tw</code></td>
+</tr>
+<tr>
+<td><code>czbooks</code></td>
+<td><code>czbooks.net</code>, <code>m.czbooks.net</code>, <code>www.czbooks.net</code></td>
+</tr>
+<tr>
+<td><code>hjwzw</code></td>
+<td><code>tw.hjwzw.com</code></td>
+</tr>
+<tr>
+<td><code>twkan</code></td>
+<td><code>twkan.com</code>, <code>www.twkan.com</code></td>
+</tr>
+<tr>
+<td><code>uukanshu</code></td>
+<td><code>uukanshu.cc</code>, <code>www.uukanshu.cc</code></td>
+</tr>
+<tr>
+<td><code>zhys</code></td>
+<td><code>zhys.tw</code>（含子網域，正則比對）</td>
+</tr>
+<tr>
+<td><code>novel543</code></td>
+<td><code>novel543.com</code>, <code>www.novel543.com</code>, <code>look.thisiscm.com</code>, <code>read.timotxt.com</code></td>
+</tr>
+</tbody></table>
+<p><strong>站點級資源配置（<code>resourceProfile</code>）</strong>：各 Adapter 可宣告自己的併發上限、請求間隔與
+成功後延遲，避免單一站點被打太兇。例如：</p>
+<pre><code class="language-typescript">// Novel543Adapter
+resourceProfile = { maxConcurrency: 4, requestIntervalMs: 400, postSuccessDelayMs: 0 }
+// ZhysAdapter
+resourceProfile = { maxConcurrency: 3, requestIntervalMs: 500, postSuccessDelayMs: 0 }
+</code></pre>
+<p><code>novel543</code> 支援多鏡像主機（含 <code>read.timotxt.com</code> 等），統一正規化回 canonical
+origin <code>https://www.novel543.com</code> 後再解析。新增站點的步驟見 README「如何支援新站點？」。</p>
+<hr>
+<h2 id="第-3-章-音頻處理管線-milestone-1"><a class="anchor" href="#第-3-章-音頻處理管線-milestone-1">#</a>第 3 章: 音頻處理管線 (Milestone 1)</h2>
+<h3 id="31-完整音頻流程"><a class="anchor" href="#31-完整音頻流程">#</a>3.1 完整音頻流程</h3>
+<pre><code>原始音頻文件（WAV/AAC/OGG/FLAC）
+        │
+        ▼
+AudioConvertService.convertToMp3()
+  ├─ RetryService（指數退避，最多 4 次）
+  ├─ AudioErrorClassifier（瞬時 vs 永久錯誤分類）
+  └─ [Bun 後端] FFmpeg subprocess → MP3
+     [Go 後端]  AudioConvertGoWrapper → kinetitext-audio → FFmpeg → MP3
+        │
+        ▼
+DurationService.getDuration()
+  └─ music-metadata parseFile → 時長（秒）
+        │
+        ▼
+AudioMergeService.mergeBatch()
+  ├─ 按目標時長分組（e.g. 11 小時）
+  ├─ p-limit 並行讀取時長
+  └─ FFmpeg concat → 合併 MP3
+        │
+        ▼
+MP4ConversionService.convert()
+  └─ FFmpeg → M4A/MP4（帶封面、元數據）
+</code></pre>
+<h3 id="32-音頻類型支持"><a class="anchor" href="#32-音頻類型支持">#</a>3.2 音頻類型支持</h3>
+<table>
+<thead>
+<tr>
+<th>輸入格式</th>
+<th>說明</th>
+<th>FFmpeg 解碼器</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WAV</td>
+<td>無損 PCM</td>
+<td>pcm_s16le</td>
+</tr>
+<tr>
+<td>AAC</td>
+<td>有損壓縮</td>
+<td>aac</td>
+</tr>
+<tr>
+<td>OGG</td>
+<td>有損（Vorbis）</td>
+<td>libvorbis</td>
+</tr>
+<tr>
+<td>FLAC</td>
+<td>無損壓縮</td>
+<td>flac</td>
+</tr>
+<tr>
+<td>MP3</td>
+<td>有損壓縮</td>
+<td>libmp3lame</td>
+</tr>
+</tbody></table>
+<h3 id="33-文本轉語音tts管線"><a class="anchor" href="#33-文本轉語音tts管線">#</a>3.3 文本轉語音（TTS）管線</h3>
+<p>第 3.1 節描述的是「既有音頻 → MP3」的轉換；本節是上游的「文字 → 音頻」生成，由
+<code>MicrosoftEdgeTTSProvider</code>（<code>src/tts/</code>）與 <code>scripts/generate_audiobook.ts</code> 負責。</p>
+<pre><code>章節文字（output/&lt;書名&gt;/txt/*.txt 或 --input 指定的 .txt/.md）
+        │
+        ▼
+MicrosoftEdgeTTSProvider.synthesize()
+  ├─ 透過 WebSocket 連線 Microsoft Edge 線上 TTS 端點
+  │    wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1
+  ├─ 套用 voice / rate / volume（預設 zh-CN-YunxiNeural、+0%、+0%）
+  ├─ 內建 token，可由 MICROSOFT_TTS_TOKEN / MICROSOFT_TOKEN_REFRESH_URL 覆寫
+  └─ 串流接收 audio-24khz-48kbitrate-mono-mp3 二進位
+        │
+        ▼
+MP3 章節音檔（output/&lt;書名&gt;/audio/chapter_NNN.mp3）
+        │
+        ▼
+（後續可接 3.1 的合併、4 的 M4A/M4B、3.4 的 YouTube 匯出）
+</code></pre>
+<p><strong>設計要點</strong>:</p>
+<ul>
+<li><strong>雲端而非本地模型</strong>：實際是直連 Microsoft 線上端點（WebSocket），需連網；
+優點是免費、無需自備金鑰、音質穩定，缺點是受網路與端點可用性影響。</li>
+<li><strong>聲音寫死於程式碼預設</strong>：CLI 僅開放 rate / volume / 併發 / 範圍等位置參數，
+變更聲音需改 <code>MicrosoftEdgeTTSProvider</code> 的預設值。</li>
+<li><strong>比特率</strong>由 <code>AUDIO_BITRATE</code> 控制（與第 3.1 節 MP3 轉換共用）。</li>
+</ul>
+<h3 id="34-youtube-影片匯出"><a class="anchor" href="#34-youtube-影片匯出">#</a>3.4 YouTube 影片匯出</h3>
+<p><code>scripts/mp3_to_youtube.ts</code> 是 <code>scripts/mp3_to_mp4.ts</code> 的薄包裝——它注入 <code>--youtube</code>
+旗標後委派給後者，最終由 <code>MP4ConversionService</code> 透過 FFmpeg 產生可上傳 YouTube 的影片。</p>
+<pre><code>MP3 +（選用）封面圖
+        │
+        ▼
+mp3_to_youtube.ts ──(注入 --youtube)──▶ mp3_to_mp4.ts ──▶ MP4ConversionService
+        │
+        ▼
+FFmpeg（src/core/utils/ffmpeg-commands.ts）
+  ├─ 影像來源：lavfi color=black（黑底）或 --cover 指定的封面圖
+  ├─ 視訊編碼：libx264，preset=fast，tune=stillimage，pix_fmt=yuv420p
+  ├─ 音訊編碼：aac
+  └─ 解析度：MP4_VIDEO_WIDTH × MP4_VIDEO_HEIGHT（預設 1920×1080）
+        │
+        ▼
+.mp4（H.264 + AAC，可直接上傳 YouTube）
+</code></pre>
+<p><strong>與 <code>to-mp4</code> 的差異</strong>：<code>to-mp4</code> 預設輸出純音訊 <code>.m4a</code>（<code>MP4_OUTPUT_FORMAT=m4a</code>）；
+<code>to-youtube</code> 強制走影片路徑，輸出帶 H.264 視訊軌的 <code>.mp4</code>。兩者共用同一套
+<code>MP4ConversionService</code> 與環境變數，差別只在輸出格式與是否疊上視訊軌。</p>
+<hr>
+<h2 id="第-4-章-重試機制設計"><a class="anchor" href="#第-4-章-重試機制設計">#</a>第 4 章: 重試機制設計</h2>
+<h3 id="41-retryservice-架構"><a class="anchor" href="#41-retryservice-架構">#</a>4.1 RetryService 架構</h3>
+<pre><code>RetryService
+├── execute(fn, operationId)
+│   ├─ 最多 N 次嘗試（預設 4 次）
+│   ├─ 指數退避（初始 100ms，乘數 2.0）
+│   ├─ 加入隨機抖動（防雷鳴群效應）
+│   └─ Pino 結構化日誌（每次嘗試、成功、失敗）
+│
+├── ErrorClassifier（可注入）
+│   ├─ isTransient(error) → boolean
+│   └─ isPermanent(error) → boolean
+│
+└── BackoffCalculator
+    └─ calculateDelay(attempt) → ms（指數退避 + jitter）
+</code></pre>
+<h3 id="42-錯誤分類策略"><a class="anchor" href="#42-錯誤分類策略">#</a>4.2 錯誤分類策略</h3>
+<table>
+<thead>
+<tr>
+<th>錯誤類型</th>
+<th>分類</th>
+<th>行為</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ENOENT（文件不存在）</td>
+<td>瞬時</td>
+<td>重試（文件可能延遲寫入）</td>
+</tr>
+<tr>
+<td>EAGAIN（資源暫時不可用）</td>
+<td>瞬時</td>
+<td>重試</td>
+</tr>
+<tr>
+<td>Network timeout</td>
+<td>瞬時</td>
+<td>重試</td>
+</tr>
+<tr>
+<td>FFmpeg exit 254</td>
+<td>瞬時（可能）</td>
+<td>重試</td>
+</tr>
+<tr>
+<td>EINVAL（無效輸入）</td>
+<td>永久</td>
+<td>快速失敗</td>
+</tr>
+<tr>
+<td>格式不支持</td>
+<td>永久</td>
+<td>快速失敗</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="第-5-章-測試策略"><a class="anchor" href="#第-5-章-測試策略">#</a>第 5 章: 測試策略</h2>
+<h3 id="51-測試層次"><a class="anchor" href="#51-測試層次">#</a>5.1 測試層次</h3>
+<table>
+<thead>
+<tr>
+<th>層次</th>
+<th>框架</th>
+<th>覆蓋範圍</th>
+<th>數量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>單元測試</td>
+<td>bun:test</td>
+<td>函數、類、配置</td>
+<td>374+</td>
+</tr>
+<tr>
+<td>集成測試</td>
+<td>bun:test + FFmpeg</td>
+<td>服務集成、Go IPC</td>
+<td>63+</td>
+</tr>
+<tr>
+<td>E2E 測試</td>
+<td>bun:test + FFmpeg</td>
+<td>完整音頻轉換流程</td>
+<td>59+</td>
+</tr>
+</tbody></table>
+<h3 id="52-e2e-測試覆蓋"><a class="anchor" href="#52-e2e-測試覆蓋">#</a>5.2 E2E 測試覆蓋</h3>
+<ul>
+<li>Phase 2: <code>AudioConversion.e2e.ts</code> — WAV/AAC/OGG/FLAC → MP3</li>
+<li>Phase 3: <code>AudioMerging.e2e.ts</code> — 批次合併、時長分組</li>
+<li>Phase 4: <code>MP4Conversion.e2e.ts</code> — M4A/MP4 轉換</li>
+<li>Phase 5: <code>FullPipeline.e2e.ts</code> — 完整管道 E2E</li>
+<li>Phase 6: <code>AudioConvertGo.e2e.ts</code> — Go 後端 E2E</li>
+</ul>
+<hr>
+<h2 id="第-6-章-bun-go-混用優化架構-milestone-2"><a class="anchor" href="#第-6-章-bun-go-混用優化架構-milestone-2">#</a>第 6 章: Bun-Go 混用優化架構 (Milestone 2)</h2>
+<h3 id="61-總體設計目標"><a class="anchor" href="#61-總體設計目標">#</a>6.1 總體設計目標</h3>
+<p>Milestone 2 通過將 CPU 密集的音頻處理操作遷移至 Go，實現整體性能優化，同時保留 Bun 的簡潔業務邏輯。</p>
+<p><strong>核心原則</strong>:</p>
+<ul>
+<li><strong>分層設計</strong>: Bun 業務邏輯 + Go 高效數據處理</li>
+<li><strong>鬆耦合</strong>: 通過 JSON IPC 接口隔離兩層</li>
+<li><strong>可選遷移</strong>: 通過配置標誌 <code>useGoBackend</code> 支持漸進遷移</li>
+<li><strong>優雅降級</strong>: Go 初始化失敗時自動回退 Bun FFmpeg</li>
+</ul>
+<h3 id="62-bun-go-邊界定義"><a class="anchor" href="#62-bun-go-邊界定義">#</a>6.2 Bun-Go 邊界定義</h3>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│                    Bun Layer (KinetiText)                 │
+│                                                           │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  CrawlerEngine                                       │ │
+│  │  AudioConvertService (業務協調)                       │ │
+│  │  AudioMergeService                                   │ │
+│  │  MP4ConversionService                                │ │
+│  │  RetryService + ErrorClassifier                      │ │
+│  └─────────────────────────────────────────────────────┘ │
+│                         │                                 │
+│                         │ JSON 請求/回應                   │
+│                         ▼                                 │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  AudioConvertGoWrapper (IPC + 錯誤處理)               │ │
+│  │  - stdin JSON 輸入                                   │ │
+│  │  - stdout JSON 輸出                                  │ │
+│  └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          │ Bun.spawn subprocess
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                  Go Layer (kinetitext-go)                 │
+│                                                           │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  kinetitext-audio 二進制                              │ │
+│  │  - JSON stdin 讀取                                   │ │
+│  │  - ffmpeg-go 呼叫                                    │ │
+│  │  - JSON stdout 輸出                                  │ │
+│  └─────────────────────────────────────────────────────┘ │
+│                         │                                 │
+│                         │ exec() 系統調用                  │
+│                         ▼                                 │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  FFmpeg (系統工具)                                    │ │
+│  │  - 音頻格式轉換                                       │ │
+│  │  - 管線 I/O 優化                                     │ │
+│  └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+</code></pre>
+<h3 id="63-ipc-協議設計"><a class="anchor" href="#63-ipc-協議設計">#</a>6.3 IPC 協議設計</h3>
+<p><strong>選擇</strong>: JSON subprocess（而非 Bun FFI.cdef 直接 C binding）</p>
+<p><strong>理由</strong>:</p>
+<ol>
+<li><strong>跨平台</strong>: macOS/Linux/Windows 無需特殊編譯配置</li>
+<li><strong>穩定性</strong>: 避免 cgo 二進制的不穩定性</li>
+<li><strong>除錯性</strong>: JSON 可視化，易於問題排查</li>
+<li><strong>隔離性</strong>: 進程隔離，Go panic 不影響 Bun</li>
+</ol>
+<p><strong>JSON 契約</strong>:</p>
+<p>請求格式（Bun → Go）:</p>
+<pre><code class="language-json">{
+  &quot;input_file&quot;: &quot;/path/to/input.wav&quot;,
+  &quot;output_file&quot;: &quot;/path/to/output.mp3&quot;,
+  &quot;format&quot;: &quot;mp3&quot;,
+  &quot;bitrate&quot;: 192
+}
+</code></pre>
+<p>成功回應格式（Go → Bun）:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;output_file&quot;: &quot;/path/to/output.mp3&quot;,
+  &quot;duration&quot;: 123.45
+}
+</code></pre>
+<p>錯誤回應格式（Go → Bun）:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;error&quot;: &quot;描述性錯誤信息&quot;
+}
+</code></pre>
+<p><strong>支援格式</strong>: <code>mp3</code> / <code>aac</code> / <code>ogg</code> / <code>flac</code> / <code>wav</code>
+<strong>位速率範圍</strong>: 128 - 320 kbps</p>
+<h3 id="64-配置切換機制"><a class="anchor" href="#64-配置切換機制">#</a>6.4 配置切換機制</h3>
+<p><strong>AudioConvertConfig 新增 Go 後端選項</strong>:</p>
+<pre><code class="language-typescript">const config = new AudioConvertConfig({
+  useGoBackend: true,                              // 啟用 Go 後端
+  goBinaryPath: &#39;../kinetitext-go/bin/kinetitext-audio&#39;, // Go 二進制路徑
+  goTimeout: 60000,                                // 60 秒超時
+  bitrate: &#39;192k&#39;,                                 // 192kbps
+})
+</code></pre>
+<p><strong>環境變數支持</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>環境變數</th>
+<th>說明</th>
+<th>預設</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>KINETITEXT_USE_GO_AUDIO</code></td>
+<td>啟用 Go 後端</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>KINETITEXT_GO_AUDIO_BIN</code></td>
+<td>Go 二進制路徑</td>
+<td>自動推導</td>
+</tr>
+<tr>
+<td><code>AUDIO_GO_TIMEOUT_MS</code></td>
+<td>Go 超時毫秒數</td>
+<td><code>60000</code></td>
+</tr>
+</tbody></table>
+<p><strong>CLI 旗標</strong>:</p>
+<pre><code class="language-bash">bun run src/index.ts --use-go-audio --crawl https://example.com
+</code></pre>
+<h3 id="65-go-後端初始化流程"><a class="anchor" href="#65-go-後端初始化流程">#</a>6.5 Go 後端初始化流程</h3>
+<pre><code>AudioConvertService.initGoBackend()
+        │
+        ├─ config.useGoBackend === false?
+        │     └─ 直接返回（使用 Bun 後端）
+        │
+        ├─ config.goBinaryPath 未設定?
+        │     └─ 警告日誌 + 使用 Bun 後端
+        │
+        ├─ Bun.file(binaryPath).exists() === false?
+        │     └─ 拋出錯誤 → initGoBackend() catch → 使用 Bun 後端
+        │
+        └─ 初始化成功
+              └─ this.goWrapper = AudioConvertGoWrapper
+</code></pre>
+<p><strong>優雅降級策略</strong>:</p>
+<ul>
+<li>Go 初始化失敗 → 自動降級 Bun FFmpeg，不拋出異常</li>
+<li>Go 轉換失敗 → RetryService 重試，仍使用 Go 後端</li>
+<li>完全失敗 → 返回錯誤給調用方</li>
+</ul>
+<h3 id="66-錯誤處理與重試策略"><a class="anchor" href="#66-錯誤處理與重試策略">#</a>6.6 錯誤處理與重試策略</h3>
+<p><strong>三層錯誤處理</strong>:</p>
+<pre><code>外層: RetryService.execute()
+  ├─ 最多 4 次重試（含指數退避）
+  ├─ AudioErrorClassifier 判定錯誤類型
+  └─ 永久錯誤（如格式不支持）快速失敗
+
+中層: convertWithGo() 私有方法
+  ├─ 呼叫 AudioConvertGoWrapper.convert()
+  ├─ 檢驗 response.success === false → 拋出 Error
+  └─ 驗證輸出文件存在 → 未創建則拋出 Error
+
+底層: Go 子進程
+  ├─ ffmpeg-go 呼叫 FFmpeg
+  ├─ FFmpeg 錯誤 → JSON error response
+  └─ 進程崩潰 → 非零退出碼 → JSON error response
+</code></pre>
+<p><strong>錯誤分類</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>錯誤</th>
+<th>分類</th>
+<th>行為</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Go 二進制不存在</td>
+<td>初始化失敗</td>
+<td>降級 Bun（不重試）</td>
+</tr>
+<tr>
+<td>Go 進程崩潰（非零退出）</td>
+<td>瞬時</td>
+<td>RetryService 重試</td>
+</tr>
+<tr>
+<td>FFmpeg 格式不支持</td>
+<td>永久</td>
+<td>快速失敗</td>
+</tr>
+<tr>
+<td>文件不存在</td>
+<td>瞬時</td>
+<td>RetryService 重試</td>
+</tr>
+<tr>
+<td>輸出文件未創建</td>
+<td>瞬時</td>
+<td>RetryService 重試</td>
+</tr>
+</tbody></table>
+<h3 id="67-進程管理模式"><a class="anchor" href="#67-進程管理模式">#</a>6.7 進程管理模式</h3>
+<p><strong>當前實現: 無狀態進程模式</strong></p>
+<p>每次轉換調用啟動新的 Go 子進程:</p>
+<pre><code>優點:
+  - 簡單實現，無連接池維護
+  - 進程隔離，Go panic 不影響 Bun
+  - 自然支持 fork-exec 並發模型
+
+缺點:
+  - Go 運行時啟動開銷 (~50-80ms)
+  - 短音頻文件場景下性能略低於直接 Bun FFmpeg
+
+適用場景:
+  - 長音頻文件（30-60 分鐘），啟動開銷佔比 &lt; 0.1%
+  - 批量轉換（10+ 文件）
+</code></pre>
+<p><strong>未來考量: 常駐進程模式（Phase 7+）</strong></p>
+<pre><code>Go HTTP 或 Unix socket 服務端:
+  - 消除每次調用的 Go 運行時啟動開銷
+  - 長連接復用，零額外 IPC 開銷
+  - 需要心跳檢測與進程監控
+</code></pre>
+<h3 id="68-性能基準數據"><a class="anchor" href="#68-性能基準數據">#</a>6.8 性能基準數據</h3>
+<p><strong>測試環境</strong>: macOS 14.2, Apple Silicon M2, 5 秒靜音音頻</p>
+<table>
+<thead>
+<tr>
+<th>格式</th>
+<th>Bun 平均</th>
+<th>Go 平均</th>
+<th>差異</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WAV</td>
+<td>120ms</td>
+<td>114ms</td>
+<td>Go 快 5%</td>
+</tr>
+<tr>
+<td>AAC</td>
+<td>74ms</td>
+<td>82ms</td>
+<td>Go 慢 10.8%</td>
+</tr>
+<tr>
+<td>OGG</td>
+<td>77ms</td>
+<td>83ms</td>
+<td>Go 慢 7.8%</td>
+</tr>
+<tr>
+<td>FLAC</td>
+<td>66ms</td>
+<td>109ms</td>
+<td>Go 慢 65.2%</td>
+</tr>
+</tbody></table>
+<p><strong>分析</strong>: 短音頻（5 秒）測試中，Go 運行時啟動開銷（~50-80ms）主導結果。
+對於長音頻（30-60 分鐘），預期 Go 後端提升 10-20%（啟動開銷佔比 &lt; 0.1%）。</p>
+<p>詳細分析見: <code>.planning/phases/06-audio-convert-go/PERF_REPORT.md</code></p>
+<h3 id="69-測試策略-phase-6"><a class="anchor" href="#69-測試策略-phase-6">#</a>6.9 測試策略 (Phase 6)</h3>
+<p><strong>E2E 測試覆蓋</strong> (<code>src/tests/e2e/AudioConvertGo.e2e.ts</code>):</p>
+<table>
+<thead>
+<tr>
+<th>場景</th>
+<th>測試數</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>WAV → MP3</td>
+<td>2</td>
+<td>基本轉換驗證</td>
+</tr>
+<tr>
+<td>多格式轉換</td>
+<td>4</td>
+<td>AAC/OGG/FLAC + 批次</td>
+</tr>
+<tr>
+<td>時長準確性</td>
+<td>4</td>
+<td>±1s 容差驗證</td>
+</tr>
+<tr>
+<td>並發穩定性</td>
+<td>1</td>
+<td>10 任務, concurrency=4</td>
+</tr>
+<tr>
+<td>錯誤處理</td>
+<td>2</td>
+<td>無效輸入、批次容錯</td>
+</tr>
+<tr>
+<td>Bun vs Go 品質</td>
+<td>4</td>
+<td>一致性對比驗證</td>
+</tr>
+<tr>
+<td><strong>總計</strong></td>
+<td><strong>17</strong></td>
+<td>全部通過</td>
+</tr>
+</tbody></table>
+<p><strong>集成測試</strong> (<code>src/tests/integration/</code>):</p>
+<ul>
+<li><code>AudioConvertGo.test.ts</code> — Go 包裝層 IPC 7 個測試</li>
+<li><code>CrawlerEngineWithGo.test.ts</code> — CrawlerEngine Go 配置 7 個測試</li>
+</ul>
+<h3 id="610-架構決策記錄-adr"><a class="anchor" href="#610-架構決策記錄-adr">#</a>6.10 架構決策記錄 (ADR)</h3>
+<table>
+<thead>
+<tr>
+<th>決策</th>
+<th>選項</th>
+<th>選擇</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IPC 協議</td>
+<td>JSON subprocess vs FFI.cdef</td>
+<td>JSON subprocess</td>
+<td>跨平台穩定性、除錯性</td>
+</tr>
+<tr>
+<td>進程管理</td>
+<td>無狀態 vs 常駐</td>
+<td>無狀態</td>
+<td>簡化實現、隔離性</td>
+</tr>
+<tr>
+<td>FFmpeg binding</td>
+<td>ffmpeg-go vs ffmpeg-next</td>
+<td>ffmpeg-go</td>
+<td>API 簡潔、文檔完善</td>
+</tr>
+<tr>
+<td>元數據庫</td>
+<td>go-flac vs ffprobe</td>
+<td>go-flac</td>
+<td>純 Go 實現（Phase 7）</td>
+</tr>
+<tr>
+<td>降級策略</td>
+<td>強制 Go vs 優雅降級</td>
+<td>優雅降級</td>
+<td>生產可靠性優先</td>
+</tr>
+<tr>
+<td>初始化時機</td>
+<td>建構子 vs 懶初始化</td>
+<td>懶初始化</td>
+<td>避免建構子 async 問題</td>
+</tr>
+</tbody></table>
+<h3 id="611-遷移路徑規劃"><a class="anchor" href="#611-遷移路徑規劃">#</a>6.11 遷移路徑規劃</h3>
+<pre><code>Phase 6: AudioConvertService (當前)
+  ├─ 目標: 音頻格式轉換 Go 後端可選
+  ├─ 狀態: 完成 ✅
+  └─ 成果: AudioConvertGoWrapper + JSON IPC 架構
+
+Phase 7: DurationService (計劃)
+  ├─ 目標: 5-10x 元數據讀取速度
+  ├─ 方案: go-flac + ffprobe (pure Go)
+  └─ 依賴: Phase 6 Go 後端基礎設施複用
+
+Phase 8: MP4ConversionService (計劃)
+  ├─ 目標: 30-40% M4A 轉換速度提升
+  ├─ 方案: 複用 Phase 6 FFmpeg binding 模式
+  └─ 預計: 3-4 天開發
+</code></pre>
+<hr>
+<h2 id="附錄"><a class="anchor" href="#附錄">#</a>附錄</h2>
+<h3 id="a-相關文檔"><a class="anchor" href="#a-相關文檔">#</a>A. 相關文檔</h3>
+<ul>
+<li><code>docs/MIGRATION_GUIDE.md</code> — Go 後端啟用與遷移指南</li>
+<li><code>docs/CONFIGURATION.md</code> — 完整配置選項說明</li>
+<li><code>docs/TROUBLESHOOTING.md</code> — 故障排查指南</li>
+<li><code>docs/API.md</code> — 完整 API 參考</li>
+<li><code>.planning/phases/06-audio-convert-go/PERF_REPORT.md</code> — 性能基準測試報告</li>
+</ul>
+<h3 id="b-項目倉庫結構"><a class="anchor" href="#b-項目倉庫結構">#</a>B. 項目倉庫結構</h3>
+<pre><code>/Users/carl/Dev/Carl/
+├── KinetiText/          - 主倉庫（Bun + TypeScript）
+└── kinetitext-go/       - Go 倉庫（FFmpeg binding）
+    └── bin/
+        └── kinetitext-audio  - 編譯後的 Go 二進制
+</code></pre>
+<h3 id="c-開發環境要求"><a class="anchor" href="#c-開發環境要求">#</a>C. 開發環境要求</h3>
+<ul>
+<li>Bun 1.0+</li>
+<li>FFmpeg 4.0+（系統安裝）</li>
+<li>Go 1.20+（僅 Go 後端開發需要）</li>
+</ul>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>docs/ARCHITECTURE.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

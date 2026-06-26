@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>AGENTS 開發指南 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li class="active"><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="kinetitext-agentsmd"><a class="anchor" href="#kinetitext-agentsmd">#</a>KinetiText AGENTS.md</h1>
+<p>KinetiText is a modular and extensible web crawler designed to scrape novels and books via Bun. It features a clean separation between the crawling engine, site-specific scrapers (adapters), and output storage formats.</p>
+<h2 id="-development-environment-bun-priority"><a class="anchor" href="#-development-environment-bun-priority">#</a>🚀 Development Environment (Bun Priority)</h2>
+<p>This project uses <strong>Bun</strong> exclusively. Do NOT use Node.js, npm, yarn, or pnpm.</p>
+<ul>
+<li><strong>Installation</strong>: <code>bun install</code></li>
+<li><strong>Execution</strong>: <code>bun run src/index.ts</code> or <code>bun &lt;file&gt;</code></li>
+<li><strong>Testing</strong>: <code>bun test</code></li>
+<li><strong>Building</strong>: <code>bun build &lt;file&gt;</code></li>
+<li><strong>Shell</strong>: Use <code>bunx &lt;package&gt;</code> instead of <code>npx</code>.</li>
+<li><strong>Environment</strong>: Bun automatically loads <code>.env</code>, do not use <code>dotenv</code>.</li>
+</ul>
+<h2 id="-architecture-overview"><a class="anchor" href="#-architecture-overview">#</a>🏗️ Architecture Overview</h2>
+<ul>
+<li><strong>Core Engine (<code>src/core/</code>)</strong>: <code>CrawlerEngine.ts</code> orchestrates the workflow: metadata fetching, chapter list retrieval, and downloading content with concurrency control.</li>
+<li><strong>Adapters (<code>src/adapters/</code>)</strong>: Site-specific scraping logic.<ul>
+<li>All adapters must implement the <code>NovelSiteAdapter</code> interface.</li>
+<li>Register new adapters in <code>src/adapters/index.ts</code> (matched by URL in registration order).</li>
+<li>Currently registered sites: <code>8novel</code>, <code>wfxs</code>, <code>xsw</code>, <code>czbooks</code>, <code>hjwzw</code>, <code>twkan</code>, <code>uukanshu</code>, <code>zhys</code>, <code>novel543</code> (plus <code>SampleNovelSite</code> as a reference implementation).</li>
+</ul>
+</li>
+<li><strong>TTS (<code>src/tts/</code>)</strong>: <code>MicrosoftEdgeTTSProvider</code> synthesizes text → MP3 over a WebSocket to Microsoft Edge&#39;s online TTS endpoint (online, free, no key). CLI: <code>bun run audiobook</code>.</li>
+<li><strong>Storage (<code>src/storage/</code>)</strong>: Persistence handlers.<ul>
+<li>All storage handlers must implement the <code>StorageAdapter</code> interface.</li>
+<li>Supports <code>TxtStorageAdapter.ts</code> (structured directory format).</li>
+</ul>
+</li>
+<li><strong>TUI (<code>src/tui/</code>)</strong>: 互動式控制台（<code>bun run menu</code>）。只負責互動問答 → 組參數 → 子程序呼叫現有 script，不含任何爬取/轉檔邏輯。狀態檢視由 <code>books.ts</code> 純函式掃描 <code>output/</code> 推導。</li>
+</ul>
+<h2 id="-tech-stack--preferred-apis"><a class="anchor" href="#-tech-stack--preferred-apis">#</a>🛠️ Tech Stack &amp; Preferred APIs</h2>
+<ul>
+<li><strong>Runtime</strong>: <a href="https://bun.sh">Bun</a> (TypeScript)</li>
+<li><strong>Scraping</strong>: <code>axios</code> + <code>cheerio</code>.</li>
+<li><strong>Concurrency</strong>: <code>p-limit</code>.</li>
+<li><strong>Encoding</strong>: <code>iconv-lite</code> for legacy character sets.</li>
+</ul>
+<h3 id="-prefer-bun-built-ins"><a class="anchor" href="#-prefer-bun-built-ins">#</a>⚡ Prefer Bun Built-ins</h3>
+<ul>
+<li><strong>I/O</strong>: Use <code>Bun.file()</code> instead of <code>node:fs</code> for reading/writing.</li>
+<li><strong>Server</strong>: Use <code>Bun.serve()</code> for any web interface or API needs.</li>
+<li><strong>Database</strong>: Use <code>bun:sqlite</code> for SQLite or <code>Bun.sql</code> for Postgres.</li>
+<li><strong>Shell</strong>: Use <code>Bun.$</code> for executing shell commands.</li>
+</ul>
+<h2 id="-development-conventions"><a class="anchor" href="#-development-conventions">#</a>📏 Development Conventions</h2>
+<ul>
+<li><strong>Modular Design</strong>: Keep site-specific logic in <code>adapters/</code> and storage-specific logic in <code>storage/</code>.</li>
+<li><strong>Respect Sites</strong>: Use the built-in <code>p-limit</code> and random delays in <code>CrawlerEngine</code> to avoid rate limits.</li>
+<li><strong>Error Handling</strong>: Adapters should throw descriptive errors so the engine can log and continue.</li>
+<li><strong>Testing</strong>: Add unit tests for all new adapters using <code>bun:test</code>.</li>
+</ul>
+<h2 id="-testing-workflow"><a class="anchor" href="#-testing-workflow">#</a>🧪 Testing Workflow</h2>
+<p>Run all tests:</p>
+<pre><code class="language-bash">bun test
+</code></pre>
+<p>Example test structure (<code>test/example.test.ts</code>):</p>
+<pre><code class="language-ts">import { test, expect } from &quot;bun:test&quot;;
+
+test(&quot;feature works&quot;, () =&gt; {
+  expect(true).toBe(true);
+});
+</code></pre>
+<h2 id="-pr--commits"><a class="anchor" href="#-pr--commits">#</a>📝 PR &amp; Commits</h2>
+<ul>
+<li>Always run <code>bun test</code> before merging.</li>
+<li>Ensure type-checks pass (Bun handles this during execution, but manual checks are good).</li>
+<li>Title format: <code>[&lt;adapter_name&gt;|&lt;core&gt;] &lt;Action description&gt;</code></li>
+</ul>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>AGENTS.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

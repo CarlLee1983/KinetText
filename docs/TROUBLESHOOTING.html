@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Cpath%20fill='%230969da'%20d='M4%202h8v12l-4-2.4L4%2014z'/%3E%3C/svg%3E">
+<title>故障排查 · KinetiText</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --border:#d1d9e0;
+  --link:#0969da; --code-bg:#f6f8fa; --pre-bg:#f6f8fa; --sidebar-bg:#f6f8fa;
+  --table-head:#f6f8fa; --table-stripe:#fafbfc; --accent:#0969da;
+  --callout-note:#0969da; --callout-tip:#1a7f37; --callout-important:#8250df;
+  --callout-warning:#9a6700; --callout-caution:#cf222e;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --border:#3d444d;
+    --link:#4493f8; --code-bg:#151b23; --pre-bg:#151b23; --sidebar-bg:#0d1117;
+    --table-head:#151b23; --table-stripe:#11161d; --accent:#4493f8;
+    --callout-note:#4493f8; --callout-tip:#3fb950; --callout-important:#ab7df8;
+    --callout-warning:#d29922; --callout-caution:#f85149;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",Helvetica,Arial,sans-serif;
+  font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+.layout{display:flex; align-items:flex-start}
+.sidebar{
+  position:sticky; top:0; flex:0 0 260px; height:100vh; overflow-y:auto;
+  background:var(--sidebar-bg); border-right:1px solid var(--border); padding:20px 14px;
+}
+.brand{display:flex; align-items:baseline; gap:8px; padding:0 8px 14px; border-bottom:1px solid var(--border); margin-bottom:10px}
+.brand a{font-weight:700; font-size:20px; color:var(--fg); text-decoration:none}
+.brand-sub{color:var(--muted); font-size:13px}
+.sidebar ul{list-style:none; margin:0; padding:0}
+.sidebar li a{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px; color:var(--fg); text-decoration:none; font-size:14.5px}
+.sidebar li a:hover{background:rgba(127,127,127,.12)}
+.sidebar li.active a{background:var(--accent); color:#fff; font-weight:600}
+.ic{width:16px; height:16px; flex:0 0 16px; vertical-align:-2px}
+.nav-icon{opacity:.85}
+.sidebar li.active a .nav-icon{opacity:1}
+.sidebar-foot{margin-top:18px; padding:0 10px; color:var(--muted); font-size:12px}
+.content{flex:1 1 auto; min-width:0; padding:32px 40px 80px; max-width:900px}
+.nav-toggle{display:none}
+.markdown-body{overflow-wrap:break-word}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{
+  line-height:1.3; margin:1.6em 0 .6em; scroll-margin-top:16px; font-weight:700;
+}
+.markdown-body h1{font-size:2em; padding-bottom:.3em; border-bottom:1px solid var(--border); margin-top:.2em}
+.markdown-body h2{font-size:1.5em; padding-bottom:.3em; border-bottom:1px solid var(--border)}
+.markdown-body h3{font-size:1.25em}
+.markdown-body h4{font-size:1.05em}
+.markdown-body a{color:var(--link); text-decoration:none}
+.markdown-body a:hover{text-decoration:underline}
+.anchor{float:left; margin-left:-.9em; padding-right:.3em; color:var(--muted); opacity:0; text-decoration:none; font-weight:400}
+.markdown-body h1:hover .anchor,.markdown-body h2:hover .anchor,.markdown-body h3:hover .anchor,.markdown-body h4:hover .anchor{opacity:1}
+.markdown-body p{margin:.7em 0}
+.markdown-body ul,.markdown-body ol{padding-left:1.6em; margin:.6em 0}
+.markdown-body li{margin:.25em 0}
+.markdown-body code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  font-size:.88em; background:var(--code-bg); padding:.2em .4em; border-radius:6px;
+}
+.markdown-body pre{
+  background:var(--pre-bg); border:1px solid var(--border); border-radius:10px;
+  padding:14px 16px; overflow-x:auto; margin:1em 0;
+}
+.markdown-body pre code{background:none; padding:0; font-size:.86em; line-height:1.55}
+.markdown-body table{border-collapse:collapse; width:100%; margin:1em 0; display:block; overflow-x:auto}
+.markdown-body th,.markdown-body td{border:1px solid var(--border); padding:7px 12px; text-align:left}
+.markdown-body th{background:var(--table-head); font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--table-stripe)}
+.markdown-body blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted); border-left:4px solid var(--border)}
+.markdown-body blockquote.callout{
+  border-left:4px solid var(--callout-note); color:inherit; background:rgba(127,127,127,.06);
+  border-radius:0 8px 8px 0; padding:.6em 1em;
+}
+.callout.note{border-left-color:var(--callout-note)}
+.callout.tip{border-left-color:var(--callout-tip)}
+.callout.important{border-left-color:var(--callout-important)}
+.callout.warning{border-left-color:var(--callout-warning)}
+.callout.caution{border-left-color:var(--callout-caution)}
+.callout-title{display:flex; align-items:center; gap:7px; font-weight:700; margin:0 0 .3em}
+.callout.note .callout-title{color:var(--callout-note)}
+.callout.tip .callout-title{color:var(--callout-tip)}
+.callout.important .callout-title{color:var(--callout-important)}
+.callout.warning .callout-title{color:var(--callout-warning)}
+.callout.caution .callout-title{color:var(--callout-caution)}
+.markdown-body img{max-width:100%}
+.markdown-body hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+.page-foot{margin-top:40px; color:var(--muted); font-size:13px}
+.page-foot hr{border:none; border-top:1px solid var(--border)}
+@media (max-width:860px){
+  .nav-toggle{
+    display:inline-block; position:fixed; top:12px; left:12px; z-index:20;
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:8px 12px; font-size:14px; cursor:pointer;
+  }
+  .sidebar{
+    position:fixed; left:0; top:0; z-index:15; transform:translateX(-100%);
+    transition:transform .2s ease; box-shadow:2px 0 12px rgba(0,0,0,.2);
+  }
+  body.nav-open .sidebar{transform:translateX(0)}
+  .content{padding:64px 18px 60px}
+}
+</style>
+</head>
+<body>
+<button class="nav-toggle" aria-label="切換導覽" onclick="document.body.classList.toggle('nav-open')">☰ 目錄</button>
+<div class="layout">
+<nav class="sidebar">
+    <div class="brand"><a href="index.html">KinetiText</a><span class="brand-sub">文件站</span></div>
+    <ul>
+      <li><a href="index.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M3.8 6.7V13h8.4V6.7"/></svg><span>首頁 / README</span></a></li>
+      <li><a href="ARCHITECTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>架構文檔</span></a></li>
+      <li><a href="API.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5 3 8l3 3"/><path d="M10 5l3 3-3 3"/></svg><span>API 參考</span></a></li>
+      <li><a href="CONFIGURATION.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 5h7"/><path d="M13 5h1"/><circle cx="10.5" cy="5" r="1.5"/><path d="M2 11h2"/><path d="M8 11h6"/><circle cx="5.5" cy="11" r="1.5"/></svg><span>配置指南</span></a></li>
+      <li class="active"><a href="TROUBLESHOOTING.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.6.3-.9.7-.9 1.3"/><circle cx="8" cy="11.3" r=".55" fill="currentColor" stroke="none"/></svg><span>故障排查</span></a></li>
+      <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
+      <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
+      <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
+    </ul>
+    <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
+  </nav>
+  <main class="content">
+    <article class="markdown-body">
+<h1 id="kinetitext-故障排查指南"><a class="anchor" href="#kinetitext-故障排查指南">#</a>KinetiText 故障排查指南</h1>
+<p>本指南涵蓋常見問題及解決方案，依功能模組分類。</p>
+<h2 id="目錄"><a class="anchor" href="#目錄">#</a>目錄</h2>
+<ol>
+<li><a href="#1-%E5%AE%89%E8%A3%9D%E8%88%87%E7%92%B0%E5%A2%83">安裝與環境</a></li>
+<li><a href="#2-%E9%87%8D%E8%A9%A6%E8%88%87%E9%8C%AF%E8%AA%A4">重試與錯誤</a></li>
+<li><a href="#3-%E9%9F%B3%E9%A0%BB%E8%BD%89%E6%8F%9Bphase-2">音頻轉換（Phase 2）</a></li>
+<li><a href="#4-%E9%9F%B3%E9%A0%BB%E5%90%88%E4%BD%B5phase-3">音頻合併（Phase 3）</a></li>
+<li><a href="#5-mp4-%E8%BD%89%E6%8F%9Bphase-4">MP4 轉換（Phase 4）</a></li>
+<li><a href="#6-%E6%80%A7%E8%83%BD%E5%95%8F%E9%A1%8C">性能問題</a></li>
+<li><a href="#7-%E6%97%A5%E8%AA%8C%E8%A8%98%E9%8C%84%E8%88%87%E9%99%A4%E9%8C%AF">日誌記錄與除錯</a></li>
+<li><a href="#8-%E8%81%AF%E7%B5%A1%E6%94%AF%E6%8F%B4">聯絡支援</a></li>
+</ol>
+<hr>
+<h2 id="1-安裝與環境"><a class="anchor" href="#1-安裝與環境">#</a>1. 安裝與環境</h2>
+<h3 id="q-command-not-found-bun"><a class="anchor" href="#q-command-not-found-bun">#</a>Q: &quot;command not found: bun&quot;</h3>
+<p><strong>原因</strong>: Bun 未安裝或不在系統 PATH 中。</p>
+<pre><code class="language-bash"># 安裝 Bun
+curl -fsSL https://bun.sh/install | bash
+
+# 驗證安裝
+bun --version
+
+# 若仍找不到，手動加入 PATH
+export PATH=&quot;$HOME/.bun/bin:$PATH&quot;
+echo &#39;export PATH=&quot;$HOME/.bun/bin:$PATH&quot;&#39; &gt;&gt; ~/.zshrc  # zsh
+</code></pre>
+<hr>
+<h3 id="q-ffmpeg-not-found-或-ffmpeg-command-not-found"><a class="anchor" href="#q-ffmpeg-not-found-或-ffmpeg-command-not-found">#</a>Q: &quot;FFmpeg not found&quot; 或 &quot;ffmpeg: command not found&quot;</h3>
+<p><strong>原因</strong>: 系統未安裝 FFmpeg，或不在 PATH 中。Phase 2-4 所有音頻處理功能都需要 FFmpeg。</p>
+<pre><code class="language-bash"># macOS（使用 Homebrew）
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt-get update &amp;&amp; sudo apt-get install ffmpeg
+
+# CentOS/RHEL
+sudo yum install ffmpeg
+
+# Windows（使用 Chocolatey）
+choco install ffmpeg
+
+# Windows（使用 winget）
+winget install ffmpeg
+
+# 驗證安裝
+ffmpeg -version
+ffprobe -version
+</code></pre>
+<hr>
+<h3 id="q-module-not-found-或-cannot-find-module"><a class="anchor" href="#q-module-not-found-或-cannot-find-module">#</a>Q: &quot;module not found&quot; 或 &quot;Cannot find module&quot;</h3>
+<p><strong>原因</strong>: 缺少依賴包或 <code>node_modules</code> 損壞。</p>
+<pre><code class="language-bash"># 重新安裝依賴
+bun install
+
+# 若失敗，清理後重試
+rm -rf node_modules bun.lockb
+bun install
+
+# 確認特定套件已安裝
+bun pm ls | grep music-metadata
+</code></pre>
+<hr>
+<h3 id="q-error-typescript-type-errors"><a class="anchor" href="#q-error-typescript-type-errors">#</a>Q: &quot;error: TypeScript type errors&quot;</h3>
+<p><strong>原因</strong>: 型別定義不匹配，可能是版本問題。</p>
+<pre><code class="language-bash"># 確認 Bun 版本（需 &gt;= 1.0）
+bun --version
+
+# 更新 Bun
+bun upgrade
+
+# 重新安裝並執行
+bun install &amp;&amp; bun run test
+</code></pre>
+<hr>
+<h2 id="2-重試與錯誤"><a class="anchor" href="#2-重試與錯誤">#</a>2. 重試與錯誤</h2>
+<h3 id="q-爬蟲反覆失敗回報-err_connection_reset-或-timeout"><a class="anchor" href="#q-爬蟲反覆失敗回報-err_connection_reset-或-timeout">#</a>Q: 爬蟲反覆失敗，回報 &quot;ERR_CONNECTION_RESET&quot; 或 &quot;timeout&quot;</h3>
+<p><strong>原因</strong>: 網站防爬蟲機制、網路不穩、或請求過於頻繁。</p>
+<pre><code class="language-bash"># 增加重試次數
+RETRY_MAX_ATTEMPTS=7 bun run start &quot;URL&quot;
+
+# 增加重試延遲（降低請求頻率）
+RETRY_BASE_DELAY_MS=500 bun run start &quot;URL&quot;
+
+# 同時增加次數與延遲
+RETRY_MAX_ATTEMPTS=5 RETRY_BASE_DELAY_MS=1000 bun run start &quot;URL&quot;
+
+# 查看重試日誌
+bun run start &quot;URL&quot; 2&gt;&amp;1 | grep -i &quot;retry\|attempt&quot;
+</code></pre>
+<hr>
+<h3 id="q-retries-exhausted-after-n-attempts"><a class="anchor" href="#q-retries-exhausted-after-n-attempts">#</a>Q: &quot;Retries exhausted after N attempts&quot;</h3>
+<p><strong>原因</strong>: 所有重試次數用盡仍未成功，通常是網路或目標網站問題。</p>
+<pre><code class="language-bash"># 1. 先確認網路連線
+ping google.com
+
+# 2. 確認目標網站可訪問
+curl -I &quot;https://example.com&quot;
+
+# 3. 查看最後一次錯誤詳情
+bun run start &quot;URL&quot; 2&gt;&amp;1 | tail -50
+
+# 4. 失敗後補抓
+bun run retry-failed &quot;小說名稱&quot;
+
+# 5. 手動重試特定章節（乾跑確認）
+bun run retry-failed &quot;小說名稱&quot; --dry-run
+</code></pre>
+<hr>
+<h3 id="q-error-failed-with-exit-code-1-或-non-zero-exit"><a class="anchor" href="#q-error-failed-with-exit-code-1-或-non-zero-exit">#</a>Q: &quot;Error: Failed with exit code 1&quot; 或 &quot;non-zero exit&quot;</h3>
+<p><strong>原因</strong>: 子程序（FFmpeg 或其他工具）返回錯誤碼。</p>
+<pre><code class="language-bash"># 查看詳細錯誤
+bun run audiobook &quot;小說名稱&quot; 2&gt;&amp;1 | grep -A 10 &quot;exit code&quot;
+
+# 確認 FFmpeg 能正常執行
+ffmpeg -i test.wav test.mp3
+
+# 確認輸入檔案存在且有效
+ls -la output/小說名稱/wav/
+file output/小說名稱/wav/chapter_001.wav
+</code></pre>
+<hr>
+<h2 id="3-音頻轉換phase-2"><a class="anchor" href="#3-音頻轉換phase-2">#</a>3. 音頻轉換（Phase 2）</h2>
+<h3 id="q-轉換超時-或-operation-timed-out"><a class="anchor" href="#q-轉換超時-或-operation-timed-out">#</a>Q: &quot;轉換超時&quot; 或 &quot;operation timed out&quot;</h3>
+<p><strong>原因</strong>: 輸入檔案過大、系統負載高，或並行數過多導致資源爭搶。</p>
+<pre><code class="language-bash"># 減少並行轉換數
+AUDIO_CONVERT_MAX_CONCURRENCY=1 bun run audiobook &quot;小說名稱&quot;
+
+# 增加重試上限
+RETRY_MAX_DELAY_MS=60000 bun run audiobook &quot;小說名稱&quot;
+
+# 分批處理（例如每次 50 章）
+bun run audiobook &quot;小說名稱&quot; 1-50
+bun run audiobook &quot;小說名稱&quot; 51-100
+</code></pre>
+<hr>
+<h3 id="q-輸出-mp3-損壞-或-output-file-is-corrupt"><a class="anchor" href="#q-輸出-mp3-損壞-或-output-file-is-corrupt">#</a>Q: &quot;輸出 MP3 損壞&quot; 或 &quot;output file is corrupt&quot;</h3>
+<p><strong>原因</strong>: FFmpeg 編碼過程中斷，或磁碟空間不足。</p>
+<pre><code class="language-bash"># 1. 驗證輸出是否有效
+ffprobe output.mp3
+
+# 2. 確認磁碟空間（MP3 約 1 MB/分鐘）
+df -h
+
+# 3. 使用不同比特率重試
+AUDIO_BITRATE=192k bun run audiobook &quot;小說名稱&quot;
+
+# 4. 清理損壞的輸出後重試
+rm output/小說名稱/mp3/chapter_*.mp3
+bun run audiobook &quot;小說名稱&quot;
+</code></pre>
+<hr>
+<h3 id="q-unsupported-audio-format-或-invalid-audio-format"><a class="anchor" href="#q-unsupported-audio-format-或-invalid-audio-format">#</a>Q: &quot;Unsupported audio format&quot; 或 &quot;Invalid audio format&quot;</h3>
+<p><strong>原因</strong>: 輸入格式 FFmpeg 不支援，或格式識別失敗。</p>
+<pre><code class="language-bash"># 查看 FFmpeg 支援的編碼
+ffmpeg -codecs | grep audio | head -30
+
+# 確認輸入格式
+file input.xyz
+ffprobe input.xyz
+
+# 先轉換為 WAV 再處理
+ffmpeg -i input.xyz -c:a pcm_s16le -f wav output.wav
+</code></pre>
+<hr>
+<h3 id="q-音頻比-tts-生成短很多-或-時長異常"><a class="anchor" href="#q-音頻比-tts-生成短很多-或-時長異常">#</a>Q: &quot;音頻比 TTS 生成短很多&quot; 或 &quot;時長異常&quot;</h3>
+<p><strong>原因</strong>: TTS 生成的音頻有靜音填充，或部分章節轉換失敗。</p>
+<pre><code class="language-bash"># 確認每個 MP3 的時長
+for f in output/小說名稱/mp3/*.mp3; do
+  echo &quot;$f: $(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 &quot;$f&quot;)秒&quot;
+done
+
+# 查看轉換結果中的失敗項目
+bun run audiobook &quot;小說名稱&quot; 2&gt;&amp;1 | grep &quot;failed\|error&quot;
+</code></pre>
+<hr>
+<h3 id="q-tts-沒有聲音輸出--章節-mp3-為空或極短"><a class="anchor" href="#q-tts-沒有聲音輸出--章節-mp3-為空或極短">#</a>Q: TTS 沒有聲音輸出 / 章節 MP3 為空或極短</h3>
+<p><strong>原因</strong>: TTS 透過 WebSocket 連 Microsoft Edge 線上端點，可能斷網、token 失效，
+或該章節文字檔為空。</p>
+<pre><code class="language-bash"># 1. 確認可連到網路（TTS 為線上服務，非本地）
+ping speech.platform.bing.com
+
+# 2. 確認輸入文字檔非空
+wc -c output/小說名稱/txt/chapter_001.txt
+
+# 3. token 失效時可改用環境變數覆寫（或設定自動更新端點）
+MICROSOFT_TTS_TOKEN=你的token bun run audiobook &quot;小說名稱&quot; 1-1
+# 或
+MICROSOFT_TOKEN_REFRESH_URL=https://你的更新端點 bun run audiobook &quot;小說名稱&quot; 1-1
+
+# 4. 先單章測試，縮小問題
+bun run audiobook &quot;小說名稱&quot; 1-1
+</code></pre>
+<hr>
+<h3 id="q-tts-速度很慢--大量章節卡住"><a class="anchor" href="#q-tts-速度很慢--大量章節卡住">#</a>Q: TTS 速度很慢 / 大量章節卡住</h3>
+<p><strong>原因</strong>: 線上端點受網路延遲與頻率限制影響；併發過高反而易被限流。</p>
+<pre><code class="language-bash"># 降低併發（audiobook 第 4 個位置參數，預設 3）
+bun run audiobook &quot;小說名稱&quot; all +0% +0% 2
+
+# 分批處理
+bun run audiobook &quot;小說名稱&quot; 1-50
+bun run audiobook &quot;小說名稱&quot; 51-100
+</code></pre>
+<hr>
+<h3 id="q-想換-tts-聲音卻找不到參數"><a class="anchor" href="#q-想換-tts-聲音卻找不到參數">#</a>Q: 想換 TTS 聲音卻找不到參數</h3>
+<p><strong>原因</strong>: CLI 僅開放語速 / 音量 / 併發 / 範圍；聲音預設 <code>zh-CN-YunxiNeural</code>
+寫死於 <code>src/tts/MicrosoftEdgeTTSProvider.ts</code> 建構子，需改原始碼才能更換。</p>
+<hr>
+<h2 id="4-音頻合併phase-3"><a class="anchor" href="#4-音頻合併phase-3">#</a>4. 音頻合併（Phase 3）</h2>
+<h3 id="q-時長計算不準確-或-duration-mismatch"><a class="anchor" href="#q-時長計算不準確-或-duration-mismatch">#</a>Q: &quot;時長計算不準確&quot; 或 &quot;duration mismatch&quot;</h3>
+<p><strong>原因</strong>: 音頻有特殊標記（gapless playback、ID3 tag 不一致）或編碼問題。</p>
+<pre><code class="language-bash"># 查看音頻元資料
+ffprobe -v quiet -print_format json -show_format chapter1.mp3 | jq .format.duration
+
+# 重新編碼以移除特殊標記（可提升計算精度）
+ffmpeg -i input.mp3 -c:a libmp3lame -b:a 128k cleaned.mp3
+ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 cleaned.mp3
+</code></pre>
+<hr>
+<h3 id="q-無法達到目標時長分組-或-grouping-failed"><a class="anchor" href="#q-無法達到目標時長分組-或-grouping-failed">#</a>Q: &quot;無法達到目標時長分組&quot; 或 &quot;grouping failed&quot;</h3>
+<p><strong>原因</strong>: 容差設置過嚴、或單個檔案時長已超過目標時長。</p>
+<pre><code class="language-bash"># 增加容差百分比
+bun run merge-mp3 --input=... --mode=duration --tolerance=30
+
+# 減少目標時長（若單一章節就很長）
+bun run merge-mp3 --input=... --target=28800  # 8 小時
+
+# 先預覽分組結果
+bun run merge-mp3 --input=... --dry-run --report=human
+
+# 查看最大單一檔案時長
+for f in output/小說名稱/mp3/*.mp3; do
+  dur=$(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 &quot;$f&quot;)
+  echo &quot;$dur $f&quot;
+done | sort -rn | head -5
+</code></pre>
+<hr>
+<h3 id="q-out-of-memory-或-javascript-heap-out-of-memory"><a class="anchor" href="#q-out-of-memory-或-javascript-heap-out-of-memory">#</a>Q: &quot;Out of memory&quot; 或 &quot;JavaScript heap out of memory&quot;</h3>
+<p><strong>原因</strong>: 並行讀取過多大型檔案，記憶體不足。</p>
+<pre><code class="language-bash"># 降低並行讀取數
+AUDIO_MERGE_MAX_CONCURRENCY=1 bun run merge-mp3 --input=...
+
+# 分批處理（例如每次處理 100 個檔案）
+ls output/小說名稱/mp3/*.mp3 | head -100 &gt; batch1.txt
+bun run merge-mp3 --input-list=batch1.txt --output=merged/batch1/
+
+ls output/小說名稱/mp3/*.mp3 | tail -100 &gt; batch2.txt
+bun run merge-mp3 --input-list=batch2.txt --output=merged/batch2/
+</code></pre>
+<hr>
+<h3 id="q-合併後音頻有雜音或靜音"><a class="anchor" href="#q-合併後音頻有雜音或靜音">#</a>Q: &quot;合併後音頻有雜音或靜音&quot;</h3>
+<p><strong>原因</strong>: 輸入檔案採樣率不一致，或編碼格式混用。</p>
+<pre><code class="language-bash"># 確認所有輸入的採樣率一致
+for f in output/小說名稱/mp3/*.mp3; do
+  ffprobe -v quiet -show_entries stream=sample_rate -of default=noprint_wrappers=1:nokey=1 &quot;$f&quot;
+done | sort | uniq -c
+
+# 若採樣率不一致，重新統一編碼
+AUDIO_SAMPLE_RATE=44100 bun run audiobook &quot;小說名稱&quot;
+</code></pre>
+<hr>
+<h2 id="5-mp4-轉換phase-4"><a class="anchor" href="#5-mp4-轉換phase-4">#</a>5. MP4 轉換（Phase 4）</h2>
+<h3 id="q-m4a-檔案無法在-iphoneipad-上播放"><a class="anchor" href="#q-m4a-檔案無法在-iphoneipad-上播放">#</a>Q: &quot;M4A 檔案無法在 iPhone/iPad 上播放&quot;</h3>
+<p><strong>原因</strong>: AAC 編碼設定問題，或元資料格式不符合 Apple 規範。</p>
+<pre><code class="language-bash"># 驗證 M4A 格式
+ffprobe output.m4a
+
+# 確認 AAC 比特率設置合理（建議 128k-256k）
+MP4_BITRATE=192k bun run to-mp4 --input=... --output=...
+
+# 確認元資料格式正確
+cat metadata.json | python3 -m json.tool
+
+# 重新轉換（不帶 --metadata）以確認基本格式
+bun run to-mp4 --input=merged.mp3 --output=test.m4a
+ffprobe test.m4a
+</code></pre>
+<hr>
+<h3 id="q-元資料未嵌入-或-metadata-not-embedded"><a class="anchor" href="#q-元資料未嵌入-或-metadata-not-embedded">#</a>Q: &quot;元資料未嵌入&quot; 或 &quot;metadata not embedded&quot;</h3>
+<p><strong>原因</strong>: metadata.json 格式錯誤，或檔案名稱對應不正確。</p>
+<pre><code class="language-bash"># 1. 驗證 JSON 格式
+cat metadata.json | python3 -m json.tool  # 或 jq . metadata.json
+
+# 2. 確認鍵名（key）與 MP3 檔案名稱完全匹配（含副檔名）
+cat metadata.json | python3 -c &quot;import json,sys; print(list(json.load(sys.stdin).keys()))&quot;
+ls output/小說名稱/merged/
+
+# 3. 驗證元資料已嵌入輸出
+ffprobe -v quiet -print_format json -show_format output.m4a | python3 -m json.tool | grep -A 10 &#39;&quot;tags&quot;&#39;
+</code></pre>
+<hr>
+<h3 id="q-轉換後-m4a-檔案大小異常"><a class="anchor" href="#q-轉換後-m4a-檔案大小異常">#</a>Q: &quot;轉換後 M4A 檔案大小異常&quot;</h3>
+<p><strong>原因</strong>: 比特率設置錯誤，或輸入 MP3 時長計算問題。</p>
+<pre><code class="language-bash"># 預估大小
+# M4A 大小（MB） ≈ 時長（分鐘）× 比特率（kbps）/ 8 / 1024 × 60
+# 例：60 分鐘 × 256kbps / 8 / 1024 × 60 ≈ 117 MB
+
+# 確認輸出比特率
+ffprobe -v error -select_streams a:0 \
+  -show_entries stream=bit_rate \
+  -of default=noprint_wrappers=1:nokey=1 \
+  output.m4a
+
+# 嘗試不同比特率
+MP4_BITRATE=256k bun run to-mp4 --input=merged.mp3 --output=output_256k.m4a
+MP4_BITRATE=192k bun run to-mp4 --input=merged.mp3 --output=output_192k.m4a
+</code></pre>
+<hr>
+<h3 id="q-批量轉換中部分檔案失敗"><a class="anchor" href="#q-批量轉換中部分檔案失敗">#</a>Q: &quot;批量轉換中部分檔案失敗&quot;</h3>
+<p><strong>原因</strong>: 個別輸入檔案問題、磁碟空間不足、或並行衝突。</p>
+<pre><code class="language-bash"># 使用乾跑查看哪些會失敗
+bun run to-mp4 --input=... --output=... --dry-run
+
+# 降低並行數（減少衝突）
+MP4_MAX_CONCURRENCY=1 bun run to-mp4 --input=... --output=...
+
+# 查看失敗詳情
+bun run to-mp4 --input=... --output=... 2&gt;&amp;1 | grep -A 5 &quot;error\|failed&quot;
+</code></pre>
+<hr>
+<h3 id="q-to-youtube-產出的影片畫質模糊--解析度不對"><a class="anchor" href="#q-to-youtube-產出的影片畫質模糊--解析度不對">#</a>Q: <code>to-youtube</code> 產出的影片畫質模糊 / 解析度不對</h3>
+<p><strong>原因</strong>: 視訊解析度由 <code>MP4_VIDEO_WIDTH</code> / <code>MP4_VIDEO_HEIGHT</code> 控制（預設 1920×1080）。</p>
+<pre><code class="language-bash"># 明確指定 1080p
+MP4_VIDEO_WIDTH=1920 MP4_VIDEO_HEIGHT=1080 \
+  bun run to-youtube --input=... --output=...
+
+# 驗證輸出解析度與編碼
+ffprobe -v error -select_streams v:0 \
+  -show_entries stream=codec_name,width,height \
+  -of default=noprint_wrappers=1 output.mp4
+# 預期：codec_name=h264, width=1920, height=1080
+</code></pre>
+<hr>
+<h3 id="q-to-youtube-輸出的是-m4a-而非-mp4沒有視訊軌"><a class="anchor" href="#q-to-youtube-輸出的是-m4a-而非-mp4沒有視訊軌">#</a>Q: <code>to-youtube</code> 輸出的是 <code>.m4a</code> 而非 <code>.mp4</code>（沒有視訊軌）</h3>
+<p><strong>原因</strong>: 直接用了 <code>to-mp4</code>（預設 <code>MP4_OUTPUT_FORMAT=m4a</code>，純音訊），或環境變數覆蓋了格式。</p>
+<pre><code class="language-bash"># 用 to-youtube（會自動注入 --youtube，強制影片輸出）
+bun run to-youtube --input=... --output=...
+
+# 或顯式指定影片格式
+MP4_OUTPUT_FORMAT=mp4 bun run to-mp4 --input=... --output=... --youtube
+</code></pre>
+<hr>
+<h3 id="q-youtube-預覽圖沒有顯示封面"><a class="anchor" href="#q-youtube-預覽圖沒有顯示封面">#</a>Q: YouTube 預覽圖沒有顯示封面</h3>
+<p><strong>原因</strong>: 未指定封面圖，預設為黑底。</p>
+<pre><code class="language-bash"># 帶入封面圖
+bun run to-youtube --input=... --output=... --cover=/path/to/cover.jpg
+# 或透過環境變數
+MP4_COVER_IMAGE=/path/to/cover.jpg bun run to-youtube --input=... --output=...
+</code></pre>
+<hr>
+<h2 id="6-性能問題"><a class="anchor" href="#6-性能問題">#</a>6. 性能問題</h2>
+<h3 id="q-轉換速度很慢"><a class="anchor" href="#q-轉換速度很慢">#</a>Q: &quot;轉換速度很慢&quot;</h3>
+<p><strong>原因</strong>: 並行數太低、比特率設置過高、或 CPU 資源不足。</p>
+<pre><code class="language-bash"># 查看 CPU 核心數
+nproc  # Linux
+sysctl -n hw.physicalcpu  # macOS
+
+# 提升並行度（建議為核心數的 1-1.5 倍）
+AUDIO_CONVERT_MAX_CONCURRENCY=6 bun run audiobook &quot;小說名稱&quot;
+
+# 降低比特率（更快但品質略低）
+AUDIO_BITRATE=128k bun run audiobook &quot;小說名稱&quot;
+
+# 監控 FFmpeg 使用率
+# macOS: 開啟 Activity Monitor
+# Linux:
+top -p $(pgrep ffmpeg | tr &#39;\n&#39; &#39;,&#39;)
+</code></pre>
+<hr>
+<h3 id="q-記憶體使用量過高"><a class="anchor" href="#q-記憶體使用量過高">#</a>Q: &quot;記憶體使用量過高&quot;</h3>
+<p><strong>原因</strong>: 並行數過高導致多個 FFmpeg 程序同時占用大量記憶體。</p>
+<pre><code class="language-bash"># 監控記憶體使用
+# macOS: Activity Monitor 或 vm_stat
+# Linux:
+watch -n 1 free -m
+
+# 降低並行度
+AUDIO_CONVERT_MAX_CONCURRENCY=1 bun run audiobook &quot;小說名稱&quot;
+AUDIO_MERGE_MAX_CONCURRENCY=1 bun run merge-mp3 --input=...
+MP4_MAX_CONCURRENCY=1 bun run to-mp4 --input=... --output=...
+</code></pre>
+<hr>
+<h3 id="q-磁碟空間不足"><a class="anchor" href="#q-磁碟空間不足">#</a>Q: &quot;磁碟空間不足&quot;</h3>
+<p><strong>原因</strong>: 輸出檔案過多，或中間產物未清理。</p>
+<pre><code class="language-bash"># 查看磁碟使用
+df -h
+
+# 查看 output 目錄大小
+du -sh output/
+du -sh output/小說名稱/*/
+
+# 預估需要的空間
+# MP3 128k: ~1 MB/分鐘
+# MP3 192k: ~1.5 MB/分鐘
+# M4A 256k: ~2 MB/分鐘
+# 合併後通常比個別章節總和略小（無標頭重複）
+
+# 清理中間產物（保留最終結果）
+rm -rf output/小說名稱/wav/    # 刪除原始 WAV（若已轉換為 MP3）
+# 謹慎：確認 MP3 正確再刪除 WAV
+</code></pre>
+<hr>
+<h2 id="7-日誌記錄與除錯"><a class="anchor" href="#7-日誌記錄與除錯">#</a>7. 日誌記錄與除錯</h2>
+<h3 id="啟用詳細日誌"><a class="anchor" href="#啟用詳細日誌">#</a>啟用詳細日誌</h3>
+<pre><code class="language-bash"># 查看所有日誌輸出（含 Pino 結構化日誌）
+bun run audiobook &quot;小說名稱&quot; 2&gt;&amp;1
+
+# 篩選特定日誌等級
+bun run audiobook &quot;小說名稱&quot; 2&gt;&amp;1 | grep &#39;&quot;level&quot;:50&#39;  # 錯誤
+bun run audiobook &quot;小說名稱&quot; 2&gt;&amp;1 | grep &#39;&quot;level&quot;:40&#39;  # 警告
+
+# 使用 pino-pretty 格式化輸出（若已安裝）
+bun run audiobook &quot;小說名稱&quot; 2&gt;&amp;1 | bunx pino-pretty
+</code></pre>
+<hr>
+<h3 id="偵錯常用命令"><a class="anchor" href="#偵錯常用命令">#</a>偵錯常用命令</h3>
+<pre><code class="language-bash"># 確認 FFmpeg 版本
+ffmpeg -version | head -3
+
+# 確認 Bun 版本
+bun --version
+
+# 確認已安裝套件
+bun pm ls
+
+# 執行測試確認基本功能
+bun test
+
+# 查看特定測試詳情
+bun test --verbose
+
+# 列出測試目錄
+ls src/tests/
+</code></pre>
+<hr>
+<h3 id="常見日誌訊息對照"><a class="anchor" href="#常見日誌訊息對照">#</a>常見日誌訊息對照</h3>
+<table>
+<thead>
+<tr>
+<th>日誌訊息</th>
+<th>含義</th>
+<th>建議行動</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;retry attempt N&quot;</code></td>
+<td>第 N 次重試</td>
+<td>正常，等待完成</td>
+</tr>
+<tr>
+<td><code>&quot;operation succeeded after N retries&quot;</code></td>
+<td>重試後成功</td>
+<td>可考慮調整延遲配置</td>
+</tr>
+<tr>
+<td><code>&quot;retries exhausted&quot;</code></td>
+<td>重試耗盡</td>
+<td>查看原因，手動處理</td>
+</tr>
+<tr>
+<td><code>&quot;ffmpeg process exited with code 1&quot;</code></td>
+<td>FFmpeg 失敗</td>
+<td>確認輸入檔案有效</td>
+</tr>
+<tr>
+<td><code>&quot;duration calculated&quot;</code></td>
+<td>時長計算完成</td>
+<td>正常</td>
+</tr>
+<tr>
+<td><code>&quot;group N completed&quot;</code></td>
+<td>第 N 組合並完成</td>
+<td>正常</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="8-聯絡支援"><a class="anchor" href="#8-聯絡支援">#</a>8. 聯絡支援</h2>
+<p>若問題未在本指南中解決，請提供以下資訊：</p>
+<p><strong>必要資訊</strong>:</p>
+<ol>
+<li>完整錯誤訊息（含 stack trace）</li>
+<li>Bun 版本：<code>bun --version</code></li>
+<li>FFmpeg 版本：<code>ffmpeg -version | head -1</code></li>
+<li>作業系統與版本</li>
+<li>重現步驟（最小化範例）</li>
+</ol>
+<p><strong>選擇性資訊</strong>:
+6. 輸入檔案的基本資訊（大小、格式）
+7. 使用的環境變數設置
+8. 完整日誌輸出</p>
+<p><strong>提交問題</strong>:</p>
+<ul>
+<li>在 GitHub Repository 開啟 Issue</li>
+<li>包含上述所有必要資訊</li>
+</ul>
+<hr>
+<blockquote>
+<p>詳細 API 說明請參閱 <a href="API.html">API.md</a>。
+配置選項說明請參閱 <a href="CONFIGURATION.html">CONFIGURATION.md</a>。</p>
+</blockquote>
+
+    </article>
+    <footer class="page-foot">
+      <hr>
+      <p>KinetiText 文件 · 來源 <code>docs/TROUBLESHOOTING.md</code> · 本頁由建置腳本自動生成，請編輯對應的 Markdown 後重跑 <code>bun run build:docs</code>。</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
