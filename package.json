@@ -15,6 +15,7 @@
     "audiobook": "bun run scripts/generate_audiobook.ts",
     "to-mp4": "bun run scripts/mp3_to_mp4.ts",
     "to-youtube": "bun run scripts/mp3_to_youtube.ts",
+    "yt-pipeline": "bun run scripts/yt_pipeline.ts",
     "build-m4b": "bun run scripts/build_m4b.ts",
     "merge-mp3": "bun run scripts/merge_mp3.ts",
     "clean-files": "bun run scripts/clean_novels.ts",
