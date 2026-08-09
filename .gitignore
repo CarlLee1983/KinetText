@@ -47,3 +47,6 @@ merge-input-*/
 # Claude Code runtime locks & SDD scratch
 .claude/scheduled_tasks.lock
 .superpowers/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+graft/
