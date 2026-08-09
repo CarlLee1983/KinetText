@@ -86,62 +86,82 @@ export class DurationGoWrapper {
       }
 
       const inputJson = JSON.stringify(request)
+      const timeoutMs = this.config.timeout
+      const controller = new AbortController()
 
       // 執行 Go 程序
       const proc = Bun.spawn([this.goBinary], {
         stdin: 'pipe',
         stdout: 'pipe',
         stderr: 'pipe',
+        signal: controller.signal,
+        killSignal: 'SIGKILL',
       })
+      let timedOut = false
+      const timeoutId = setTimeout(() => {
+        timedOut = true
+        controller.abort()
+      }, timeoutMs)
 
-      // 寫入 stdin
-      proc.stdin.write(inputJson)
-      proc.stdin.end()
+      try {
+        // 寫入 stdin
+        proc.stdin.write(inputJson)
+        proc.stdin.end()
 
-      // 等待完成並讀取 stdout/stderr
-      const [outputText, errorText, exitCode] = await Promise.all([
-        new Response(proc.stdout).text(),
-        new Response(proc.stderr).text(),
-        proc.exited,
-      ])
+        // 等待完成並讀取 stdout/stderr
+        const outputPromise = new Response(proc.stdout).text()
+        const errorPromise = new Response(proc.stderr).text()
+        const exitCode = await proc.exited
+        clearTimeout(timeoutId)
+        const [outputText, errorText] = await Promise.all([
+          outputPromise,
+          errorPromise,
+        ])
 
-      if (exitCode !== 0) {
-        const errorMsg = errorText || outputText || 'unknown error'
-        throw new Error(
-          `Go process exited with code ${exitCode}: ${errorMsg}`
-        )
-      }
-
-      // 解析 Go 回應
-      const response: GoReadMetadataResponse = JSON.parse(outputText)
-
-      // 記錄成功/失敗
-      logger.info(
-        {
-          success: response.success,
-          total: filePaths.length,
-          error: response.error,
-        },
-        'Go metadata read completed'
-      )
-
-      // 轉換回 Map<string, number>
-      const result = new Map<string, number>()
-      if (response.durations) {
-        for (const [path, duration] of Object.entries(response.durations)) {
-          result.set(path, duration)
+        if (timedOut) {
+          throw new Error(`Duration Go process timed out after ${timeoutMs}ms`)
         }
-      }
 
-      // 若有錯誤但部分成功，記錄警告但不拋錯
-      if (response.error && response.success > 0) {
-        logger.warn(
-          { error: response.error },
-          'Partial metadata read success'
+        if (exitCode !== 0) {
+          const errorMsg = errorText || outputText || 'unknown error'
+          throw new Error(
+            `Go process exited with code ${exitCode}: ${errorMsg}`
+          )
+        }
+
+        // 解析 Go 回應
+        const response: GoReadMetadataResponse = JSON.parse(outputText)
+
+        // 記錄成功/失敗
+        logger.info(
+          {
+            success: response.success,
+            total: filePaths.length,
+            error: response.error,
+          },
+          'Go metadata read completed'
         )
-      }
 
-      return result
+        // 轉換回 Map<string, number>
+        const result = new Map<string, number>()
+        if (response.durations) {
+          for (const [path, duration] of Object.entries(response.durations)) {
+            result.set(path, duration)
+          }
+        }
+
+        // 若有錯誤但部分成功，記錄警告但不拋錯
+        if (response.error && response.success > 0) {
+          logger.warn(
+            { error: response.error },
+            'Partial metadata read success'
+          )
+        }
+
+        return result
+      } finally {
+        clearTimeout(timeoutId)
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error)
       logger.error({ error: msg }, 'Go metadata read failed')
