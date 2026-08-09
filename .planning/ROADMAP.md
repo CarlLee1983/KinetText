@@ -1,210 +1,69 @@
-# Milestone 2 路線圖: Bun + Go 混用優化 (v1.1)
+# KinetiText 現行路線圖
 
-**規劃日期**: 2026-03-25
-**里程碑名稱**: Bun + Go 混用優化
-**預計週期**: 4-5 週 (18-23 天實現)
-**實際週期**: 2 天 (2026-03-25 至 2026-03-26)
-**狀態**: ✅ 完成 (2026-03-26)
+_最後更新：2026-08-09_
 
----
+本文件是 KinetiText 目前能力與下一個里程碑的權威規劃來源。歷史規格與實作計畫保留其當時的設計脈絡，但不應用來判斷目前功能狀態。
 
-## 整體結構
+## 目前能力
 
-```
-Milestone 2: Bun + Go 混用優化
-  ├─ Phase 6: AudioConvertService (Go 遷移) [Week 1-2]
-  ├─ Phase 7: DurationService (元數據優化) [Week 3]
-  └─ Phase 8: MP4ConversionService (Go 遷移) [Week 4]
-```
+KinetiText 目前提供下列使用者工作流程：
 
-**Phase 編號說明**: 從 Phase 6 開始（Phase 1-5 屬於 Milestone 1）
+- **爬取小說**：從支援網站的 URL 擷取書籍與章節，保存文字、書籍資訊及失敗／完整性報告。
+- **生成有聲書**：將章節文字轉為 MP3，並可接續處理既有章節。
+- **生成 M4B**：將章節音訊輸出為具有章節標記的有聲書檔。
+- **生成 YouTube 影片**：串接爬取、TTS、合併、封面與 MP4 產出；可調整爬取重試、併發、延遲、合併容差與補抓行為。
+- **互動式控制台**：以 `bun run menu` 檢視作品狀態，並執行既有工作流程。
+- **備份**：透過既有備份命令將產物同步到已設定的遠端。
 
----
+技術細節與完整命令說明請見 [README](../README.md) 與 [架構文件](../docs/ARCHITECTURE.md)。
 
-## Phase 6: AudioConvertService Go 遷移
+## 已知限制
 
-**目標**: 實現 Go 側 FFmpeg 音頻轉換服務，通過 Bun FFI 調用，實現 30-50% 性能提升
+- 本里程碑的自動診斷與完整工作流程驗收以 macOS 為準；現有 Windows／Linux 安裝指引不構成完整流程的支援承諾。
+- 本機前置檢查分散在各功能中，尚無單一的健康診斷入口。
+- 線上小說站、Microsoft Edge TTS 與備份遠端的可用性只能在實際請求時判斷。
+- 既有續作規則在不同階段不一致，且多數產物尚未保存輸入、設定與版本的來源追溯。
 
-**交付物**:
-- [ ] kinetitext-go 項目骨架 (src/audio-convert 模塊)
-- [ ] FFmpeg Go binding (github.com/u2takey/ffmpeg-go)
-- [ ] Bun FFI 層實現 (src/services/AudioConvertGoWrapper.ts)
-- [ ] Bun ↔ Go JSON 通信標準化
-- [ ] 性能基準測試 (對比 Bun 版本)
-- [ ] 集成測試 (5+ 音頻格式)
-- [ ] 文檔 (API, 配置, 故障排查)
+## 下一里程碑：可靠性與可診斷性
 
-**依賴**: 無 (獨立開始)
+### 目標
 
-**預計工作量**: 8-11 天
+讓使用者在執行前能判斷所選工作流程的本機前置條件是否可用；發生本機或遠端問題時，能取得可行的修復資訊，並安全地從已驗證的產物續作。
 
-**驗收標準**:
-- [ ] FFmpeg 轉換速度快 30% 以上
-- [ ] 進程啟動開銷從 ~100ms 降至 ~1ms
-- [ ] 所有測試通過 (100%)
-- [ ] 支援 5+ 音頻格式轉換
-- [ ] 錯誤正確回傳至 Bun 層
+### 範圍
 
-**關鍵決策**:
-- FFmpeg 綁定: ffmpeg-go (簡潔, 文檔好)
-- IPC 協議: Bun FFI (無序列化開銷)
-- 進程模型: 無狀態，按需建立
+- 建立由 CLI、TUI 與工作流程啟動點共同使用的宣告式診斷核心。
+- 支援 `crawl`、`audiobook`、`m4b`、`youtube` 與 `backup` 設定檔；手動診斷預設檢查全部，亦可選擇設定檔。
+- 在開始工作流程前自動執行對應設定檔檢查；阻斷項不得略過，警告應說明回退行為並自動繼續。
+- 執行無副作用、具逾時與取消能力的本機探測，並提供穩定的人類可讀與 JSON 輸出。
+- 依 URL 解析網站適配器後，檢查其特有前置條件；備份只檢查 `rclone` 與具名遠端設定，不預先連線。
+- 延續既有的有界重試；線上服務最終失敗時，以服務與階段為單位提供修復資訊，並保留既有進度。
+- 在每部作品中保存版本化 JSON 工作流程狀態清單，追蹤階段產物、內容雜湊、正規化設定、適用工具版本與階段產生器版本。
+- 以明確的階段依賴關係傳播失效；階段產物需先驗證，再原子地發佈與登錄。
+- 保留缺少來源追溯的舊版產物，但不自動重用；使用者可指定從某階段重新產生，系統只重做其下游。
+- 不在工作流程狀態清單、診斷文字或 JSON 輸出中保存原始祕密值。
 
-**驗證計畫**:
-- [x] Phase 6-01-PLAN: Go 項目設置 + FFmpeg binding 集成 ✅ (2026-03-25, 6min)
-- [x] Phase 6-02-PLAN: Bun FFI 層 + 基準測試 ✅ (2026-03-25, 21min)
-- [x] Phase 6-03-PLAN: 集成測試 + 文檔 ✅ (2026-03-26, 15min)
+### 非範圍
 
----
+- Windows 或 Linux 的完整跨平台支援。
+- 前置探測外部網站、TTS 服務或備份遠端的連線與權限。
+- 以檔案存在與否作為可安全續作的唯一依據。
+- 自動刪除既有或舊版產物。
 
-## Phase 7: DurationService 優化
+### 完成條件
 
-**目標**: 實現 Go 側並發元數據讀取層，優化音頻時長計算，支援 100+ 文件並發讀取
+- CLI 與 TUI 從同一診斷核心取得一致的設定檔結果與修復資訊。
+- 診斷區分阻斷與警告；CLI 可輸出 JSON，且本次選取範圍存在阻斷項時以非零結束碼結束。
+- TUI 顯示最近診斷摘要並允許重新檢查，且真正啟動流程前仍會即時驗證。
+- 自動化測試覆蓋設定檔判定、阻斷／警告、祕密遮蔽、失效傳播、舊版產物、原子發佈及續作；可用環境另執行真實工具整合測試。
 
-**依賴**: Phase 6 (FFmpeg binding 完成)
+## 相關決策與歷史文件
 
-**交付物**:
-- [ ] Go metadata 並發讀取層 (src/duration-service 模塊)
-- [ ] go-flac 集成 (FLAC 元數據)
-- [ ] ffprobe 備選方案 (其他格式)
-- [ ] Bun DurationManager 層 (委派給 Go)
-- [ ] 並發限制和超時機制
-- [ ] 集成測試 (100+ 文件)
-- [ ] 文檔
-
-**預計工作量**: 7-8 天
-
-**驗收標準**:
-- [ ] 100 文件並發讀取 < 2 秒
-- [ ] 相比 Bun 版本快 5-10 倍
-- [ ] 內存效率提升 50%
-- [ ] 所有格式支援 (MP3, FLAC, AAC, OGG)
-- [ ] 超時和錯誤處理完善
-
-**關鍵決策**:
-- 主庫: go-flac (純 Go 實現)
-- 備選: ffprobe (系統命令)
-- 並發數: 配置化 (預設 4)
-
-**驗證計畫**:
-- [ ] Phase 7-01-PLAN: Go metadata 層 + go-flac 集成
-- [ ] Phase 7-02-PLAN: 並發控制 + Bun 層集成 + 基準測試
-
----
-
-## Phase 8: MP4ConversionService Go 遷移
-
-**目標**: 複用 Phase 6 的 FFmpeg binding，遷移 MP4 (M4A) 轉換至 Go，實現 30-40% 提升
-
-**依賴**: Phase 6 FFmpeg binding 完成
-
-**交付物**:
-- [ ] Go MP4 轉換模塊 (src/mp4-convert 模塊)
-- [ ] 元數據序列化層 (title, artist, album)
-- [ ] Bun MP4Manager 層 (委派給 Go)
-- [ ] 集成測試
-- [ ] 文檔
-
-**預計工作量**: 3-4 天
-
-**驗收標準**:
-- [ ] MP3 → M4A 轉換速度快 30% 以上
-- [ ] M4A 文件在 VLC/iTunes 正常播放
-- [ ] 元數據正確嵌入
-- [ ] 所有測試通過
-
-**關鍵決策**:
-- 複用 Phase 6 FFmpeg binding (不重複)
-- 元數據用 JSON 序列化
-
-**驗證計畫**:
-- [ ] Phase 8-01-PLAN: MP4 轉換服務 + 元數據處理
-- [ ] Phase 8-02-PLAN: 集成測試 + 性能驗證
-
----
-
-## 時間表總結
-
-| 階段 | 工作量 | 開始周 | 完成周 | 狀態 |
-|------|--------|--------|--------|------|
-| Phase 6 | 8-11天 | W1 | W1-W2 | ✅ 完成 (2026-03-25/26, 42 min) |
-| Phase 7 | 7-8天 | W1 | W1 | ✅ 完成 (2026-03-26, 47 min) |
-| Phase 8 | 3-4天 | W1 | W1 | ✅ 完成 (2026-03-26, 15 min) |
-| **總計** | **18-23天** | **2026-03-25** | **2026-03-26** | **✅ 完成** |
-
----
-
-## 資源與假設
-
-### 資源
-- **開發者**: 1 人 (Carl)
-- **環境**: Bun 1.0+, Go 1.20+, macOS/Linux
-- **外部工具**: FFmpeg (系統安裝或 npm 版本)
-
-### 假設
-- FFmpeg 在目標系統中可用
-- Bun FFI 穩定可靠 (備選 subprocess JSON)
-- Go toolchain 已安裝
-- 沒有其他高優先級中斷工作
-
----
-
-## 風險與緩解
-
-| 風險 | 可能性 | 影響 | 缺解 |
-|------|--------|------|------|
-| **Bun FFI 不穩定** | 低 | 高 | 備選方案 C (subprocess JSON) |
-| **跨平台兼容性** | 中 | 中 | Windows: 預編譯二進制或 subprocess |
-| **序列化性能瓶頸** | 低 | 中 | 改用 MessagePack 或 Protocol Buffers |
-| **Go 服務掛起** | 低 | 高 | 實現健康檢查與自動重啟 |
-| **元數據不一致** | 低 | 中 | 嚴格的 TypeScript 類型檢查 |
-
----
-
-## 執行檢查清單
-
-### 準備階段 (Week 0)
-- [ ] 創建 kinetitext-go 項目骨架
-- [ ] 驗證 Bun FFI 在目標平台可用
-- [ ] 選定 FFmpeg binding 版本
-- [ ] 制定 Rollback 策略
-
-### Phase 6 (Week 1-2)
-- [x] Go FFmpeg binding 完成 ✅
-- [x] Bun FFI 層完成 ✅
-- [x] 性能基準達到預期 (30-50%) ✅
-- [x] 文檔完成 ✅
-
-### Phase 7 (Week 3)
-- [x] Go metadata 層完成 ✅
-- [x] 100+ 文件並發測試通過 ✅
-- [x] Bun 層集成完成 ✅
-
-### Phase 8 (Week 4)
-- [x] MP4 轉換完成 ✅
-- [x] 性能基準驗證 ✅
-- [x] 最終集成測試 ✅
-
----
-
-## 下一步
-
-1. **啟動 Phase 6 規劃**: 執行 `/gsd:plan-phase 6` 進行詳細設計
-2. **創建 kinetitext-go**: Go 項目骨架準備
-3. **建立測試框架**: 性能基準和集成測試設置
-4. **順序執行**: Phase 6 → Phase 7 → Phase 8
-
----
-
-**文檔簽核**:
-- [x] Carl (開發者) ✅
-- [x] Architecture Review (已完成 ✅)
-
-**更新歷史**:
-- 2026-03-25: 初始版本，Milestone 2 路線圖規劃完成
-- 2026-03-26: 里程碑完成，所有 Phase 6-8 全部執行完畢
-  - Phase 6: 42 min (Go FFmpeg Audio Conversion + 30% 性能改進)
-  - Phase 7: 47 min (Go DurationService + 7x 加速)
-  - Phase 8: 15 min (Go MP4 Conversion + 20-30% 改進)
-  - **總工時**: 104 min (預計 18-23 天) — 交付效率: 99.27%
-  - **交付成果**: 488/488 測試通過, 2,000+ 行文檔, ~1,600 行代碼
+- [來源追溯清單與可續作階段 ADR](../docs/adr/0001-provenance-manifests-for-resumable-stages.md)
+- [領域詞彙表](../CONTEXT.md)
+- [2026-03-26 專案規劃快照](PROJECT.md)
+- [v1.1 路線圖歷史快照](milestones/2026-03-25-v1.1-roadmap.md)
+- [TUI 設計](../docs/superpowers/specs/2026-05-30-tui-control-panel-design.md)／[實作計畫](../docs/superpowers/plans/2026-05-30-tui-control-panel.md)
+- [M4B 設計](../docs/superpowers/specs/2026-05-30-m4b-audiobook-output-design.md)／[實作計畫](../docs/superpowers/plans/2026-05-30-m4b-audiobook-output.md)
+- [YT pipeline 設計](../docs/superpowers/specs/2026-06-26-yt-pipeline-design.md)／[實作計畫](../docs/superpowers/plans/2026-06-26-yt-pipeline.md)
+- [管線參數化設計](../docs/superpowers/specs/2026-06-26-pipeline-knobs-design.md)／[實作計畫](../docs/superpowers/plans/2026-06-26-pipeline-knobs.md)
