@@ -10,7 +10,7 @@
  * 性能目標: Go 後端 < 2000ms，相比 Bun 快 5-10 倍
  */
 
-import { test, describe, beforeAll, afterAll } from 'bun:test'
+import { test, describe, beforeAll, afterAll, expect } from 'bun:test'
 import { DurationService } from '../../src/core/services/DurationService'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
@@ -26,6 +26,32 @@ const logger = createLogger('duration-bench')
 // 避免在較慢的 CI runner 上因 beforeAll 大量產檔逾時而失敗；本機建構後仍正常執行。
 const GO_DURATION_BINARY = resolveGoBinaryPath('duration')
 const goDurationBinaryAvailable = existsSync(GO_DURATION_BINARY)
+
+async function generateSilentAudio(
+  outputFile: string,
+  codecArgs: string[]
+): Promise<void> {
+  const proc = Bun.spawn([
+    'ffmpeg',
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'anullsrc=r=44100:cl=mono',
+    '-t',
+    '1',
+    ...codecArgs,
+    outputFile,
+  ])
+  const exitCode = await proc.exited
+
+  if (exitCode !== 0 || !(await Bun.file(outputFile).exists())) {
+    throw new Error(`Failed to generate test audio: ${outputFile}`)
+  }
+}
 
 describe.skipIf(!goDurationBinaryAvailable)('DurationService Performance Benchmarks', () => {
   let testDir: string
@@ -46,20 +72,11 @@ describe.skipIf(!goDurationBinaryAvailable)('DurationService Performance Benchma
     for (let i = 0; i < 100; i++) {
       const outputFile = join(testDir, `test-${String(i).padStart(3, '0')}.wav`)
 
-      try {
-        const proc = Bun.spawn([
-          '/bin/sh',
-          '-c',
-          `ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 1 -q:a 9 -acodec libmp3lame "${outputFile}" 2>/dev/null`,
-        ])
-        await proc.exited
-        testFiles.push(outputFile)
+      await generateSilentAudio(outputFile, ['-c:a', 'pcm_s16le'])
+      testFiles.push(outputFile)
 
-        if ((i + 1) % 20 === 0) {
-          logger.debug({ generated: i + 1 }, '進度')
-        }
-      } catch (err) {
-        logger.warn({ i, error: err }, '檔案生成失敗')
+      if ((i + 1) % 20 === 0) {
+        logger.debug({ generated: i + 1 }, '進度')
       }
     }
 
@@ -198,28 +215,19 @@ describe.skipIf(!goDurationBinaryAvailable)('DurationService Performance Benchma
           )
 
           // 根據格式選擇編碼選項
-          let codecArgs = ''
+          let codecArgs: string[] = []
           if (fmt === 'mp3') {
-            codecArgs = '-q:a 9 -acodec libmp3lame'
+            codecArgs = ['-q:a', '9', '-c:a', 'libmp3lame']
           } else if (fmt === 'flac') {
-            codecArgs = '-acodec flac'
+            codecArgs = ['-c:a', 'flac']
           } else if (fmt === 'aac') {
-            codecArgs = '-acodec aac'
+            codecArgs = ['-c:a', 'aac']
           } else if (fmt === 'ogg') {
-            codecArgs = '-acodec libvorbis'
+            codecArgs = ['-ac', '2', '-strict', '-2', '-c:a', 'vorbis']
           }
 
-          try {
-            const proc = Bun.spawn([
-              '/bin/sh',
-              '-c',
-              `ffmpeg -f lavfi -i anullsrc=r=44100:cl=mono -t 1 ${codecArgs} "${outputFile}" 2>/dev/null`,
-            ])
-            await proc.exited
-            testFilesMultiFormat.push(outputFile)
-          } catch (err) {
-            logger.warn({ fmt, i, error: err }, '檔案生成失敗')
-          }
+          await generateSilentAudio(outputFile, codecArgs)
+          testFilesMultiFormat.push(outputFile)
         }
       }
 
@@ -227,6 +235,7 @@ describe.skipIf(!goDurationBinaryAvailable)('DurationService Performance Benchma
         { totalFiles: testFilesMultiFormat.length, formats },
         '多格式測試檔案生成完成'
       )
+      expect(testFilesMultiFormat).toHaveLength(100)
 
       const goConfig = {
         enabled: true,
@@ -251,14 +260,7 @@ describe.skipIf(!goDurationBinaryAvailable)('DurationService Performance Benchma
 
       // 驗證：應讀取 100 個檔案（各格式 25 × 1 秒）
       const expected = 100.0
-      if (Math.abs(total - expected) > 2.0) {
-        logger.warn(
-          { total, expected, diff: Math.abs(total - expected) },
-          '多格式時長不匹配'
-        )
-      } else {
-        logger.info({ total, expected }, '多格式時長驗證通過')
-      }
+      expect(Math.abs(total - expected)).toBeLessThanOrEqual(2.0)
     } finally {
       // 清理多格式測試目錄
       try {
@@ -267,5 +269,5 @@ describe.skipIf(!goDurationBinaryAvailable)('DurationService Performance Benchma
         logger.warn({ multiTestDir, error: err }, '清理多格式目錄失敗')
       }
     }
-  })
+  }, 30_000)
 })
