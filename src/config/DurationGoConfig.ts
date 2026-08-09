@@ -4,12 +4,11 @@
  */
 
 import { z } from 'zod'
+import { resolveGoBinaryPath } from './goBinaryPaths'
 
 export const DurationGoConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  goBinaryPath: z
-    .string()
-    .default('../../../kinetitext-go/bin/kinetitext-duration'),
+  goBinaryPath: z.string().default(resolveGoBinaryPath('duration')),
   timeout: z.number().int().min(5000).default(30000), // batch timeout in ms
   concurrency: z.number().int().min(1).max(16).default(4),
   perFileTimeout: z.number().int().default(5000), // per-file timeout in ms
@@ -19,7 +18,7 @@ export type DurationGoConfig = z.infer<typeof DurationGoConfigSchema>
 
 export const defaultDurationGoConfig: DurationGoConfig = {
   enabled: true,
-  goBinaryPath: '../../../kinetitext-go/bin/kinetitext-duration',
+  goBinaryPath: resolveGoBinaryPath('duration'),
   timeout: 30000,
   concurrency: 4,
   perFileTimeout: 5000,

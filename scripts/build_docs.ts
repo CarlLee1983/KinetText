@@ -59,6 +59,7 @@ const PAGES: Page[] = [
   { src: "docs/MP4_SERVICE.md", out: "MP4_SERVICE.html", title: "MP4 服務", nav: "MP4 服務", icon: "film" },
   { src: "docs/DURATION_SERVICE.md", out: "DURATION_SERVICE.html", title: "時長服務", nav: "時長服務", icon: "clock" },
   { src: "docs/MIGRATION_GUIDE.md", out: "MIGRATION_GUIDE.html", title: "遷移指南", nav: "遷移指南", icon: "refresh" },
+  { src: "docs/PROJECT_STRUCTURE.md", out: "PROJECT_STRUCTURE.html", title: "專案結構與責任邊界", nav: "專案結構", icon: "layers" },
   { src: "AGENTS.md", out: "AGENTS.html", title: "AGENTS 開發指南", nav: "AGENTS 指南", icon: "terminal" },
 ];
 

@@ -5,7 +5,7 @@
  * 相比 FFI.cdef，subprocess JSON 方案更穩定、跨平台兼容性更好。
  *
  * IPC 協議: JSON via subprocess stdin/stdout
- * 二進制路徑: ../../../kinetitext-go/bin/kinetitext-duration
+ * 二進制路徑由 `DurationGoConfig` 提供。
  */
 
 import { join } from 'node:path'

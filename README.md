@@ -211,7 +211,8 @@ bun run profile --help
 - `rules/`: 外部化清理規則（`content-cleaner.json`）。
 - `output/`: 爬取結果與語音生成存放處。
 - `scripts/`: 所有的工具指令腳本。
-- `tests/`: Bun 測試（workflow helpers 與清理邏輯）。
+- `tests/`: 所有 Bun 測試；媒體服務依 `unit/`、`integration/`、`e2e/` 分層，E2E 需要 FFmpeg。
+- `docs/`: 可編輯的 Markdown 文件、其產生的 HTML 文件站與架構決策紀錄；詳見[專案結構與責任邊界](docs/PROJECT_STRUCTURE.md)。
 
 ---
 
@@ -481,6 +482,7 @@ bun run menu
 - [MP4 服務](docs/MP4_SERVICE.md) - MP4 / YouTube 轉檔的 Go 後端細節
 - [時長服務](docs/DURATION_SERVICE.md) - 音頻時長計算演算法
 - [遷移指南](docs/MIGRATION_GUIDE.md) - 版本升級與 Go 後端啟用
+- [專案結構與責任邊界](docs/PROJECT_STRUCTURE.md) - 目錄責任、測試佈局與衍生檔規則
 
 ## 📦 需求
 

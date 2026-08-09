@@ -148,7 +148,7 @@ await engine.crawl()
 | Variable | Type | Default | Valid Range | Description |
 |---|---|---|---|---|
 | `MP4_GO_ENABLED` | `boolean` | `false` | `true` \| `false` | Enable Go backend for MP4 conversion |
-| `MP4_GO_BINARY_PATH` | `string` | auto-detect | Filesystem path | Absolute or relative path to `kinetitext-mp4convert` binary |
+| `MP4_GO_BINARY_PATH` | `string` | sibling-repo resolver | Filesystem path | Override path to `kinetitext-mp4convert` binary |
 | `MP4_GO_TIMEOUT_MS` | `number` | `60000` | `1000-300000` | Conversion timeout in milliseconds (1s to 5m) |
 
 ### Type Definition: MP4ConvertGoConfig
@@ -163,9 +163,8 @@ export interface MP4ConvertGoConfig {
   enabled: boolean
 
   /**
-   * Absolute or relative path to kinetitext-mp4convert binary
-   * Relative paths resolved from project root
-   * @default '../kinetitext-go/bin/kinetitext-mp4convert'
+   * Path to kinetitext-mp4convert binary
+   * @default absolute path from the shared sibling-repo resolver
    */
   goBinaryPath: string
 
@@ -532,7 +531,7 @@ make build-mp4convert
 
 ```bash
 cd ../../KinetiText  # Back to main project
-bun test ./src/tests/integration/MP4ConvertGo.test.ts --bail
+bun test ./tests/integration/MP4ConvertGo.test.ts --bail
 
 # Should see: "11 pass"
 ```
@@ -773,7 +772,7 @@ See ROADMAP.md for full timeline.
 
 1. ✅ Review ARCHITECTURE.md (Chapter 6: Bun-Go hybrid design)
 2. ✅ Read PERF_REPORT.md (performance baseline and rationale)
-3. ✅ Run E2E tests: `bun test ./src/tests/e2e/MP4ConvertGo.e2e.ts`
+3. ✅ Run E2E tests: `bun test ./tests/e2e/MP4ConvertGo.e2e.ts`
 4. ✅ Explore Go code: `cd ../kinetitext-go/src/mp4-convert`
 
 ### For Integrators
@@ -804,8 +803,8 @@ See ROADMAP.md for full timeline.
 - **Phase 8 Summary**: `.planning/phases/08-mp4conversionservice-go/08-02-SUMMARY.md`
 - **ARCHITECTURE.md**: System design and Bun-Go boundary
 - **PERF_REPORT.md**: Performance benchmarks and root cause analysis
-- **Integration Tests**: `src/tests/integration/MP4ConvertGo.test.ts`
-- **E2E Tests**: `src/tests/e2e/MP4ConvertGo.e2e.ts`
+- **Integration Tests**: `tests/integration/MP4ConvertGo.test.ts`
+- **E2E Tests**: `tests/e2e/MP4ConvertGo.e2e.ts`
 
 ---
 

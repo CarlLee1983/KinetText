@@ -124,6 +124,7 @@ body{
       <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
       <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
       <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="PROJECT_STRUCTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>專案結構</span></a></li>
       <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
     </ul>
     <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
@@ -786,7 +787,7 @@ FFmpeg（src/core/utils/ffmpeg-commands.ts）
 對於長音頻（30-60 分鐘），預期 Go 後端提升 10-20%（啟動開銷佔比 &lt; 0.1%）。</p>
 <p>詳細分析見: <code>.planning/phases/06-audio-convert-go/PERF_REPORT.md</code></p>
 <h3 id="69-測試策略-phase-6"><a class="anchor" href="#69-測試策略-phase-6">#</a>6.9 測試策略 (Phase 6)</h3>
-<p><strong>E2E 測試覆蓋</strong> (<code>src/tests/e2e/AudioConvertGo.e2e.ts</code>):</p>
+<p><strong>E2E 測試覆蓋</strong> (<code>tests/e2e/AudioConvertGo.e2e.ts</code>):</p>
 <table>
 <thead>
 <tr>
@@ -831,7 +832,7 @@ FFmpeg（src/core/utils/ffmpeg-commands.ts）
 <td>全部通過</td>
 </tr>
 </tbody></table>
-<p><strong>集成測試</strong> (<code>src/tests/integration/</code>):</p>
+<p><strong>集成測試</strong> (<code>tests/integration/</code>):</p>
 <ul>
 <li><code>AudioConvertGo.test.ts</code> — Go 包裝層 IPC 7 個測試</li>
 <li><code>CrawlerEngineWithGo.test.ts</code> — CrawlerEngine Go 配置 7 個測試</li>

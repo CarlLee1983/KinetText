@@ -124,6 +124,7 @@ body{
       <li class="active"><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
       <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
       <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="PROJECT_STRUCTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>專案結構</span></a></li>
       <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
     </ul>
     <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
@@ -264,9 +265,9 @@ await engine.crawl()
 <tr>
 <td><code>MP4_GO_BINARY_PATH</code></td>
 <td><code>string</code></td>
-<td>auto-detect</td>
+<td>sibling-repo resolver</td>
 <td>Filesystem path</td>
-<td>Absolute or relative path to <code>kinetitext-mp4convert</code> binary</td>
+<td>Override path to <code>kinetitext-mp4convert</code> binary</td>
 </tr>
 <tr>
 <td><code>MP4_GO_TIMEOUT_MS</code></td>
@@ -286,9 +287,8 @@ await engine.crawl()
   enabled: boolean
 
   /**
-   * Absolute or relative path to kinetitext-mp4convert binary
-   * Relative paths resolved from project root
-   * @default &#39;../kinetitext-go/bin/kinetitext-mp4convert&#39;
+   * Path to kinetitext-mp4convert binary
+   * @default absolute path from the shared sibling-repo resolver
    */
   goBinaryPath: string
 
@@ -626,7 +626,7 @@ make build-mp4convert
 </code></pre>
 <h4 id="step-4-test-bun-integration"><a class="anchor" href="#step-4-test-bun-integration">#</a>Step 4: Test Bun Integration</h4>
 <pre><code class="language-bash">cd ../../KinetiText  # Back to main project
-bun test ./src/tests/integration/MP4ConvertGo.test.ts --bail
+bun test ./tests/integration/MP4ConvertGo.test.ts --bail
 
 # Should see: &quot;11 pass&quot;
 </code></pre>
@@ -806,7 +806,7 @@ await service.convert(input, output, { title: &#39;Chapter 1&#39; })  // Partial
 <ol>
 <li>✅ Review ARCHITECTURE.md (Chapter 6: Bun-Go hybrid design)</li>
 <li>✅ Read PERF_REPORT.md (performance baseline and rationale)</li>
-<li>✅ Run E2E tests: <code>bun test ./src/tests/e2e/MP4ConvertGo.e2e.ts</code></li>
+<li>✅ Run E2E tests: <code>bun test ./tests/e2e/MP4ConvertGo.e2e.ts</code></li>
 <li>✅ Explore Go code: <code>cd ../kinetitext-go/src/mp4-convert</code></li>
 </ol>
 <h3 id="for-integrators"><a class="anchor" href="#for-integrators">#</a>For Integrators</h3>
@@ -835,8 +835,8 @@ export MP4_GO_BINARY_PATH=../kinetitext-go/bin/kinetitext-mp4convert
 <li><strong>Phase 8 Summary</strong>: <code>.planning/phases/08-mp4conversionservice-go/08-02-SUMMARY.md</code></li>
 <li><strong>ARCHITECTURE.md</strong>: System design and Bun-Go boundary</li>
 <li><strong>PERF_REPORT.md</strong>: Performance benchmarks and root cause analysis</li>
-<li><strong>Integration Tests</strong>: <code>src/tests/integration/MP4ConvertGo.test.ts</code></li>
-<li><strong>E2E Tests</strong>: <code>src/tests/e2e/MP4ConvertGo.e2e.ts</code></li>
+<li><strong>Integration Tests</strong>: <code>tests/integration/MP4ConvertGo.test.ts</code></li>
+<li><strong>E2E Tests</strong>: <code>tests/e2e/MP4ConvertGo.e2e.ts</code></li>
 </ul>
 <hr>
 <p><strong>Document Version</strong>: 1.0

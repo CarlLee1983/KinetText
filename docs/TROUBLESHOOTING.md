@@ -584,7 +584,7 @@ bun test
 bun test --verbose
 
 # 列出測試目錄
-ls src/tests/
+ls tests/
 ```
 
 ---

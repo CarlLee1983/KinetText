@@ -5,10 +5,10 @@
  * 相比 FFI.cdef，subprocess JSON 方案更穩定、跨平台兼容性更好。
  *
  * IPC 協議: JSON via subprocess stdin/stdout
- * 二進制路徑: ../../../kinetitext-go/bin/kinetitext-mp4convert
+ * 預設二進制路徑由 `config/goBinaryPaths` 提供。
  */
 
-import { join } from 'node:path'
+import { resolveGoBinaryPath } from '../../config/goBinaryPaths'
 import { createLogger } from '../utils/logger'
 import { MP4Metadata } from '../types/audio'
 
@@ -61,12 +61,7 @@ export interface MP4ConvertGoResponse {
  * 使用 singleton 模式管理二進制路徑配置，確保路徑只初始化一次。
  */
 export class MP4ConvertGoWrapper {
-  // import.meta.dir = /Users/carl/Dev/Carl/KinetiText/src/core/services
-  // 5 levels up → /Users/carl/Dev/Carl → kinetitext-go/bin/kinetitext-mp4convert
-  private static goBinaryPath: string = join(
-    import.meta.dir,
-    '../../../../../kinetitext-go/bin/kinetitext-mp4convert'
-  )
+  private static goBinaryPath = resolveGoBinaryPath('mp4convert')
 
   /**
    * 初始化 Go 二進制路徑（可選，覆蓋預設值）

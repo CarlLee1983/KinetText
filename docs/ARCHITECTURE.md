@@ -518,7 +518,7 @@ Go HTTP 或 Unix socket 服務端:
 
 ### 6.9 測試策略 (Phase 6)
 
-**E2E 測試覆蓋** (`src/tests/e2e/AudioConvertGo.e2e.ts`):
+**E2E 測試覆蓋** (`tests/e2e/AudioConvertGo.e2e.ts`):
 
 | 場景 | 測試數 | 說明 |
 |------|--------|------|
@@ -530,7 +530,7 @@ Go HTTP 或 Unix socket 服務端:
 | Bun vs Go 品質 | 4 | 一致性對比驗證 |
 | **總計** | **17** | 全部通過 |
 
-**集成測試** (`src/tests/integration/`):
+**集成測試** (`tests/integration/`):
 
 - `AudioConvertGo.test.ts` — Go 包裝層 IPC 7 個測試
 - `CrawlerEngineWithGo.test.ts` — CrawlerEngine Go 配置 7 個測試

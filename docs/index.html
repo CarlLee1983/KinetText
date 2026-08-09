@@ -124,6 +124,7 @@ body{
       <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
       <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
       <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="PROJECT_STRUCTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>專案結構</span></a></li>
       <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
     </ul>
     <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
@@ -262,6 +263,16 @@ bun run to-mp4 --input=... --output=... --dry-run
 細部環境變數（比特率、解析度、背景）見下方 Phase 4 與 <a href="CONFIGURATION.html">docs/CONFIGURATION.md</a>。</p>
 <blockquote class="callout note"><p class="callout-title"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 7.4v3.4"/><circle cx="8" cy="5.2" r=".55" fill="currentColor" stroke="none"/></svg><span>注意</span></p><p>此功能需要系統預先安裝 <code>ffmpeg</code>。</p>
 </blockquote>
+<h3 id="65--一鍵端到端yt-pipeline"><a class="anchor" href="#65--一鍵端到端yt-pipeline">#</a>6.5. 🎬 一鍵端到端：yt-pipeline</h3>
+<p>從小說網址一路產出可上傳 YouTube 的 MP4（爬文 → TTS → 時長合併 → 自動封面 + MP4）：</p>
+<pre><code class="language-bash">bun run yt-pipeline &quot;https://twp.zhys.tw/book/777167.html&quot;
+# 可調：--target=6h --bitrate=256 --rate=+0% --concurrency=3 --font=&lt;字型&gt; --title=&lt;書名&gt;
+# 爬取可調：--crawl-retries=3 --crawl-concurrency=5 --crawl-delay=2000
+# 合併容差：--tolerance=10
+# 爬完自動補抓失敗章節（預設開）；--no-retry-failed 可關閉
+# --dry-run 只印計畫；--resume（預設開）已存在產物自動跳過，可重跑接續
+</code></pre>
+<p>產物落點：<code>output/&lt;書名&gt;/mp4/*.mp4</code>（封面為純色底 + 書名 + partN）。</p>
 <h3 id="7--雲端備份-cloud-backup"><a class="anchor" href="#7--雲端備份-cloud-backup">#</a>7. ☁️ 雲端備份 (Cloud Backup)</h3>
 <p>使用 <code>rclone</code> 將 <code>output/</code> 目錄同步至雲端（如 Google Drive, OneDrive 等）。</p>
 <pre><code class="language-bash">bun run backup
@@ -288,7 +299,8 @@ bun run profile --help
 <li><code>rules/</code>: 外部化清理規則（<code>content-cleaner.json</code>）。</li>
 <li><code>output/</code>: 爬取結果與語音生成存放處。</li>
 <li><code>scripts/</code>: 所有的工具指令腳本。</li>
-<li><code>tests/</code>: Bun 測試（workflow helpers 與清理邏輯）。</li>
+<li><code>tests/</code>: 所有 Bun 測試；媒體服務依 <code>unit/</code>、<code>integration/</code>、<code>e2e/</code> 分層，E2E 需要 FFmpeg。</li>
+<li><code>docs/</code>: 可編輯的 Markdown 文件、其產生的 HTML 文件站與架構決策紀錄；詳見<a href="PROJECT_STRUCTURE.html">專案結構與責任邊界</a>。</li>
 </ul>
 <hr>
 <h2 id="-開發者手冊"><a class="anchor" href="#-開發者手冊">#</a>🛠 開發者手冊</h2>
@@ -689,6 +701,7 @@ bun run backup
 <li><a href="MP4_SERVICE.html">MP4 服務</a> - MP4 / YouTube 轉檔的 Go 後端細節</li>
 <li><a href="DURATION_SERVICE.html">時長服務</a> - 音頻時長計算演算法</li>
 <li><a href="MIGRATION_GUIDE.html">遷移指南</a> - 版本升級與 Go 後端啟用</li>
+<li><a href="PROJECT_STRUCTURE.html">專案結構與責任邊界</a> - 目錄責任、測試佈局與衍生檔規則</li>
 </ul>
 <h2 id="-需求"><a class="anchor" href="#-需求">#</a>📦 需求</h2>
 <ul>

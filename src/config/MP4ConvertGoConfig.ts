@@ -4,11 +4,11 @@
  */
 
 import { z } from 'zod'
+import { resolveGoBinaryPath } from './goBinaryPaths'
 
 export const MP4ConvertGoConfigSchema = z.object({
   enabled: z.boolean().default(false),
-  // 預設路徑會在執行時由 MP4ConvertGoWrapper 設定
-  goBinaryPath: z.string().default('kinetitext-go/bin/kinetitext-mp4convert'),
+  goBinaryPath: z.string().default(resolveGoBinaryPath('mp4convert')),
   timeout: z.number().int().min(1000).max(300000).default(60000), // 60 秒
 })
 

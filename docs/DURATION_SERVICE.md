@@ -136,19 +136,19 @@ const engine = new CrawlerEngine({
 
 ## Binary Path Resolution
 
-### 相對路徑 (開發環境)
+### 預設路徑 (開發環境)
 
-在專案根目錄執行時：
+設定模組會由共用 resolver 取得與 KinetiText 並列的 `kinetitext-go` 專案，並產生絕對路徑：
 
 ```typescript
 // src/config/DurationGoConfig.ts
 const defaultDurationGoConfig: DurationGoConfig = {
-  goBinaryPath: '../../../kinetitext-go/bin/kinetitext-duration',
+  goBinaryPath: resolveGoBinaryPath('duration'),
   // ...
 }
 ```
 
-DurationGoWrapper 會自動解析相對於 `import.meta.dir` (即 `src/core/services/`) 的路徑。
+若要使用其他位置，請透過 `DURATION_GO_BINARY_PATH` 或設定物件明確指定路徑。
 
 ### 絕對路徑 (生產環境)
 
@@ -185,9 +185,9 @@ export interface DurationGoConfig {
   /** 是否啟用 Go 後端 */
   enabled: boolean // 預設: true
 
-  /** Go 二進制路徑 (絕對或相對於 import.meta.dir) */
+  /** Go 二進制路徑 */
   goBinaryPath: string
-  // 預設: '../../../kinetitext-go/bin/kinetitext-duration'
+  // 預設: 共用 resolver 推導的 sibling-repo 絕對路徑
 
   /** 整個 batch 的超時時間 (毫秒) */
   timeout: number // 預設: 30000 (30 秒)

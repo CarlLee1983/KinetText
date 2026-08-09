@@ -172,7 +172,7 @@ bun run bench:convert
 執行 Go 後端 E2E 測試:
 
 ```bash
-bun test ./src/tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
+bun test ./tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
 # 預期: 17 tests passing
 ```
 
@@ -194,7 +194,7 @@ cat .planning/phases/06-audio-convert-go/PERF_REPORT.md
 | `goBinaryPath` | `string?` | `undefined` | Go 二進制絕對路徑 |
 | `goTimeout` | `number` | `60000` | Go 轉換超時（毫秒） |
 
-**注意**: `goBinaryPath` 未設置時，`AudioConvertGoWrapper` 會使用相對於原始碼的預設路徑（`../../../../../kinetitext-go/bin/kinetitext-audio`）。建議在生產環境明確指定絕對路徑。
+**注意**: `AudioConvertConfig` 的 `goBinaryPath` 未設置時，音訊服務會回退 Bun FFmpeg；請透過 `KINETITEXT_GO_AUDIO_BIN` 或設定物件明確提供 Go binary 路徑。共用 resolver 的預設路徑則供 `AudioConvertGoConfig` 與 wrapper 的直接使用者採用。建議在生產環境明確指定絕對路徑。
 
 ### 3.2 環境變數完整列表
 
@@ -430,10 +430,10 @@ go test ./...
 
 # 回到 KinetiText 目錄，運行集成測試
 cd ../KinetiText
-bun test ./src/tests/integration/AudioConvertGo.test.ts
+bun test ./tests/integration/AudioConvertGo.test.ts
 
 # 運行完整 E2E 測試套件
-bun test ./src/tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
+bun test ./tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
 ```
 
 ### 6.2 添加新的輸出格式支持

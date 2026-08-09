@@ -12,7 +12,7 @@
 
 import { join } from 'node:path'
 import { mkdir } from 'node:fs/promises'
-import { AudioConvertBenchmark } from '../src/tests/integration/PerformanceBench'
+import { AudioConvertBenchmark } from './lib/AudioConvertBenchmark'
 
 const REPORT_DIR = join(import.meta.dir, '../.planning/phases/06-audio-convert-go')
 const REPORT_PATH = join(REPORT_DIR, 'PERF_REPORT.md')

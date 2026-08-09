@@ -124,6 +124,7 @@ body{
       <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
       <li class="active"><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
       <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="PROJECT_STRUCTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>專案結構</span></a></li>
       <li><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
     </ul>
     <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
@@ -297,15 +298,15 @@ const engine = new CrawlerEngine({
 <p><strong>結論</strong>: Go 後端內存效率 <strong>2.7x</strong> 更高</p>
 <hr>
 <h2 id="binary-path-resolution"><a class="anchor" href="#binary-path-resolution">#</a>Binary Path Resolution</h2>
-<h3 id="相對路徑-開發環境"><a class="anchor" href="#相對路徑-開發環境">#</a>相對路徑 (開發環境)</h3>
-<p>在專案根目錄執行時：</p>
+<h3 id="預設路徑-開發環境"><a class="anchor" href="#預設路徑-開發環境">#</a>預設路徑 (開發環境)</h3>
+<p>設定模組會由共用 resolver 取得與 KinetiText 並列的 <code>kinetitext-go</code> 專案，並產生絕對路徑：</p>
 <pre><code class="language-typescript">// src/config/DurationGoConfig.ts
 const defaultDurationGoConfig: DurationGoConfig = {
-  goBinaryPath: &#39;../../../kinetitext-go/bin/kinetitext-duration&#39;,
+  goBinaryPath: resolveGoBinaryPath(&#39;duration&#39;),
   // ...
 }
 </code></pre>
-<p>DurationGoWrapper 會自動解析相對於 <code>import.meta.dir</code> (即 <code>src/core/services/</code>) 的路徑。</p>
+<p>若要使用其他位置，請透過 <code>DURATION_GO_BINARY_PATH</code> 或設定物件明確指定路徑。</p>
 <h3 id="絕對路徑-生產環境"><a class="anchor" href="#絕對路徑-生產環境">#</a>絕對路徑 (生產環境)</h3>
 <pre><code class="language-typescript">import { resolve } from &#39;node:path&#39;
 
@@ -331,9 +332,9 @@ bun src/index.ts
   /** 是否啟用 Go 後端 */
   enabled: boolean // 預設: true
 
-  /** Go 二進制路徑 (絕對或相對於 import.meta.dir) */
+  /** Go 二進制路徑 */
   goBinaryPath: string
-  // 預設: &#39;../../../kinetitext-go/bin/kinetitext-duration&#39;
+  // 預設: 共用 resolver 推導的 sibling-repo 絕對路徑
 
   /** 整個 batch 的超時時間 (毫秒) */
   timeout: number // 預設: 30000 (30 秒)
