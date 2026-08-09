@@ -41,6 +41,18 @@ This project uses **Bun** exclusively. Do NOT use Node.js, npm, yarn, or pnpm.
 - **Database**: Use `bun:sqlite` for SQLite or `Bun.sql` for Postgres.
 - **Shell**: Use `Bun.$` for executing shell commands.
 
+## 🗺️ Graft usage
+
+For repository orientation, feature discovery, cross-file changes, dependency analysis, and refactoring:
+
+- Use `graft_repo_map` before exploring an unfamiliar area.
+- Use `graft_find_code` before broad manual file searches.
+- Use `graft_file_api` before reading an entire large file.
+- Use `graft_trace_calls` before changing public symbols or contracts.
+- Use `graft_find_all` when exhaustive matching is required.
+- Run `graft_check_freshness` after code changes.
+- Fall back to native file search when Graft results are incomplete.
+
 ## 📏 Development Conventions
 
 - **Modular Design**: Keep site-specific logic in `adapters/` and storage-specific logic in `storage/`.

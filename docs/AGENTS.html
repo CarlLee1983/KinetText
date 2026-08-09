@@ -124,6 +124,7 @@ body{
       <li><a href="MP4_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M6.8 6.2 10 8l-3.2 1.8z" fill="currentColor" stroke="none"/></svg><span>MP4 服務</span></a></li>
       <li><a href="DURATION_SERVICE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.5"/></svg><span>時長服務</span></a></li>
       <li><a href="MIGRATION_GUIDE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 8a4.8 4.8 0 1 0-1.4 3.4"/><path d="M12.9 4.7v3.1H9.8"/></svg><span>遷移指南</span></a></li>
+      <li><a href="PROJECT_STRUCTURE.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.3 14 5 8 7.7 2 5z"/><path d="M2.6 8 8 10.5 13.4 8"/><path d="M2.6 11 8 13.5 13.4 11"/></svg><span>專案結構</span></a></li>
       <li class="active"><a href="AGENTS.html"><svg class="ic nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6"/><path d="M5 7l2 1.6L5 10.2"/><path d="M8.4 10.4h3"/></svg><span>AGENTS 指南</span></a></li>
     </ul>
     <div class="sidebar-foot">由 <code>build:docs</code> 自動生成</div>
@@ -158,6 +159,8 @@ body{
 </ul>
 </li>
 <li><strong>TUI (<code>src/tui/</code>)</strong>: 互動式控制台（<code>bun run menu</code>）。只負責互動問答 → 組參數 → 子程序呼叫現有 script，不含任何爬取/轉檔邏輯。狀態檢視由 <code>books.ts</code> 純函式掃描 <code>output/</code> 推導。</li>
+<li><strong>YT Pipeline (<code>scripts/yt_pipeline.ts</code>)</strong>: 一鍵串接 爬取→TTS→時長合併→封面+MP4，產出 YouTube-ready mp4。CLI: <code>bun run yt-pipeline &lt;url&gt;</code>。
+支援爬取重試/併發/延遲旗標（<code>--crawl-retries/concurrency/delay</code>）、合併容差（<code>--tolerance</code>）與爬後自動補抓（<code>--no-retry-failed</code> 關閉）。</li>
 </ul>
 <h2 id="-tech-stack--preferred-apis"><a class="anchor" href="#-tech-stack--preferred-apis">#</a>🛠️ Tech Stack &amp; Preferred APIs</h2>
 <ul>
@@ -172,6 +175,17 @@ body{
 <li><strong>Server</strong>: Use <code>Bun.serve()</code> for any web interface or API needs.</li>
 <li><strong>Database</strong>: Use <code>bun:sqlite</code> for SQLite or <code>Bun.sql</code> for Postgres.</li>
 <li><strong>Shell</strong>: Use <code>Bun.$</code> for executing shell commands.</li>
+</ul>
+<h2 id="-graft-usage"><a class="anchor" href="#-graft-usage">#</a>🗺️ Graft usage</h2>
+<p>For repository orientation, feature discovery, cross-file changes, dependency analysis, and refactoring:</p>
+<ul>
+<li>Use <code>graft_repo_map</code> before exploring an unfamiliar area.</li>
+<li>Use <code>graft_find_code</code> before broad manual file searches.</li>
+<li>Use <code>graft_file_api</code> before reading an entire large file.</li>
+<li>Use <code>graft_trace_calls</code> before changing public symbols or contracts.</li>
+<li>Use <code>graft_find_all</code> when exhaustive matching is required.</li>
+<li>Run <code>graft_check_freshness</code> after code changes.</li>
+<li>Fall back to native file search when Graft results are incomplete.</li>
 </ul>
 <h2 id="-development-conventions"><a class="anchor" href="#-development-conventions">#</a>📏 Development Conventions</h2>
 <ul>
