@@ -9,15 +9,16 @@
  *   4. Performance benchmark (10 files within 5 minutes)
  */
 
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
-import { mkdtemp } from 'node:fs/promises'
+import { describe, test, expect, beforeAll } from 'bun:test'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { AudioMergeService } from '../../src/core/services/AudioMergeService'
 import { AudioConvertConfig } from '../../src/config/AudioConvertConfig'
 import type { GroupingReport } from '../../src/core/types/audio'
 import { verifyMP3File, getMp3Duration, assertDurationWithinPercent } from './utils'
 import { getSample10MP3s, createTestSubDir } from './fixtures'
+import { registerE2EHooks } from './setup'
+
+registerE2EHooks()
 
 /** Maximum wall-clock time for the entire mergeBatch of 10 files */
 const MAX_BATCH_TIME_MS = 5 * 60_000 // 5 minutes
@@ -38,15 +39,10 @@ describe('E2E: Phase 3 - Audio Merging', () => {
   let suiteOutputRoot: string
 
   beforeAll(async () => {
-    suiteOutputRoot = await mkdtemp(join(tmpdir(), 'e2e-merge-'))
+    suiteOutputRoot = await createTestSubDir('merge-output')
     service = new AudioMergeService(new AudioConvertConfig())
     mp3Files = await getSample10MP3s('merge-input')
   }, 120_000)
-
-  afterAll(async () => {
-    const { rm } = await import('node:fs/promises')
-    await rm(suiteOutputRoot, { recursive: true, force: true })
-  })
 
   // -------------------------------------------------------------------------
   // Scenario 1: Batch merge

@@ -3,7 +3,7 @@
  * Tests schema validation, environment variable loading, and defaults
  */
 
-import { describe, test, expect, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import { loadMP4Config, validateBitrate, validateConcurrency } from '../../src/core/config/MP4ConversionConfig'
 import type { MP4ConversionConfig } from '../../src/core/config/MP4ConversionConfig'
 
@@ -21,6 +21,16 @@ describe('MP4ConversionConfig', () => {
       MP4_MAX_CONCURRENCY: process.env.MP4_MAX_CONCURRENCY,
       MP4_OUTPUT_DIRECTORY: process.env.MP4_OUTPUT_DIRECTORY,
       MP4_RETRY_MAX_ATTEMPTS: process.env.MP4_RETRY_MAX_ATTEMPTS
+    }
+  })
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
     }
   })
 

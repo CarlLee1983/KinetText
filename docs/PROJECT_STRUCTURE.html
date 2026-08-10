@@ -214,7 +214,7 @@ body{
 <li><code>scripts/generate_audiobook.ts</code> 的 TTS 工作與 <code>AudioConvertService</code> 的音訊格式轉換是不同階段。</li>
 </ul>
 <h2 id="測試佈局"><a class="anchor" href="#測試佈局">#</a>測試佈局</h2>
-<p>目前測試分成兩個已存在的區域，兩者都由 <code>bun test</code> 執行：</p>
+<p>目前測試分成兩個已存在的區域，皆由 <code>bun test</code> 執行：</p>
 <table>
 <thead>
 <tr>
@@ -236,7 +236,7 @@ body{
 </tr>
 <tr>
 <td><code>tests/e2e/</code></td>
-<td>需 FFmpeg 的端對端媒體流程測試。</td>
+<td>需 FFmpeg 的端對端媒體流程測試；Go 路徑另需可選的 sibling binary。</td>
 </tr>
 </tbody></table>
 <p>所有測試一律放在 <code>tests/</code>。新增或修改測試時，將媒體服務測試依上述分層放置；其他測試應放在最接近既有測試範圍的位置。目錄搬移必須獨立成一個可驗證變更，不與行為修改混在一起。</p>

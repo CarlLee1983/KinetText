@@ -172,8 +172,8 @@ bun run bench:convert
 執行 Go 後端 E2E 測試:
 
 ```bash
-bun test ./tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
-# 預期: 17 tests passing
+bun test ./tests/e2e/AudioConvertGo.e2e.test.ts --timeout=120000
+# 預期: sibling Go binary 可用時驗證 Go 路徑；否則驗證 Bun fallback
 ```
 
 查看性能報告:
@@ -433,7 +433,7 @@ cd ../KinetiText
 bun test ./tests/integration/AudioConvertGo.test.ts
 
 # 運行完整 E2E 測試套件
-bun test ./tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
+bun test ./tests/e2e/AudioConvertGo.e2e.test.ts --timeout=120000
 ```
 
 ### 6.2 添加新的輸出格式支持

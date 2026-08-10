@@ -523,11 +523,11 @@ FFmpeg（src/core/utils/ffmpeg-commands.ts）
 </tbody></table>
 <h3 id="52-e2e-測試覆蓋"><a class="anchor" href="#52-e2e-測試覆蓋">#</a>5.2 E2E 測試覆蓋</h3>
 <ul>
-<li>Phase 2: <code>AudioConversion.e2e.ts</code> — WAV/AAC/OGG/FLAC → MP3</li>
-<li>Phase 3: <code>AudioMerging.e2e.ts</code> — 批次合併、時長分組</li>
-<li>Phase 4: <code>MP4Conversion.e2e.ts</code> — M4A/MP4 轉換</li>
-<li>Phase 5: <code>FullPipeline.e2e.ts</code> — 完整管道 E2E</li>
-<li>Phase 6: <code>AudioConvertGo.e2e.ts</code> — Go 後端 E2E</li>
+<li>Phase 2: <code>AudioConversion.e2e.test.ts</code> — WAV/AAC/OGG/FLAC → MP3</li>
+<li>Phase 3: <code>AudioMerging.e2e.test.ts</code> — 批次合併、時長分組</li>
+<li>Phase 4: <code>MP4Conversion.e2e.test.ts</code> — M4A/MP4 轉換</li>
+<li>Phase 5: <code>FullPipeline.e2e.test.ts</code> — 完整管道 E2E</li>
+<li>Phase 6: <code>AudioConvertGo.e2e.test.ts</code> — Go 後端 E2E（需 sibling Go binary；預設 CI 驗證 Bun fallback）</li>
 </ul>
 <hr>
 <h2 id="第-6-章-bun-go-混用優化架構-milestone-2"><a class="anchor" href="#第-6-章-bun-go-混用優化架構-milestone-2">#</a>第 6 章: Bun-Go 混用優化架構 (Milestone 2)</h2>
@@ -787,7 +787,7 @@ FFmpeg（src/core/utils/ffmpeg-commands.ts）
 對於長音頻（30-60 分鐘），預期 Go 後端提升 10-20%（啟動開銷佔比 &lt; 0.1%）。</p>
 <p>詳細分析見: <code>.planning/phases/06-audio-convert-go/PERF_REPORT.md</code></p>
 <h3 id="69-測試策略-phase-6"><a class="anchor" href="#69-測試策略-phase-6">#</a>6.9 測試策略 (Phase 6)</h3>
-<p><strong>E2E 測試覆蓋</strong> (<code>tests/e2e/AudioConvertGo.e2e.ts</code>):</p>
+<p><strong>E2E 測試覆蓋</strong> (<code>tests/e2e/AudioConvertGo.e2e.test.ts</code>):</p>
 <table>
 <thead>
 <tr>

@@ -281,8 +281,8 @@ const result = await service.convertToMp3(&#39;input.wav&#39;, &#39;output.mp3&#
 ✅ Benchmark complete! Report saved to PERF_REPORT.md
 </code></pre>
 <p>執行 Go 後端 E2E 測試:</p>
-<pre><code class="language-bash">bun test ./tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
-# 預期: 17 tests passing
+<pre><code class="language-bash">bun test ./tests/e2e/AudioConvertGo.e2e.test.ts --timeout=120000
+# 預期: sibling Go binary 可用時驗證 Go 路徑；否則驗證 Bun fallback
 </code></pre>
 <p>查看性能報告:</p>
 <pre><code class="language-bash">cat .planning/phases/06-audio-convert-go/PERF_REPORT.md
@@ -611,7 +611,7 @@ cd ../KinetiText
 bun test ./tests/integration/AudioConvertGo.test.ts
 
 # 運行完整 E2E 測試套件
-bun test ./tests/e2e/AudioConvertGo.e2e.ts --timeout=120000
+bun test ./tests/e2e/AudioConvertGo.e2e.test.ts --timeout=120000
 </code></pre>
 <h3 id="62-添加新的輸出格式支持"><a class="anchor" href="#62-添加新的輸出格式支持">#</a>6.2 添加新的輸出格式支持</h3>
 <p>如需 Go 後端支持新的輸出格式（例如 M4A）:</p>

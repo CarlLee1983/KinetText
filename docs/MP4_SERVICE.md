@@ -772,7 +772,7 @@ See ROADMAP.md for full timeline.
 
 1. ✅ Review ARCHITECTURE.md (Chapter 6: Bun-Go hybrid design)
 2. ✅ Read PERF_REPORT.md (performance baseline and rationale)
-3. ✅ Run E2E tests: `bun test ./tests/e2e/MP4ConvertGo.e2e.ts`
+3. ✅ Run E2E tests: `bun test ./tests/e2e/MP4ConvertGo.e2e.test.ts`
 4. ✅ Explore Go code: `cd ../kinetitext-go/src/mp4-convert`
 
 ### For Integrators
@@ -804,7 +804,7 @@ See ROADMAP.md for full timeline.
 - **ARCHITECTURE.md**: System design and Bun-Go boundary
 - **PERF_REPORT.md**: Performance benchmarks and root cause analysis
 - **Integration Tests**: `tests/integration/MP4ConvertGo.test.ts`
-- **E2E Tests**: `tests/e2e/MP4ConvertGo.e2e.ts`
+- **E2E Tests**: `tests/e2e/MP4ConvertGo.e2e.test.ts`
 
 ---
 

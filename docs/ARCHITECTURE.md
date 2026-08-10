@@ -283,11 +283,11 @@ RetryService
 
 ### 5.2 E2E 測試覆蓋
 
-- Phase 2: `AudioConversion.e2e.ts` — WAV/AAC/OGG/FLAC → MP3
-- Phase 3: `AudioMerging.e2e.ts` — 批次合併、時長分組
-- Phase 4: `MP4Conversion.e2e.ts` — M4A/MP4 轉換
-- Phase 5: `FullPipeline.e2e.ts` — 完整管道 E2E
-- Phase 6: `AudioConvertGo.e2e.ts` — Go 後端 E2E
+- Phase 2: `AudioConversion.e2e.test.ts` — WAV/AAC/OGG/FLAC → MP3
+- Phase 3: `AudioMerging.e2e.test.ts` — 批次合併、時長分組
+- Phase 4: `MP4Conversion.e2e.test.ts` — M4A/MP4 轉換
+- Phase 5: `FullPipeline.e2e.test.ts` — 完整管道 E2E
+- Phase 6: `AudioConvertGo.e2e.test.ts` — Go 後端 E2E（需 sibling Go binary；預設 CI 驗證 Bun fallback）
 
 ---
 
@@ -518,7 +518,7 @@ Go HTTP 或 Unix socket 服務端:
 
 ### 6.9 測試策略 (Phase 6)
 
-**E2E 測試覆蓋** (`tests/e2e/AudioConvertGo.e2e.ts`):
+**E2E 測試覆蓋** (`tests/e2e/AudioConvertGo.e2e.test.ts`):
 
 | 場景 | 測試數 | 說明 |
 |------|--------|------|
