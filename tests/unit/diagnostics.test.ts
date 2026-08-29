@@ -9,7 +9,9 @@ import {
   renderJson,
 } from '../../src/diagnostics/evaluate'
 import { secretFingerprint } from '../../src/diagnostics/secrets'
-import { M4B_PROFILE, getProfile, PROFILE_NAMES } from '../../src/diagnostics/profiles'
+import { missingRemotes } from '../../src/diagnostics/probes'
+import { backupRemoteNames } from '../../src/config/backupDestinations'
+import { allProfiles, M4B_PROFILE, getProfile, PROFILE_NAMES } from '../../src/diagnostics/profiles'
 import type { ProbeOutcome, WorkflowProfile } from '../../src/diagnostics/types'
 
 const ffmpegPresent: ProbeOutcome = { id: 'ffmpeg', present: true, version: '7.1' }
@@ -256,82 +258,80 @@ describe('profiles', () => {
 })
 
 describe('Go 輔助工具的降級語意', () => {
-  const goCapabilityIds = ['go-duration', 'go-audio'] as const
-
-  function outcomesFor(present: Partial<Record<string, boolean>>): ProbeOutcome[] {
-    return [
-      ffmpegPresent,
-      ...goCapabilityIds.map((id) => ({ id, present: present[id] ?? true })),
-    ]
+  function outcomesFor(duration: Partial<ProbeOutcome> = {}): ProbeOutcome[] {
+    return [ffmpegPresent, { id: 'go-duration', present: true, ...duration }]
   }
 
-  test('m4b 設定檔宣告 ffmpeg 為阻斷項、Go 輔助工具為可降級項', () => {
+  test('m4b 宣告 ffmpeg 為阻斷項、時長輔助工具為可降級項', () => {
     const byId = new Map(M4B_PROFILE.capabilities.map((c) => [c.id, c]))
 
     expect(byId.get('ffmpeg')!.whenMissing).toBe('blocked')
-    for (const id of goCapabilityIds) {
-      expect(byId.get(id)!.whenMissing).toBe('degraded')
-      expect(byId.get(id)!.fallback).toBeDefined()
-    }
+    expect(byId.get('go-duration')!.whenMissing).toBe('degraded')
+    expect(byId.get('go-duration')!.fallback).toBeDefined()
   })
 
-  test('Go 輔助工具全數缺席時流程仍可進行，只是降級', () => {
+  test('時長輔助工具缺席時流程仍可進行，只是降級', () => {
     const verdict = evaluateProfile(
       M4B_PROFILE,
-      outcomesFor({ 'go-duration': false, 'go-audio': false })
+      outcomesFor({ present: false, detail: 'unavailable' })
     )
 
     expect(verdict.canProceed).toBe(true)
     expect(verdict.blocking).toHaveLength(0)
-    expect(verdict.warnings.map((c) => c.id).sort()).toEqual(['go-audio', 'go-duration'])
+    expect(verdict.warnings.map((c) => c.id)).toEqual(['go-duration'])
   })
 
   test('時長的降級訊息指向真正的回退實作，並標明其非權威', () => {
-    const verdict = evaluateProfile(M4B_PROFILE, outcomesFor({ 'go-duration': false }))
+    const verdict = evaluateProfile(
+      M4B_PROFILE,
+      outcomesFor({ present: false, detail: 'unavailable' })
+    )
     const degraded = verdict.warnings.find((c) => c.id === 'go-duration')!
 
-    // 時長的回退是 music-metadata，不是 ffmpeg；且依 ADR-0002 兩者產出不等價
+    // 回退是 music-metadata，不是 ffmpeg；且依 ADR-0002 兩者產出不等價
     expect(degraded.message).toContain('music-metadata')
     expect(degraded.message).not.toContain('結果相同')
     expect(degraded.message).toContain('非權威')
   })
 
-  test('音訊轉換的降級訊息指向 ffmpeg，且結果確實相同', () => {
-    const verdict = evaluateProfile(M4B_PROFILE, outcomesFor({ 'go-audio': false }))
-    const degraded = verdict.warnings.find((c) => c.id === 'go-audio')!
-
-    expect(degraded.message).toContain('ffmpeg')
-    expect(degraded.message).toContain('結果相同')
-  })
-
   test('降級訊息同時給出修復資訊，否則使用者不知道怎麼裝回來', () => {
-    const verdict = evaluateProfile(M4B_PROFILE, outcomesFor({ 'go-audio': false }))
-    const degraded = verdict.warnings.find((c) => c.id === 'go-audio')!
+    const verdict = evaluateProfile(
+      M4B_PROFILE,
+      outcomesFor({ present: false, detail: 'unavailable' })
+    )
+    const degraded = verdict.warnings.find((c) => c.id === 'go-duration')!
 
-    expect(degraded.message).toContain('AUDIO_GO_BINARY_PATH')
+    expect(degraded.message).toContain('DURATION_GO_BINARY_PATH')
   })
 
-  test('只缺其中一支時，輸出指得出是哪一支', () => {
-    const verdict = evaluateProfile(M4B_PROFILE, outcomesFor({ 'go-audio': false }))
+  test('二進位存在但沒有流程接上它時，說明它不會被使用且不影響流程', () => {
+    const verdict = evaluateProfile(
+      M4B_PROFILE,
+      outcomesFor({ present: false, detail: 'not-wired' })
+    )
+    const notWired = verdict.warnings.find((c) => c.id === 'go-duration')!
 
-    expect(verdict.warnings.map((c) => c.id)).toEqual(['go-audio'])
-
-    const lines = renderHuman([verdict]).split('\n')
-    const audioLine = lines.find((line) => line.includes('kinetitext-audio'))
-    const durationLine = lines.find((line) => line.includes('kinetitext-duration'))
-    expect(audioLine).toBeDefined()
-    expect(durationLine).toBeDefined()
-    expect(audioLine!).toContain('警告')
-    expect(durationLine!).toContain('可用')
-
-    const parsed = JSON.parse(renderJson([verdict]))
-    expect(parsed.profiles[0].warnings).toEqual(['go-audio'])
+    expect(notWired.state).toBe('degraded')
+    expect(notWired.message).toContain('沒有任何流程接上')
+    expect(verdict.canProceed).toBe(true)
   })
 
-  test('ffmpeg 缺席時仍為阻斷，不因 Go 可用而放行', () => {
+  test('二進位存在但被環境變數停用時，說明是停用而非未安裝', () => {
+    const verdict = evaluateProfile(
+      M4B_PROFILE,
+      outcomesFor({ present: false, detail: 'disabled' })
+    )
+    const disabled = verdict.warnings.find((c) => c.id === 'go-duration')!
+
+    expect(disabled.state).toBe('degraded')
+    expect(disabled.message).toContain('停用')
+    expect(disabled.message).toContain('DURATION_GO_BINARY_PATH')
+  })
+
+  test('ffmpeg 缺席時仍為阻斷，不因輔助工具可用而放行', () => {
     const verdict = evaluateProfile(M4B_PROFILE, [
       ffmpegMissing,
-      ...goCapabilityIds.map((id) => ({ id, present: true })),
+      { id: 'go-duration', present: true },
     ])
 
     expect(verdict.canProceed).toBe(false)
@@ -339,34 +339,163 @@ describe('Go 輔助工具的降級語意', () => {
   })
 
   test('ffmpeg 的版本同時出現在人類可讀與 JSON 輸出', () => {
-    // 注意：三支 Go 輔助工具不支援版本旗標，因此它們的 version 恆為 null。
-    // 驗收條件「版本出現在兩種輸出」目前只對 ffmpeg 成立，見 issue #3 的討論。
-    const verdict = evaluateProfile(M4B_PROFILE, outcomesFor({}))
+    // 注意：Go 輔助工具不支援版本旗標，其 version 恆為 null，見 issue #3。
+    const verdict = evaluateProfile(M4B_PROFILE, outcomesFor())
 
     expect(renderHuman([verdict])).toContain('7.1')
     expect(JSON.parse(renderJson([verdict])).profiles[0].capabilities[0].version).toBe('7.1')
   })
 
   test('Go 輔助工具目前無法回報版本，JSON 中為 null', () => {
-    const verdict = evaluateProfile(M4B_PROFILE, outcomesFor({}))
-    const parsed = JSON.parse(renderJson([verdict]))
+    const parsed = JSON.parse(renderJson([evaluateProfile(M4B_PROFILE, outcomesFor())]))
     const goDuration = parsed.profiles[0].capabilities.find(
       (c: { id: string }) => c.id === 'go-duration'
     )
 
     expect(goDuration.version).toBeNull()
   })
+})
 
-  test('二進位存在但被環境變數停用時，說明是停用而非未安裝', () => {
-    const verdict = evaluateProfile(M4B_PROFILE, [
-      ffmpegPresent,
-      { id: 'go-duration', present: false, detail: 'disabled' },
-      { id: 'go-audio', present: true },
+describe('五個具名工作流程設定檔', () => {
+  test('五個設定檔皆已註冊且可依名稱取得', () => {
+    for (const name of ['crawl', 'audiobook', 'm4b', 'youtube', 'backup']) {
+      expect(PROFILE_NAMES).toContain(name)
+      expect(getProfile(name)?.name).toBe(name)
+    }
+  })
+
+  function capabilityIds(name: string): string[] {
+    return getProfile(name)!.capabilities.map((capability) => capability.id)
+  }
+
+  test('各設定檔只宣告該流程真正用到的能力', () => {
+    // 爬取不需要任何本機媒體工具；適配器前置條件於 T4 才依 URL 加入
+    expect(capabilityIds('crawl')).toEqual([])
+
+    // 有聲書直接寫出 TTS 的 mp3，不經 ffmpeg
+    expect(capabilityIds('audiobook')).toEqual([])
+
+    // m4b 需要 ffmpeg；時長輔助工具是唯一與時長有關的宣告
+    expect(capabilityIds('m4b')).toEqual(['ffmpeg', 'go-duration'])
+
+    // youtube 的 MP4 階段直接呼叫 ffmpeg，不經 MP4ConversionService，
+    // 因此不宣告 MP4 轉檔輔助工具；音訊轉換輔助工具同樣沒有呼叫點
+    expect(capabilityIds('youtube')).toEqual(['ffmpeg', 'go-duration'])
+
+    // 備份只檢查本機的 rclone 與具名遠端設定
+    expect(capabilityIds('backup')).toEqual(['rclone', 'rclone-remotes'])
+  })
+
+  test('備份的兩項能力都是阻斷項——沒有替代路徑', () => {
+    for (const capability of getProfile('backup')!.capabilities) {
+      expect(capability.whenMissing).toBe('blocked')
+    }
+  })
+
+  test('youtube 的 Go 輔助工具是降級項，ffmpeg 是阻斷項', () => {
+    const byId = new Map(getProfile('youtube')!.capabilities.map((c) => [c.id, c]))
+
+    expect(byId.get('ffmpeg')!.whenMissing).toBe('blocked')
+    expect(byId.get('go-duration')!.whenMissing).toBe('degraded')
+  })
+
+  test('沒有呼叫點的輔助工具不出現在任何設定檔', () => {
+    for (const profile of allProfiles()) {
+      const ids = profile.capabilities.map((c) => c.id)
+      expect(ids).not.toContain('go-audio')
+      expect(ids).not.toContain('go-mp4convert')
+    }
+  })
+
+  test('用到 TTS 的設定檔宣告其祕密設定，其他設定檔不宣告', () => {
+    expect(getProfile('audiobook')!.secretNames).toEqual([
+      'MICROSOFT_TTS_TOKEN',
+      'MICROSOFT_TOKEN_REFRESH_URL',
     ])
-    const disabled = verdict.warnings.find((c) => c.id === 'go-duration')!
+    expect(getProfile('youtube')!.secretNames).toEqual([
+      'MICROSOFT_TTS_TOKEN',
+      'MICROSOFT_TOKEN_REFRESH_URL',
+    ])
+    expect(getProfile('backup')!.secretNames ?? []).toEqual([])
+  })
 
-    expect(disabled.state).toBe('degraded')
-    expect(disabled.message).toContain('停用')
-    expect(disabled.message).not.toContain('建置相鄰的')
+  test('祕密值只以指紋出現在兩種輸出中', () => {
+    const verdict = evaluateProfile(getProfile('audiobook')!, [], {
+      MICROSOFT_TTS_TOKEN: 'a-real-looking-token',
+    })
+
+    expect(renderHuman([verdict])).not.toContain('a-real-looking-token')
+    expect(renderJson([verdict])).not.toContain('a-real-looking-token')
+    expect(verdict.secretFingerprints.map((s) => s.name)).toEqual([
+      'MICROSOFT_TTS_TOKEN',
+      'MICROSOFT_TOKEN_REFRESH_URL',
+    ])
+  })
+
+  test('未設定的祕密與已設定的祕密指紋不同', () => {
+    const verdict = evaluateProfile(getProfile('audiobook')!, [], {
+      MICROSOFT_TTS_TOKEN: 'set-value',
+    })
+    const [token, refreshUrl] = verdict.secretFingerprints
+
+    expect(token!.fingerprint).not.toBe(refreshUrl!.fingerprint)
+    expect(refreshUrl!.fingerprint).toBe('unset')
+  })
+
+  test('沒有宣告能力的設定檔判定為可進行', () => {
+    expect(evaluateProfile(getProfile('crawl')!, []).canProceed).toBe(true)
+  })
+
+  test('預設全查時，輸出可分辨各設定檔的結果', () => {
+    const verdicts = allProfiles().map((profile) => evaluateProfile(profile, [ffmpegMissing]))
+    const text = renderHuman(verdicts)
+
+    for (const name of PROFILE_NAMES) {
+      expect(text).toContain(`設定檔 ${name}`)
+    }
+
+    const parsed = JSON.parse(renderJson(verdicts))
+    expect(parsed.profiles.map((p: { profile: string }) => p.profile)).toEqual([...PROFILE_NAMES])
+    // 只有宣告 ffmpeg 的設定檔會因為它缺席而不可進行
+    expect(parsed.canProceed).toBe(false)
+    expect(parsed.profiles.find((p: { profile: string }) => p.profile === 'crawl').canProceed).toBe(
+      true
+    )
+  })
+})
+
+describe('missingRemotes', () => {
+  const required = ['novel-backup-gdrive', 'novel-backup-s3']
+
+  test('已設定的遠端不列為缺少', () => {
+    const output = 'novel-backup-gdrive:\nnovel-backup-s3:\n'
+    expect(missingRemotes(output, required)).toEqual([])
+  })
+
+  test('只列出備份目標需要但未設定的遠端', () => {
+    expect(missingRemotes('novel-backup-gdrive:\n', required)).toEqual(['novel-backup-s3'])
+  })
+
+  test('忽略空白行與前後空白', () => {
+    const output = '\n  novel-backup-gdrive:  \n\n  novel-backup-s3:\n\n'
+    expect(missingRemotes(output, required)).toEqual([])
+  })
+
+  test('沒有尾隨冒號的行不算遠端名稱', () => {
+    expect(missingRemotes('novel-backup-gdrive\n', required)).toEqual(required)
+  })
+
+  test('遠端名稱區分大小寫，不做寬鬆比對', () => {
+    expect(missingRemotes('NOVEL-BACKUP-GDRIVE:\n', ['novel-backup-gdrive'])).toEqual([
+      'novel-backup-gdrive',
+    ])
+  })
+
+  test('輸出為空時所有需要的遠端都算缺少', () => {
+    expect(missingRemotes('', required)).toEqual(required)
+  })
+
+  test('備份目標點位的遠端名稱取自共用清單', () => {
+    expect(backupRemoteNames(['a:one', 'b:two', 'a:three'])).toEqual(['a', 'b'])
   })
 })

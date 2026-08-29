@@ -38,6 +38,15 @@ export interface ProbeOutcome {
   readonly error?: string
   /** 解析時實際找過的路徑，供診斷說明；與工具自身的錯誤輸出區分開。 */
   readonly searched?: string
+  /** 需要但尚未設定的項目，例如缺少的具名遠端。 */
+  readonly missing?: readonly string[]
+  /**
+   * 由探測器指定的判定，覆寫能力宣告的 whenMissing。
+   *
+   * 只在探測器比靜態宣告更清楚該情境的嚴重度時使用：例如備份目標仍是出廠範例
+   * 值，那是「尚未設定」而非「設定壞了」，不該讓流程以阻斷收場。
+   */
+  readonly state?: CapabilityState
 }
 
 export interface CapabilityVerdict {

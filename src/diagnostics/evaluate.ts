@@ -61,13 +61,15 @@ function judge(
     }
   }
 
-  const degraded = requirement.whenMissing === 'degraded'
+  // 探測器可覆寫嚴重度：它有時比靜態宣告更清楚該情境的意義（例如備份目標
+  // 仍是出廠範例值，那是尚未設定而非設定壞了）。
+  const state = outcome?.state ?? (requirement.whenMissing === 'degraded' ? 'degraded' : 'blocked')
   return {
     id: requirement.id,
     label: requirement.label,
-    state: degraded ? 'degraded' : 'blocked',
+    state,
     detail: outcome?.detail,
-    message: messageFor(requirement, outcome, degraded),
+    message: messageFor(requirement, outcome, state === 'degraded'),
   }
 }
 
@@ -89,8 +91,28 @@ function messageFor(
       return '探測已取消，本次結果不代表它不可用'
     case 'no-probe':
       return `內部設定缺漏：能力 ${requirement.id} 尚未註冊探測方式`
+    case 'not-wired':
+      return (
+        '二進位存在，但目前沒有任何流程接上它，因此不會被使用；' +
+        '此項不影響流程能否進行'
+      )
+    case 'rclone-missing':
+      return 'rclone 尚未安裝，因此無法確認備份遠端設定；請先解決 rclone 的阻斷項'
+    case 'example-destinations':
+      return (
+        '尚未設定備份目標——目前的目標點位仍是出廠範例值；' +
+        '請於 src/config/backupDestinations.ts 填入實際的 rclone 目標'
+      )
+    case 'remote-not-configured':
+      return `備份目標需要的遠端尚未以 rclone config 設定：${(outcome?.missing ?? []).join('、')}`
     case 'disabled':
-      return `二進位存在，但已由環境變數停用；${requirement.fallback ?? requirement.remedy}`
+      return [
+        '二進位存在，但已由環境變數停用',
+        requirement.fallback,
+        requirement.remedy,
+      ]
+        .filter(Boolean)
+        .join('；')
     default:
       break
   }
@@ -157,6 +179,10 @@ export function renderHuman(verdicts: readonly ProfileVerdict[]): string {
   for (const verdict of verdicts) {
     const summary = verdict.canProceed ? '可進行' : '不可進行（存在阻斷項）'
     lines.push(`設定檔 ${verdict.profile}：${summary}`)
+
+    if (verdict.capabilities.length === 0) {
+      lines.push('  · 無宣告的本機能力需求')
+    }
 
     for (const capability of verdict.capabilities) {
       const version = capability.version ? ` (${capability.version})` : ''

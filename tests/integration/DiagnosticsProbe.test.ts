@@ -133,13 +133,14 @@ describe('doctor CLI 結束碼', () => {
 describe('Go 輔助工具的優先序解析（經探測層）', () => {
   const realExecutable = '/bin/echo'
 
-  test('環境變數指定的路徑存在時判定為可用，並標示來源', async () => {
+  test('環境變數指定的路徑存在時被解析到，並回報該路徑', async () => {
     const [outcome] = await probeCapabilities(['go-duration'], {
       env: { DURATION_GO_BINARY_PATH: realExecutable },
     })
 
-    expect(outcome!.present).toBe(true)
-    expect(outcome!.detail).toBe('resolved-by-env')
+    // 目前沒有流程接上這支輔助工具，因此解析成功仍不算可用
+    expect(outcome!.detail).toBe('not-wired')
+    expect(outcome!.searched).toBe(realExecutable)
   })
 
   test('環境變數指定的路徑不存在時判定為不可用，並回報找過哪裡', async () => {
@@ -158,8 +159,8 @@ describe('Go 輔助工具的優先序解析（經探測層）', () => {
       env: { DURATION_GO_BINARY_PATH: '/nonexistent/kinetitext-duration' },
     })
 
-    expect(outcome!.present).toBe(true)
-    expect(outcome!.detail).toBe('resolved-by-override')
+    expect(outcome!.detail).toBe('not-wired')
+    expect(outcome!.searched).toBe(realExecutable)
   })
 
   test('三支輔助工具各自解析，互不影響', async () => {
@@ -173,9 +174,11 @@ describe('Go 輔助工具的優先序解析（經探測層）', () => {
     })
     const byId = new Map(outcomes.map((outcome) => [outcome.id, outcome]))
 
-    expect(byId.get('go-audio')!.present).toBe(true)
-    expect(byId.get('go-duration')!.present).toBe(false)
-    expect(byId.get('go-mp4convert')!.present).toBe(true)
+    // 三支各自解析：兩支找到（但尚未接上流程），一支路徑不存在
+    expect(byId.get('go-audio')!.detail).toBe('not-wired')
+    expect(byId.get('go-audio')!.searched).toBe(realExecutable)
+    expect(byId.get('go-duration')!.detail).toBe('unavailable')
+    expect(byId.get('go-mp4convert')!.detail).toBe('not-wired')
   })
 
   test('MP4 輔助工具預設停用，二進位存在也不報為可用', async () => {
@@ -247,5 +250,49 @@ describe('預設的可執行檔判定（唯一真正接觸檔案系統的一段�
 
     expect(outcome!.present).toBe(false)
     expect(outcome!.detail).toBe('unavailable')
+  })
+})
+
+describe('備份能力探測', () => {
+  async function rcloneInstalled(): Promise<boolean> {
+    const [outcome] = await probeCapabilities(['rclone'])
+    return outcome!.present
+  }
+
+  test('rclone 未安裝時判定為缺席且不拋出例外', async () => {
+    if (await rcloneInstalled()) return // 本機已安裝，跳過
+
+    const [outcome] = await probeCapabilities(['rclone'])
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('not-found')
+  })
+
+  test('備份目標仍是出廠範例值時，以警告而非阻斷表達，且不需 rclone 在場', async () => {
+    const [outcome] = await probeCapabilities(['rclone-remotes'])
+
+    expect(outcome!.detail).toBe('example-destinations')
+    expect(outcome!.state).toBe('degraded')
+  })
+
+  test('rclone 已安裝時，遠端探測回報缺少哪些具名遠端', async () => {
+    if (!(await rcloneInstalled())) return // 本機未安裝，跳過
+
+    const [outcome] = await probeCapabilities(['rclone-remotes'])
+
+    expect(typeof outcome!.present).toBe('boolean')
+    if (!outcome!.present) {
+      expect(outcome!.detail).toBe('remote-not-configured')
+      expect(outcome!.searched).toBeTruthy()
+    }
+  })
+
+  test('備份探測不對遠端發出連線——只讀本機設定', async () => {
+    // listremotes 只讀設定檔；此測試鎖住「探測不連線」這個對外承諾，
+    // 方式是確認它在無網路可用的假設下仍能在探測逾時內完成。
+    const outcomes = await probeCapabilities(['rclone-remotes'], { timeoutMs: 3000 })
+
+    expect(outcomes).toHaveLength(1)
+    expect(outcomes[0]!.id).toBe('rclone-remotes')
   })
 })

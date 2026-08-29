@@ -1,15 +1,6 @@
 import { spawnSync } from 'child_process';
 import { formatCliError, parseCommonCliFlags } from '../src/cli/common';
-
-/**
- * 定義備份目標點位 (Rclone Remote Names)
- * 請確保您已透過 `rclone config` 設定好這些名稱
- */
-const BACKUP_DESTINATIONS = [
-    'novel-backup-gdrive:kinetitext-backup',  // Google Drive 範例
-    'novel-backup-s3:my-novel-bucket',        // S3/R2 範例
-    // 'novel-backup-onedrive:novels',        // 可持續增加點位
-];
+import { BACKUP_DESTINATIONS } from '../src/config/backupDestinations';
 
 const SOURCE_DIR = './output';
 const { help, dryRun } = parseCommonCliFlags(process.argv.slice(2));
@@ -26,7 +17,7 @@ async function runBackup() {
     console.log(`[Backup] Starting multi-point backup for ${SOURCE_DIR}...`);
 
     if (BACKUP_DESTINATIONS.length === 0) {
-        console.warn('[Backup] No backup destinations defined. Please edit scripts/backup.ts');
+        console.warn('[Backup] No backup destinations defined. Please edit src/config/backupDestinations.ts');
         return;
     }
 
