@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { resolveGoBinaryPath } from '../src/config/goBinaryPaths'
+import { resolveGoBinary, resolveGoBinaryPath } from '../src/config/goBinaryPaths'
 import { AudioConvertGoConfigSchema } from '../src/config/AudioConvertGoConfig'
 import { createAudioConvertGoConfig } from '../src/config/AudioConvertGoConfig'
 import { DurationGoConfigSchema } from '../src/config/DurationGoConfig'
@@ -88,5 +88,78 @@ describe('Go binary paths', () => {
     expect(
       createAudioConvertGoConfig({ goBinaryPath: '/override/audio' }).goBinaryPath
     ).toBe('/override/audio')
+  })
+})
+
+describe('resolveGoBinary 優先序鏈', () => {
+  const allExist = () => true
+  const noneExist = () => false
+
+  test('明確傳入的路徑優先於環境變數與預設', () => {
+    const resolution = resolveGoBinary('duration', {
+      override: '/explicit/duration',
+      env: { DURATION_GO_BINARY_PATH: '/from/env' },
+      exists: allExist,
+    })
+
+    expect(resolution.source).toBe('override')
+    expect(resolution.path).toBe('/explicit/duration')
+  })
+
+  test('沒有明確路徑時採用環境變數', () => {
+    const resolution = resolveGoBinary('duration', {
+      env: { DURATION_GO_BINARY_PATH: '/from/env' },
+      exists: allExist,
+    })
+
+    expect(resolution.source).toBe('env')
+    expect(resolution.path).toBe('/from/env')
+  })
+
+  test('三支二進位各自讀自己的環境變數', () => {
+    const env = {
+      AUDIO_GO_BINARY_PATH: '/audio',
+      DURATION_GO_BINARY_PATH: '/duration',
+      MP4_GO_BINARY_PATH: '/mp4',
+    }
+
+    expect(resolveGoBinary('audio', { env, exists: allExist }).path).toBe('/audio')
+    expect(resolveGoBinary('duration', { env, exists: allExist }).path).toBe('/duration')
+    expect(resolveGoBinary('mp4convert', { env, exists: allExist }).path).toBe('/mp4')
+  })
+
+  test('皆未指定時退回相鄰 repo 的開發預設', () => {
+    const resolution = resolveGoBinary('duration', { env: {}, exists: allExist })
+
+    expect(resolution.source).toBe('default')
+    expect(resolution.path).toContain('kinetitext-duration')
+  })
+
+  test('候選路徑都不存在時判定為不可用', () => {
+    const resolution = resolveGoBinary('duration', { env: {}, exists: noneExist })
+
+    expect(resolution.source).toBe('unavailable')
+    expect(resolution.path).toBeUndefined()
+  })
+
+  test('較高順位的路徑不存在時，不會靜默退回較低順位', () => {
+    const resolution = resolveGoBinary('duration', {
+      override: '/explicit/missing',
+      env: { DURATION_GO_BINARY_PATH: '/from/env' },
+      exists: (path: string) => path === '/from/env',
+    })
+
+    expect(resolution.source).toBe('unavailable')
+    expect(resolution.attempted).toEqual(['/explicit/missing'])
+  })
+
+  test('環境變數指定的路徑不存在時同樣不退回預設', () => {
+    const resolution = resolveGoBinary('duration', {
+      env: { DURATION_GO_BINARY_PATH: '/from/env' },
+      exists: () => false,
+    })
+
+    expect(resolution.source).toBe('unavailable')
+    expect(resolution.attempted).toEqual(['/from/env'])
   })
 })

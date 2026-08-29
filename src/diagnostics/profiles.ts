@@ -1,10 +1,37 @@
 import { hasProbe } from './probes'
-import type { WorkflowProfile } from './types'
+import type { CapabilityRequirement, WorkflowProfile } from './types'
+
+/**
+ * Go 輔助工具的能力宣告，供各設定檔共用。
+ *
+ * 依 CONTEXT.md，Go 輔助工具是選用的增強能力：不健康時核心流程仍應以既有
+ * 替代能力維持可用，因此缺席一律是降級而非阻斷。真正沒有替代路徑的能力
+ * （ffmpeg）才是阻斷項。
+ */
+const GO_AUDIO: CapabilityRequirement = {
+  id: 'go-audio',
+  label: 'Go 音訊轉換輔助工具 (kinetitext-audio)',
+  whenMissing: 'degraded',
+  fallback: '改以 ffmpeg 轉換，較慢但結果相同',
+  remedy: '建置相鄰的 kinetitext-go，或以 AUDIO_GO_BINARY_PATH 指定二進位路徑',
+}
+
+const GO_DURATION: CapabilityRequirement = {
+  id: 'go-duration',
+  label: 'Go 時長輔助工具 (kinetitext-duration)',
+  whenMissing: 'degraded',
+  fallback:
+    '改以 music-metadata 讀取時長；較慢，且依 ADR-0002 屬非權威來源，' +
+    '日後裝上 Go 輔助工具會重新產生',
+  remedy: '建置相鄰的 kinetitext-go，或以 DURATION_GO_BINARY_PATH 指定二進位路徑',
+}
 
 /**
  * m4b 設定檔。
  *
- * 目前只宣告 ffmpeg 一項能力；Go 輔助工具的解析與降級語意由後續切片加入。
+ * ffmpeg 沒有替代路徑，缺席即阻斷；兩支 Go 輔助工具缺席則降級。
+ * m4b 不使用 MP4 轉檔輔助工具，因此不在此宣告——設定檔只宣告該流程真正
+ * 用到的能力。
  */
 export const M4B_PROFILE: WorkflowProfile = {
   name: 'm4b',
@@ -15,6 +42,8 @@ export const M4B_PROFILE: WorkflowProfile = {
       whenMissing: 'blocked',
       remedy: '請安裝 ffmpeg 後重試（macOS：brew install ffmpeg）',
     },
+    GO_DURATION,
+    GO_AUDIO,
   ],
 }
 

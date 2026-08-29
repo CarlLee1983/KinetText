@@ -84,17 +84,28 @@ function messageFor(
 ): string {
   switch (outcome?.detail) {
     case 'timeout':
-      return `${requirement.label} 探測逾時；工具可能存在但無回應，可提高 --timeout 後重試`
+      return '探測逾時；工具可能存在但無回應，可提高 --timeout 後重試'
     case 'cancelled':
-      return `${requirement.label} 探測已取消，本次結果不代表它不可用`
+      return '探測已取消，本次結果不代表它不可用'
     case 'no-probe':
       return `內部設定缺漏：能力 ${requirement.id} 尚未註冊探測方式`
+    case 'disabled':
+      return `二進位存在，但已由環境變數停用；${requirement.fallback ?? requirement.remedy}`
     default:
       break
   }
 
-  const base = degraded ? (requirement.fallback ?? requirement.remedy) : requirement.remedy
-  return outcome?.error ? `${base}（${outcome.error}）` : base
+  // 降級時兩句都要：回退說明「這次會怎樣」，修復資訊說明「想要更好該做什麼」。
+  const base = degraded
+    ? [requirement.fallback, requirement.remedy].filter(Boolean).join('；')
+    : requirement.remedy
+
+  const context = [
+    outcome?.searched ? `找過：${outcome.searched}` : undefined,
+    outcome?.error,
+  ].filter(Boolean)
+
+  return context.length > 0 ? `${base}（${context.join('；')}）` : base
 }
 
 /** 選取範圍內存在阻斷項時為非零，供 CI 直接判定成敗。 */

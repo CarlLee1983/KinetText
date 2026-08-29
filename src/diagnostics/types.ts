@@ -36,6 +36,8 @@ export interface ProbeOutcome {
   readonly detail?: string
   /** 探測失敗時的第一行錯誤輸出，用於診斷訊息；不含祕密。 */
   readonly error?: string
+  /** 解析時實際找過的路徑，供診斷說明；與工具自身的錯誤輸出區分開。 */
+  readonly searched?: string
 }
 
 export interface CapabilityVerdict {

@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 import { dirname } from 'node:path'
 import { probeCapabilities, probeExecutable, probeProfile } from '../../src/diagnostics/probes'
 import { M4B_PROFILE } from '../../src/diagnostics/profiles'
@@ -127,5 +127,125 @@ describe('doctor CLI 結束碼', () => {
 
     expect(exitCode).toBe(0)
     expect(JSON.parse(stdout).canProceed).toBe(true)
+  })
+})
+
+describe('Go 輔助工具的優先序解析（經探測層）', () => {
+  const realExecutable = '/bin/echo'
+
+  test('環境變數指定的路徑存在時判定為可用，並標示來源', async () => {
+    const [outcome] = await probeCapabilities(['go-duration'], {
+      env: { DURATION_GO_BINARY_PATH: realExecutable },
+    })
+
+    expect(outcome!.present).toBe(true)
+    expect(outcome!.detail).toBe('resolved-by-env')
+  })
+
+  test('環境變數指定的路徑不存在時判定為不可用，並回報找過哪裡', async () => {
+    const [outcome] = await probeCapabilities(['go-duration'], {
+      env: { DURATION_GO_BINARY_PATH: '/nonexistent/kinetitext-duration' },
+    })
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('unavailable')
+    expect(outcome!.searched).toContain('/nonexistent/kinetitext-duration')
+  })
+
+  test('overrides 優先於環境變數', async () => {
+    const [outcome] = await probeCapabilities(['go-duration'], {
+      overrides: { 'go-duration': realExecutable },
+      env: { DURATION_GO_BINARY_PATH: '/nonexistent/kinetitext-duration' },
+    })
+
+    expect(outcome!.present).toBe(true)
+    expect(outcome!.detail).toBe('resolved-by-override')
+  })
+
+  test('三支輔助工具各自解析，互不影響', async () => {
+    const outcomes = await probeCapabilities(['go-audio', 'go-duration', 'go-mp4convert'], {
+      env: {
+        AUDIO_GO_BINARY_PATH: realExecutable,
+        DURATION_GO_BINARY_PATH: '/nonexistent/duration',
+        MP4_GO_BINARY_PATH: realExecutable,
+        MP4_GO_ENABLED: 'true',
+      },
+    })
+    const byId = new Map(outcomes.map((outcome) => [outcome.id, outcome]))
+
+    expect(byId.get('go-audio')!.present).toBe(true)
+    expect(byId.get('go-duration')!.present).toBe(false)
+    expect(byId.get('go-mp4convert')!.present).toBe(true)
+  })
+
+  test('MP4 輔助工具預設停用，二進位存在也不報為可用', async () => {
+    const [outcome] = await probeCapabilities(['go-mp4convert'], {
+      env: { MP4_GO_BINARY_PATH: realExecutable },
+    })
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('disabled')
+  })
+
+  test('時長輔助工具可被 DURATION_GO_ENABLED=false 停用', async () => {
+    const [outcome] = await probeCapabilities(['go-duration'], {
+      env: { DURATION_GO_BINARY_PATH: realExecutable, DURATION_GO_ENABLED: 'false' },
+    })
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('disabled')
+  })
+})
+
+describe('預設的可執行檔判定（唯一真正接觸檔案系統的一段）', () => {
+  const created: string[] = []
+
+  afterEach(async () => {
+    const { rm } = await import('node:fs/promises')
+    await Promise.all(created.splice(0).map((path) => rm(path, { recursive: true, force: true })))
+  })
+
+  test('存在但不可執行的檔案判定為不可用', async () => {
+    const { mkdtemp, writeFile, chmod } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+
+    const directory = await mkdtemp(join(tmpdir(), 'kinetitext-probe-'))
+    created.push(directory)
+    const file = join(directory, 'kinetitext-duration')
+    await writeFile(file, '')
+    await chmod(file, 0o644)
+
+    const [outcome] = await probeCapabilities(['go-duration'], {
+      env: { DURATION_GO_BINARY_PATH: file },
+    })
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('unavailable')
+  })
+
+  test('指向目錄而非二進位時判定為不可用', async () => {
+    const { mkdtemp } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+
+    const directory = await mkdtemp(join(tmpdir(), 'kinetitext-probe-'))
+    created.push(directory)
+
+    const [outcome] = await probeCapabilities(['go-duration'], {
+      env: { DURATION_GO_BINARY_PATH: directory },
+    })
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('unavailable')
+  })
+
+  test('空字串的環境變數視為指定了不存在的路徑，不退回預設', async () => {
+    const [outcome] = await probeCapabilities(['go-duration'], {
+      env: { DURATION_GO_BINARY_PATH: '' },
+    })
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('unavailable')
   })
 })
