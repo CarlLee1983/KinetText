@@ -4,7 +4,6 @@
 >
 > 此計畫已對應到完成的 YT pipeline 功能；未勾選的步驟保留作為當時執行脈絡，並非目前待辦。請改閱 [現行路線圖](../../../.planning/ROADMAP.md)。
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 提供一支 `bun run yt-pipeline <url>` 指令，從小說網址一路產出可上傳 YouTube 的 MP4（爬文 → TTS mp3 → 時長合併 → 自動封面 + MP4）。
 

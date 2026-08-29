@@ -4,7 +4,6 @@
 >
 > 此計畫已對應到完成的管線參數化功能；未勾選的步驟保留作為當時執行脈絡，並非目前待辦。請改閱 [現行路線圖](../../../.planning/ROADMAP.md)。
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 把爬取重試/併發/退避延遲開放成 CLI 旗標、把合併容差透出，並讓 `yt-pipeline` 爬完自動補抓失敗章節，使整條 pipeline 完全可腳本化。
 

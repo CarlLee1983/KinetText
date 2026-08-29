@@ -4,7 +4,6 @@
 >
 > 此計畫已對應到完成的 M4B 功能；未勾選的步驟保留作為當時執行脈絡，並非目前待辦。請改閱 [現行路線圖](../../../.planning/ROADMAP.md)。
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 從 `output/<書>/audio/` 的逐章 MP3 直接產生含逐章標記、按時長分卷的 M4B 有聲書，並新增 TUI 動作與 CLI、設為 pipeline 預設。
 

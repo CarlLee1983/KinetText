@@ -55,7 +55,7 @@
 
 - Markdown 是可編輯的文件來源：`README.md`、`AGENTS.md` 與 `docs/*.md`。
 - `docs/*.html` 與 `docs/.nojekyll` 由 `bun run build:docs` 產生並提交；修改其對應 Markdown 或文件導覽後，必須重建並檢查差異。
-- `docs/adr/` 是手寫架構決策紀錄；`docs/superpowers/` 保存歷史設計與計畫，兩者不會自動加入文件網站導覽。
+- `docs/adr/` 是手寫架構決策紀錄；`docs/history/` 保存歷史設計與計畫（superpowers 工具已棄用），兩者不會自動加入文件網站導覽。
 - `graft/` 是本機可再生的程式碼索引，已被 Git 忽略；修改程式後執行 Graft freshness check，不應手動維護其產物。
 - `output/`、暫存檔與本機設定屬執行產物，不納入版本控制。
 

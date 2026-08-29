@@ -4,7 +4,6 @@
 >
 > 此計畫已對應到完成的 TUI 功能；未勾選的步驟保留作為當時執行脈絡，並非目前待辦。請改閱 [現行路線圖](../../../.planning/ROADMAP.md)。
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 為 KinetiText 新增一個 `bun run menu` 互動式 TUI 控制台，讓使用者不必背指令參數、自動接續 pipeline、並提供詳細的書籍進度檢視。
 
@@ -12,7 +11,7 @@
 
 **Tech Stack:** Bun + TypeScript、`@clack/prompts`（互動選單）、`music-metadata`（既有依賴，估算時長）、`bun:test`（測試）。
 
-**Spec:** `docs/superpowers/specs/2026-05-30-tui-control-panel-design.md`
+**Spec:** `docs/history/specs/2026-05-30-tui-control-panel-design.md`
 
 ---
 
