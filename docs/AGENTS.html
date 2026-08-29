@@ -167,7 +167,7 @@ body{
 <li><strong>Runtime</strong>: <a href="https://bun.sh">Bun</a> (TypeScript)</li>
 <li><strong>Scraping</strong>: <code>axios</code> + <code>cheerio</code>.</li>
 <li><strong>Concurrency</strong>: <code>p-limit</code>.</li>
-<li><strong>Encoding</strong>: <code>iconv-lite</code> for legacy character sets.</li>
+<li><strong>Encoding</strong>: fetch as <code>arraybuffer</code> and decode with the built-in <code>Buffer</code> (UTF-8); no third-party encoding library.</li>
 </ul>
 <h3 id="-prefer-bun-built-ins"><a class="anchor" href="#-prefer-bun-built-ins">#</a>⚡ Prefer Bun Built-ins</h3>
 <ul>
@@ -211,6 +211,13 @@ test(&quot;feature works&quot;, () =&gt; {
 <li>Ensure type-checks pass (Bun handles this during execution, but manual checks are good).</li>
 <li>Title format: <code>[&lt;adapter_name&gt;|&lt;core&gt;] &lt;Action description&gt;</code></li>
 </ul>
+<h2 id="agent-skills"><a class="anchor" href="#agent-skills">#</a>Agent skills</h2>
+<h3 id="issue-tracker"><a class="anchor" href="#issue-tracker">#</a>Issue tracker</h3>
+<p>GitHub Issues on <code>CarlLee1983/KinetText</code>, operated via the <code>gh</code> CLI. See <code>docs/agents/issue-tracker.md</code>.</p>
+<h3 id="triage-labels"><a class="anchor" href="#triage-labels">#</a>Triage labels</h3>
+<p>The five canonical roles, each label string equal to its name. See <code>docs/agents/triage-labels.md</code>.</p>
+<h3 id="domain-docs"><a class="anchor" href="#domain-docs">#</a>Domain docs</h3>
+<p>Single-context: <code>CONTEXT.md</code> and <code>docs/adr/</code> at the repo root. See <code>docs/agents/domain.md</code>.</p>
 
     </article>
     <footer class="page-foot">

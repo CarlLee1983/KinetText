@@ -81,3 +81,17 @@ test("feature works", () => {
 - Always run `bun test` before merging.
 - Ensure type-checks pass (Bun handles this during execution, but manual checks are good).
 - Title format: `[<adapter_name>|<core>] <Action description>`
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `CarlLee1983/KinetText`, operated via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, each label string equal to its name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
