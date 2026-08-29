@@ -12,6 +12,7 @@ import {
   shouldRetryFailed,
 } from '../src/core/services/ytPipeline'
 import { CoverGenerator } from '../src/core/services/CoverGenerator'
+import { enforceStartup } from '../src/diagnostics/startup'
 import { buildMP4WithImageCommand } from '../src/core/utils/ffmpeg-commands'
 
 const HELP = `用法: bun run yt-pipeline <url> [選項]
@@ -73,6 +74,10 @@ async function main(): Promise<void> {
     process.exit(0)
   }
 
+  // 啟動前檢查。dry-run 只印出將執行的指令、不碰任何外部工具，因此在其之後。
+  // 帶上網址，讓第 ① 階段所需的適配器前置條件一併納入。
+  await enforceStartup('youtube', { url: o.url })
+
   // ① 爬取（記錄前後書目錄差異以判定書名）
   const before = await listBookDirs()
   console.log('\n========== ① 爬取 ==========\n')
@@ -121,7 +126,6 @@ async function main(): Promise<void> {
   // ④ 逐段封面 + MP4
   console.log('\n========== ④ 封面 + MP4 ==========\n')
   await mkdir(coversDir, { recursive: true })
-  await ensureFfmpeg()
 
   const mergedAbs = mergedDir
   const mergedFiles = (await readdir(mergedAbs))
@@ -194,13 +198,5 @@ async function readFailedChapters(title: string): Promise<unknown[]> {
   }
 }
 
-async function ensureFfmpeg(): Promise<void> {
-  try {
-    await $`ffmpeg -version`.quiet()
-  } catch {
-    console.error('❌ 找不到 ffmpeg，請先安裝（brew install ffmpeg）。')
-    process.exit(1)
-  }
-}
 
 main()

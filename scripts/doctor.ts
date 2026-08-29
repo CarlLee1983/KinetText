@@ -7,6 +7,7 @@ import {
   withAdapterCapabilities,
 } from '../src/diagnostics/profiles'
 import { probeCapabilities } from '../src/diagnostics/probes'
+import { resolveAdapter, secretValuesFor } from '../src/diagnostics/startup'
 import type { ProfileVerdict, WorkflowProfile } from '../src/diagnostics/types'
 
 /** 使用者中止時的慣例結束碼。 */
@@ -59,30 +60,6 @@ function selectProfiles(args: readonly string[]): readonly WorkflowProfile[] {
     throw new Error(`未知的設定檔：${name}（可用：${PROFILE_NAMES.join(', ')}）`)
   }
   return [profile]
-}
-
-/** 只挑出設定檔宣告的祕密名稱，不把整份環境交給純函式。 */
-function secretValuesFor(
-  profile: WorkflowProfile,
-  env: Readonly<Record<string, string | undefined>>
-): Record<string, string | undefined> {
-  const values: Record<string, string | undefined> = {}
-  for (const name of profile.secretNames ?? []) {
-    values[name] = env[name]
-  }
-  return values
-}
-
-/**
- * 解析網址對應的適配器。
- *
- * 動態載入：適配器註冊表會連帶載入 puppeteer，只有真的給了網址才值得付這個
- * 載入成本——診斷的賣點正是開始前很快就知道能不能跑。
- */
-async function resolveAdapter(url: string | undefined) {
-  if (!url) return undefined
-  const { getAdapterForUrl } = await import('../src/adapters')
-  return getAdapterForUrl(url)
 }
 
 async function main() {

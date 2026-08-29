@@ -1,6 +1,7 @@
 import { spawnSync } from 'child_process';
 import { formatCliError, parseCommonCliFlags } from '../src/cli/common';
 import { BACKUP_DESTINATIONS } from '../src/config/backupDestinations';
+import { enforceStartup } from '../src/diagnostics/startup';
 
 const SOURCE_DIR = './output';
 const { help, dryRun } = parseCommonCliFlags(process.argv.slice(2));
@@ -14,6 +15,11 @@ if (help) {
 }
 
 async function runBackup() {
+    // dry-run 只印出指令、不執行 rclone，因此不要求它在場。
+    if (!dryRun) {
+        await enforceStartup('backup');
+    }
+
     console.log(`[Backup] Starting multi-point backup for ${SOURCE_DIR}...`);
 
     if (BACKUP_DESTINATIONS.length === 0) {

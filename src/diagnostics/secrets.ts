@@ -42,8 +42,13 @@ function installKey(): string {
   }
 
   const generated = randomBytes(32).toString('hex')
-  mkdirSync(dirname(KEY_PATH), { recursive: true })
-  writeFileSync(KEY_PATH, generated, { mode: 0o600 })
+  try {
+    mkdirSync(dirname(KEY_PATH), { recursive: true })
+    writeFileSync(KEY_PATH, generated, { mode: 0o600 })
+  } catch {
+    // 唯讀的 checkout 或容器裡寫不進去。指紋在該次執行內仍然一致，只是不跨執行
+    // 穩定——這比讓一個「檢查流程能否進行」的步驟自己因檔案系統錯誤而死要好。
+  }
   cachedKey = generated
   return cachedKey
 }

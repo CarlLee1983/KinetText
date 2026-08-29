@@ -2,6 +2,7 @@ import { CrawlerEngine } from './core/CrawlerEngine';
 import { getAdapterForUrl } from './adapters';
 import { TxtStorageAdapter } from './storage/TxtStorageAdapter';
 import { formatCliError, parseCommonCliFlags, parseCrawlFlags } from './cli/common';
+import { enforceStartup } from './diagnostics/startup';
 
 function printUsage() {
     console.log('Usage: bun run start <URL>');
@@ -42,6 +43,10 @@ async function main() {
         console.error(`No adapter found for URL: ${targetUrl}`);
         process.exit(1);
     }
+
+    // 啟動前檢查。--dry-run 仍會抓 metadata 與章節列表，因此同樣需要適配器的
+    // 前置條件，不在此略過。
+    await enforceStartup('crawl', { adapter });
 
     const storage = new TxtStorageAdapter('./output');
     const engine = new CrawlerEngine(adapter, storage, {

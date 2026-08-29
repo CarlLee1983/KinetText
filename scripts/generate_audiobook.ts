@@ -2,6 +2,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import pLimit from 'p-limit'
 import { MicrosoftEdgeTTSProvider } from '../src/tts/MicrosoftEdgeTTSProvider'
+import { enforceStartup } from '../src/diagnostics/startup'
 import {
     chapterFileToMp3,
     listChapterTextFiles,
@@ -120,6 +121,9 @@ async function main() {
             process.exit(1)
         }
     }
+
+    // 啟動前檢查：在建立輸出目錄與開始 TTS 之前，避免半途失敗留下半成品。
+    await enforceStartup('audiobook')
 
     await fs.mkdir(audioDir, { recursive: true })
     let txtFiles = await listChapterTextFiles(txtSourceDir)

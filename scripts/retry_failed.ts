@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import pLimit from 'p-limit';
 import { getAdapterForUrl } from '../src/adapters';
+import { enforceStartup } from '../src/diagnostics/startup';
 import type { Chapter } from '../src/core/types';
 import { TxtStorageAdapter } from '../src/storage/TxtStorageAdapter';
 import { formatCliError, parseCommonCliFlags } from '../src/cli/common';
@@ -53,6 +54,19 @@ async function main() {
         console.log(`[Retry][Dry-run] Sample: ${failed.slice(0, 10).map((c) => `${c.index}:${c.title}`).join(', ')}`);
         return;
     }
+
+    // 補抓就是爬取流程的另一個名字：一樣逐章呼叫適配器，因此一樣要先確認該
+    // 適配器的前置條件。取所有待補章節所屬適配器的能力聯集，只回報一次。
+    const requiredCapabilities = [
+        ...new Set(
+            failed
+                .map((entry) => getAdapterForUrl(entry.sourceUrl))
+                .flatMap((adapter) => adapter?.requiredCapabilities ?? []),
+        ),
+    ];
+    await enforceStartup('crawl', {
+        adapter: { siteName: 'retry-failed', requiredCapabilities },
+    });
 
     const storage = new TxtStorageAdapter('./output');
     const limit = pLimit(3);

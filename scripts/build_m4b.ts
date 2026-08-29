@@ -7,6 +7,7 @@ import path from 'node:path'
 import { stat } from 'node:fs/promises'
 import { M4BBuilderService } from '../src/core/services/M4BBuilderService'
 import type { M4BBuildReport } from '../src/core/services/M4BBuilderService'
+import { enforceStartup } from '../src/diagnostics/startup'
 
 interface CliArgs {
   title?: string
@@ -95,6 +96,13 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
+  // 啟動前檢查：ffmpeg 沒有替代路徑，缺席時不該讓流程跑到一半才失敗。
+  // dry-run 只計算時長與分卷（M4BBuilderService 在呼叫 ffmpeg 前就返回），
+  // 因此與 backup、yt-pipeline 同規則略過。
+  if (!args.dryRun) {
+    await enforceStartup('m4b')
+  }
+
   const svc = new M4BBuilderService()
   const bookTitle = args.title ?? path.basename(path.dirname(outputDir))
   try {
@@ -112,4 +120,7 @@ async function main(): Promise<void> {
   }
 }
 
-main()
+main().catch((error) => {
+  console.error(`[Error] ${error instanceof Error ? error.message : String(error)}`)
+  process.exit(1)
+})
