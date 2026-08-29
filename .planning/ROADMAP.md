@@ -60,6 +60,8 @@ KinetiText 目前提供下列使用者工作流程：
 ## 相關決策與歷史文件
 
 - [來源追溯清單與可續作階段 ADR](../docs/adr/0001-provenance-manifests-for-resumable-stages.md)
+- [時長權威來源 ADR](../docs/adr/0002-go-duration-helper-as-authoritative-source.md)
+- [本機能力診斷切片規格](../docs/specs/2026-08-29-capability-diagnostics-slice.md)
 - [領域詞彙表](../CONTEXT.md)
 - [2026-03-26 專案規劃快照](PROJECT.md)
 - [v1.1 路線圖歷史快照](milestones/2026-03-25-v1.1-roadmap.md)
