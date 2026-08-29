@@ -1,6 +1,7 @@
 import { select, text, confirm, isCancel, cancel } from '@clack/prompts'
 import { scanAllBooks } from '../books'
 import { buildAudiobookArgs, runScript } from '../runner'
+import { guardLaunch } from '../diagnostics'
 import { OUTPUT_ROOT } from '../paths'
 
 async function pickBook(message: string): Promise<string | null> {
@@ -65,6 +66,8 @@ export async function audiobookAction(presetTitle?: string): Promise<void> {
   if (isCancel(concurrency)) return cancel('已取消')
   const merge = await confirm({ message: '跑完後合併？', initialValue: false })
   if (isCancel(merge)) return cancel('已取消')
+
+  if (!(await guardLaunch('audiobook'))) return
 
   const code = await runScript(
     buildAudiobookArgs({

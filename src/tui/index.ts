@@ -7,6 +7,7 @@ import { convertAction } from './actions/convert'
 import { m4bAction } from './actions/m4b'
 import { backupAction } from './actions/backup'
 import { pipelineAction } from './actions/pipeline'
+import { diagnosticsAction } from './actions/diagnostics'
 
 async function main(): Promise<void> {
   intro('📚 KinetiText 控制台')
@@ -16,6 +17,7 @@ async function main(): Promise<void> {
       message: '選擇動作',
       options: [
         { value: 'status', label: '📊 檢視狀態' },
+        { value: 'diagnostics', label: '🩺 診斷本機能力' },
         { value: 'crawl', label: '🕷  爬取小說' },
         { value: 'audiobook', label: '🎙  生成語音書 (TTS)' },
         { value: 'merge', label: '🔗 合併 MP3' },
@@ -35,6 +37,7 @@ async function main(): Promise<void> {
     try {
       switch (action) {
         case 'status': await showStatus(); break
+        case 'diagnostics': await diagnosticsAction(); break
         case 'crawl': await crawlAction(); break
         case 'audiobook': await audiobookAction(); break
         case 'merge': await mergeAction(); break

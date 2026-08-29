@@ -2,6 +2,7 @@ import { select, text, isCancel, cancel } from '@clack/prompts'
 import * as fs from 'node:fs/promises'
 import { scanAllBooks } from '../books'
 import { buildConvertArgs, runScript } from '../runner'
+import { guardLaunch } from '../diagnostics'
 import { OUTPUT_ROOT, mergedDir, m4aDir, metadataJsonPath } from '../paths'
 
 export async function convertAction(presetTitle?: string): Promise<void> {
@@ -27,6 +28,11 @@ export async function convertAction(presetTitle?: string): Promise<void> {
   } catch {
     metadata = undefined
   }
+
+  // 轉檔需要的能力與 m4b 同一組（ffmpeg 阻斷、時長輔助工具降級），沿用該設定檔。
+  // 探測用的環境與子程序相同，否則前置檢查驗的會是另一個環境。
+  const env = { ...process.env, MP4_BITRATE: String(bitrate) }
+  if (!(await guardLaunch('m4b', { env }))) return
 
   const code = await runScript(
     buildConvertArgs({ inputDir: mergedDir(title), outputDir: m4aDir(title), metadata }),

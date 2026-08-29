@@ -7,6 +7,7 @@ import {
   buildBackupArgs,
   runScript,
 } from '../runner'
+import { guardLaunch } from '../diagnostics'
 import { OUTPUT_ROOT } from '../paths'
 
 interface Step {
@@ -28,6 +29,14 @@ export async function pipelineAction(): Promise<void> {
 
   // 步驟 1：爬取
   console.log('\n========== ① 爬取 ==========\n')
+  // 一鍵全跑實際執行的是 crawl → audiobook → m4b → backup（見下方 steps），
+  // 不是 yt-pipeline。四個階段的前置條件都要在第一步之前驗過，否則備份的
+  // 阻斷項會等到爬完整本、跑完 TTS、生完 M4B 之後才浮現。
+  if (!(await guardLaunch('crawl', { url: String(url) }))) return
+  for (const profile of ['audiobook', 'm4b', 'backup']) {
+    if (!(await guardLaunch(profile))) return
+  }
+
   let code = await runScript(buildCrawlArgs(String(url)))
   if (code !== 0) {
     console.error(`\n❌ Pipeline 停在「① 爬取」(exit ${code})。`)

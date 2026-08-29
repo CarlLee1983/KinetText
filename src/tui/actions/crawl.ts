@@ -1,5 +1,6 @@
 import { text, isCancel, cancel } from '@clack/prompts'
 import { buildCrawlArgs, runScript } from '../runner'
+import { guardLaunch } from '../diagnostics'
 
 export async function crawlAction(): Promise<void> {
   const url = await text({
@@ -11,6 +12,8 @@ export async function crawlAction(): Promise<void> {
     cancel('已取消')
     return
   }
+  if (!(await guardLaunch('crawl', { url: String(url) }))) return
+
   const code = await runScript(buildCrawlArgs(String(url)))
   if (code !== 0) console.error(`\n❌ 爬取失敗 (exit ${code})`)
 }
