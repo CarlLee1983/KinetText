@@ -9,6 +9,7 @@
     "start": "bun run src/index.ts",
     "menu": "bun run src/tui/index.ts",
     "test": "bun test",
+    "doctor": "bun run scripts/doctor.ts",
     "backup": "bun run scripts/backup.ts",
     "retry-failed": "bun run scripts/retry_failed.ts",
     "clean": "bun run scripts/clean_noise.ts",

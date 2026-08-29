@@ -50,3 +50,6 @@ merge-input-*/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 graft/
+
+# 指紋金鑰（本機安裝專屬，不進版控）
+.kinetitext/
