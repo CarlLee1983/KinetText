@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid'
 import * as crypto from 'crypto'
 import WebSocket from 'ws'
 import * as fs from 'fs/promises'
@@ -146,7 +145,7 @@ export class MicrosoftEdgeTTSProvider implements TTSProvider {
 
     private async synthesize(text: string): Promise<Buffer> {
         return new Promise((resolve, reject) => {
-            const connectionId = uuidv4().replace(/-/g, '').toUpperCase()
+            const connectionId = crypto.randomUUID().replace(/-/g, '').toUpperCase()
             const secMsGec = this.generateSecMsGec(this.trustedClientToken)
             const url = `${this.endpoint}?TrustedClientToken=${this.trustedClientToken}&ConnectionId=${connectionId}&Sec-MS-GEC=${secMsGec}&Sec-MS-GEC-Version=${SEC_MS_GEC_VERSION}`
 

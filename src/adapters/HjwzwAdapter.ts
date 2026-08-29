@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import * as iconv from 'iconv-lite';
 import type { NovelSiteAdapter } from './NovelSiteAdapter';
 import type { Book, Chapter } from '../core/types';
 import { ContentCleaner } from '../utils/ContentCleaner';
@@ -45,7 +44,7 @@ export class HjwzwAdapter implements NovelSiteAdapter {
             () => this.client.get<ArrayBuffer>(bookUrl, { responseType: 'arraybuffer' }),
             'hjwzw metadata'
         );
-        const html = iconv.decode(Buffer.from(data), 'utf-8');
+        const html = Buffer.from(data).toString('utf-8');
         assertNoAntiBotText(html, 'hjwzw metadata');
         const $ = cheerio.load(html);
 
@@ -87,7 +86,7 @@ export class HjwzwAdapter implements NovelSiteAdapter {
             () => this.client.get<ArrayBuffer>(chapterListUrl, { responseType: 'arraybuffer' }),
             'hjwzw chapter list'
         );
-        const html = iconv.decode(Buffer.from(data), 'utf-8');
+        const html = Buffer.from(data).toString('utf-8');
         assertNoAntiBotText(html, 'hjwzw chapter list');
         const $ = cheerio.load(html);
 
@@ -140,7 +139,7 @@ export class HjwzwAdapter implements NovelSiteAdapter {
             () => this.client.get<ArrayBuffer>(chapterUrl, { responseType: 'arraybuffer' }),
             'hjwzw chapter content'
         );
-        const html = iconv.decode(Buffer.from(data), 'utf-8');
+        const html = Buffer.from(data).toString('utf-8');
         assertNoAntiBotText(html, 'hjwzw chapter content');
         const $ = cheerio.load(html);
 

@@ -40,11 +40,11 @@ KinetiText 是一個模組化且可擴展的網路爬蟲系統，專注於小說
 | 語言 | TypeScript | 型別安全、可維護性 |
 | 爬蟲 | axios + cheerio | HTTP 請求、HTML 解析 |
 | 並發 | p-limit | 並發數量控制 |
-| 編碼 | iconv-lite | 繁體中文/Big5 支持 |
+| 編碼 | Node Buffer（內建） | arraybuffer 回應解碼為 UTF-8 |
 | 音頻 | FFmpeg + music-metadata | 格式轉換、元數據讀取 |
 | Go 層 | ffmpeg-go | 高效能 FFmpeg binding |
 | 日誌 | pino | 結構化 JSON 日誌 |
-| 重試 | p-retry | 瞬時錯誤指數退避 |
+| 重試 | 自實作 RetryService / BackoffCalculator | 瞬時錯誤指數退避 |
 
 ---
 

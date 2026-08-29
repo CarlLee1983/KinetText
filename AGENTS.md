@@ -33,7 +33,7 @@ This project uses **Bun** exclusively. Do NOT use Node.js, npm, yarn, or pnpm.
 - **Runtime**: [Bun](https://bun.sh) (TypeScript)
 - **Scraping**: `axios` + `cheerio`.
 - **Concurrency**: `p-limit`.
-- **Encoding**: `iconv-lite` for legacy character sets.
+- **Encoding**: fetch as `arraybuffer` and decode with the built-in `Buffer` (UTF-8); no third-party encoding library.
 
 ### ⚡ Prefer Bun Built-ins
 - **I/O**: Use `Bun.file()` instead of `node:fs` for reading/writing.
