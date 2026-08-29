@@ -9,7 +9,7 @@ import type {
 import { secretFingerprint } from './secrets'
 
 /** JSON 輸出的契約版本。結構變更時遞增，讓消費端能偵測。 */
-export const JSON_SCHEMA_VERSION = 1
+export const JSON_SCHEMA_VERSION = 2
 
 /**
  * 依探測結果評估單一工作流程設定檔。
@@ -140,10 +140,16 @@ export function exitCodeFor(verdicts: readonly ProfileVerdict[]): number {
  *
  * 缺值輸出 null 而非省略鍵，讓消費端的欄位集合在各種情境下一致。
  */
-export function renderJson(verdicts: readonly ProfileVerdict[]): string {
+export function renderJson(
+  verdicts: readonly ProfileVerdict[],
+  context: { readonly adapter?: string | null } = {}
+): string {
   return JSON.stringify(
     {
       schemaVersion: JSON_SCHEMA_VERSION,
+      // 比對到的網站適配器；null 表示未提供網址或沒有適配器認得它。腳本需要
+      // 分辨「這個站不需瀏覽器」與「這個網址根本沒人認得」。
+      adapter: context.adapter ?? null,
       canProceed: verdicts.every((verdict) => verdict.canProceed),
       profiles: verdicts.map((verdict) => ({
         profile: verdict.profile,

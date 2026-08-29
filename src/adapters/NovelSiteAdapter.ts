@@ -11,6 +11,14 @@ export interface NovelSiteAdapter {
     siteName: string;
     resourceProfile?: AdapterResourceProfile;
 
+    /**
+     * 此適配器執行所需的本機能力 id（例如 'browser'）。
+     *
+     * 只有當網址解析到這個適配器時，這些前置條件才成為爬取設定檔的檢查項——
+     * 爬純 HTTP 站點的使用者不該因為缺少瀏覽器而被阻斷。
+     */
+    requiredCapabilities?: readonly string[];
+
     // Check if this adapter can handle the given URL
     matchUrl(url: string): boolean;
 

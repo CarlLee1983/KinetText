@@ -296,3 +296,47 @@ describe('備份能力探測', () => {
     expect(outcomes[0]!.id).toBe('rclone-remotes')
   })
 })
+
+describe('瀏覽器探測', () => {
+  test('明確指定的路徑若是目錄則不算可用', async () => {
+    const [outcome] = await probeCapabilities(['browser'], {
+      env: { PUPPETEER_EXECUTABLE_PATH: '/tmp' },
+    })
+
+    expect(outcome!.present).toBe(false)
+    expect(outcome!.detail).toBe('unavailable')
+  })
+
+  test('明確指定的路徑是實際檔案時判定為可用', async () => {
+    const [outcome] = await probeCapabilities(['browser'], {
+      env: { PUPPETEER_EXECUTABLE_PATH: '/bin/echo' },
+    })
+
+    expect(outcome!.present).toBe(true)
+    expect(outcome!.detail).toBe('explicit-path')
+  })
+
+  test('未指定路徑時，答案來自 puppeteer 自己解析的釘住版本', async () => {
+    const { default: puppeteer } = await import('puppeteer')
+    const { statSync } = await import('node:fs')
+    const expectedPath = puppeteer.executablePath()
+
+    const [outcome] = await probeCapabilities(['browser'], { env: {} })
+
+    // 掃描快取「有沒有東西」不夠：puppeteer 找的是它釘住的那一個 buildId
+    expect(outcome!.searched).toBe(expectedPath)
+    expect(outcome!.present).toBe(
+      statSync(expectedPath, { throwIfNoEntry: false })?.isFile() ?? false
+    )
+  })
+
+  test('overrides 優先於 PUPPETEER_EXECUTABLE_PATH', async () => {
+    const [outcome] = await probeCapabilities(['browser'], {
+      overrides: { browser: '/bin/echo' },
+      env: { PUPPETEER_EXECUTABLE_PATH: '/nonexistent/chrome' },
+    })
+
+    expect(outcome!.present).toBe(true)
+    expect(outcome!.searched).toBe('/bin/echo')
+  })
+})

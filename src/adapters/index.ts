@@ -23,6 +23,11 @@ const adapters: NovelSiteAdapter[] = [
     new Novel543Adapter(),
 ];
 
+/** 全部已註冊的適配器。供測試做註冊表級不變量斷言（例如誰宣告了哪些能力）。 */
+export function allAdapters(): readonly NovelSiteAdapter[] {
+    return adapters;
+}
+
 export function getAdapterForUrl(url: string): NovelSiteAdapter | undefined {
     return adapters.find(adapter => adapter.matchUrl(url));
 }

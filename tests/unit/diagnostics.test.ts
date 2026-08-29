@@ -11,7 +11,14 @@ import {
 import { secretFingerprint } from '../../src/diagnostics/secrets'
 import { missingRemotes } from '../../src/diagnostics/probes'
 import { backupRemoteNames } from '../../src/config/backupDestinations'
-import { allProfiles, M4B_PROFILE, getProfile, PROFILE_NAMES } from '../../src/diagnostics/profiles'
+import {
+  allProfiles,
+  deriveCrawlProfile,
+  M4B_PROFILE,
+  getProfile,
+  PROFILE_NAMES,
+  withAdapterCapabilities,
+} from '../../src/diagnostics/profiles'
 import type { ProbeOutcome, WorkflowProfile } from '../../src/diagnostics/types'
 
 const ffmpegPresent: ProbeOutcome = { id: 'ffmpeg', present: true, version: '7.1' }
@@ -187,7 +194,7 @@ describe('renderJson', () => {
     const parsed = JSON.parse(renderJson([evaluateProfile(M4B_PROFILE, [ffmpegMissing])]))
     const capability = parsed.profiles[0].capabilities[0]
 
-    expect(parsed.schemaVersion).toBe(1)
+    expect(parsed.schemaVersion).toBe(2)
     expect(Object.keys(capability)).toContain('version')
     expect(capability.version).toBeNull()
   })
@@ -497,5 +504,107 @@ describe('missingRemotes', () => {
 
   test('備份目標點位的遠端名稱取自共用清單', () => {
     expect(backupRemoteNames(['a:one', 'b:two', 'a:three'])).toEqual(['a', 'b'])
+  })
+})
+
+describe('依 URL 解析後的網站適配器前置條件', () => {
+  const httpOnlyAdapter = { siteName: 'http-only' }
+  const browserAdapter = { siteName: 'needs-browser', requiredCapabilities: ['browser'] }
+
+  test('未提供網址時，爬取設定檔不含任何適配器的前置條件', () => {
+    const profile = deriveCrawlProfile()
+
+    expect(profile.name).toBe('crawl')
+    expect(profile.capabilities).toEqual([])
+  })
+
+  test('純 HTTP 站點的適配器不引入瀏覽器需求', () => {
+    const profile = deriveCrawlProfile(httpOnlyAdapter)
+
+    expect(profile.capabilities.map((c) => c.id)).toEqual([])
+  })
+
+  test('需要瀏覽器的適配器把瀏覽器納入檢查項', () => {
+    const profile = deriveCrawlProfile(browserAdapter)
+
+    expect(profile.capabilities.map((c) => c.id)).toEqual(['browser'])
+    expect(profile.capabilities[0]!.whenMissing).toBe('blocked')
+  })
+
+  test('瀏覽器缺席時，需要它的站點才被阻斷', () => {
+    const missing = [{ id: 'browser', present: false, detail: 'not-found' }]
+
+    expect(evaluateProfile(deriveCrawlProfile(browserAdapter), missing).canProceed).toBe(false)
+    expect(evaluateProfile(deriveCrawlProfile(httpOnlyAdapter), missing).canProceed).toBe(true)
+    expect(evaluateProfile(deriveCrawlProfile(), missing).canProceed).toBe(true)
+  })
+
+  test('衍生設定檔沿用爬取設定檔的名稱與祕密宣告', () => {
+    const base = getProfile('crawl')!
+    const derived = deriveCrawlProfile(browserAdapter)
+
+    expect(derived.name).toBe(base.name)
+    expect(derived.secretNames).toEqual(base.secretNames)
+  })
+
+  test('適配器宣告了未知能力時，訊息指出是內部設定缺漏而非使用者環境問題', () => {
+    const profile = deriveCrawlProfile({
+      siteName: 'typo',
+      requiredCapabilities: ['brwoser'],
+    })
+    const verdict = evaluateProfile(profile, [
+      { id: 'brwoser', present: false, detail: 'no-probe' },
+    ])
+
+    expect(verdict.capabilities[0]!.message).toContain('內部設定缺漏')
+  })
+
+  test('新增適配器不需修改評估邏輯——能力由適配器自身宣告', () => {
+    const brandNew = { siteName: 'brand-new', requiredCapabilities: ['browser'] }
+
+    expect(deriveCrawlProfile(brandNew).capabilities.map((c) => c.id)).toEqual(['browser'])
+  })
+})
+
+describe('含爬取階段的設定檔都吃適配器前置條件', () => {
+  const browserAdapter = { siteName: 'needs-browser', requiredCapabilities: ['browser'] }
+
+  test('crawl 與 youtube 都宣告自己含爬取階段', () => {
+    expect(getProfile('crawl')!.includesCrawl).toBe(true)
+    expect(getProfile('youtube')!.includesCrawl).toBe(true)
+  })
+
+  test('youtube 也納入適配器前置條件——它的第一階段就是爬取', () => {
+    const derived = withAdapterCapabilities(getProfile('youtube')!, browserAdapter)
+
+    expect(derived.capabilities.map((c) => c.id)).toContain('browser')
+    expect(evaluateProfile(derived, [
+      ffmpegPresent,
+      { id: 'go-duration', present: true },
+      { id: 'browser', present: false, detail: 'unavailable' },
+    ]).canProceed).toBe(false)
+  })
+
+  test('不含爬取階段的設定檔不受適配器影響', () => {
+    for (const name of ['audiobook', 'm4b', 'backup']) {
+      const profile = getProfile(name)!
+      expect(withAdapterCapabilities(profile, browserAdapter)).toBe(profile)
+    }
+  })
+
+  test('重複宣告的能力只出現一次', () => {
+    const derived = withAdapterCapabilities(getProfile('crawl')!, {
+      siteName: 'dup',
+      requiredCapabilities: ['browser', 'browser'],
+    })
+
+    expect(derived.capabilities.map((c) => c.id)).toEqual(['browser'])
+  })
+
+  test('JSON 輸出帶上比對到的適配器，未匹配時為 null', () => {
+    const verdicts = [evaluateProfile(getProfile('crawl')!, [])]
+
+    expect(JSON.parse(renderJson(verdicts, { adapter: 'czbooks' })).adapter).toBe('czbooks')
+    expect(JSON.parse(renderJson(verdicts)).adapter).toBeNull()
   })
 })

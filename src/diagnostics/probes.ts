@@ -10,6 +10,7 @@
  * - 工具的原始輸出不進入 ProbeOutcome：需要解析輸出的探測器在本模組內部取用，
  *   避免把數十行建置參數或使用者的遠端清單掛到跨層型別上。
  */
+import { statSync } from 'node:fs'
 import { backupRemoteNames, isExampleDestinations } from '../config/backupDestinations'
 import { resolveGoBinary, type GoBinary } from '../config/goBinaryPaths'
 import type { ProbeOutcome, WorkflowProfile } from './types'
@@ -274,6 +275,48 @@ async function rcloneRemotesProbe(context: ProbeContext): Promise<ProbeOutcome> 
   return { id, present: true, detail: `${required.length} 個遠端已設定` }
 }
 
+/**
+ * 探測本機是否有可用的 Chromium。
+ *
+ * 由 puppeteer 自己解析路徑，而不是掃描快取目錄看有沒有東西：puppeteer 解析的
+ * 是它自己版本所釘住的那一個 buildId，快取裡有「某個」Chromium 不代表它找得到
+ * 那一個。快取有 148 而 puppeteer 釘 146 時，掃描法會回報可用，實際啟動卻會以
+ * 「Could not find Chrome」失敗——正是這個里程碑要消滅的失敗模式。
+ *
+ * 這裡動態 import puppeteer 而非靜態：唯一會執行本探測的路徑是「網址解析到需要
+ * 瀏覽器的適配器」，而該路徑上適配器註冊表早已載入、puppeteer 就在記憶體裡；
+ * 其餘設定檔則完全不付這個載入成本。
+ */
+async function browserProbe(context: ProbeContext): Promise<ProbeOutcome> {
+  const id = 'browser'
+  const env = context.env ?? process.env
+
+  const explicit = context.overrides?.[id] ?? env.PUPPETEER_EXECUTABLE_PATH
+  const path = explicit ?? (await puppeteerExecutablePath())
+
+  if (!path) {
+    return { id, present: false, detail: 'resolve-failed' }
+  }
+  return isExecutableFile(path)
+    ? { id, present: true, detail: explicit ? 'explicit-path' : 'puppeteer-resolved', searched: path }
+    : { id, present: false, detail: 'unavailable', searched: path }
+}
+
+/** puppeteer 對其釘住版本所解析出的執行檔路徑；無法解析時回 undefined。 */
+async function puppeteerExecutablePath(): Promise<string | undefined> {
+  try {
+    const { default: puppeteer } = await import('puppeteer')
+    return puppeteer.executablePath()
+  } catch {
+    return undefined
+  }
+}
+
+/** 必須是檔案：指向目錄的路徑（例如誤設成 /tmp）不是可用的瀏覽器。 */
+function isExecutableFile(path: string): boolean {
+  return statSync(path, { throwIfNoEntry: false })?.isFile() ?? false
+}
+
 /** 能力 id 對應的探測方式。新增能力時只需在此註冊。 */
 const PROBES: Record<string, (context: ProbeContext) => Promise<ProbeOutcome>> = {
   ffmpeg: (context) => probeExecutable('ffmpeg', 'ffmpeg', ['-version'], context),
@@ -282,6 +325,7 @@ const PROBES: Record<string, (context: ProbeContext) => Promise<ProbeOutcome>> =
   'go-mp4convert': goBinaryProbe('go-mp4convert', 'mp4convert', { wired: false }),
   rclone: (context) => probeExecutable('rclone', 'rclone', ['version'], context),
   'rclone-remotes': rcloneRemotesProbe,
+  browser: browserProbe,
 }
 
 /** 某個能力 id 是否已註冊探測方式。設定檔註冊時用來擋開發者漏接。 */

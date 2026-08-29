@@ -25,6 +25,13 @@ export interface WorkflowProfile {
   readonly capabilities: readonly CapabilityRequirement[]
   /** 此設定檔相關的祕密設定名稱；只用於產生指紋，不保存原始值。 */
   readonly secretNames?: readonly string[]
+  /**
+   * 此流程是否包含爬取階段。
+   *
+   * 含爬取階段的流程在給定網址時，要一併納入該網址所屬適配器的前置條件——
+   * yt-pipeline 的第一階段就是爬取，缺瀏覽器一樣會在第一步失敗。
+   */
+  readonly includesCrawl?: boolean
 }
 
 /** 探測層的產出。這是評估層唯一的輸入來源，因此評估可在無外部工具的環境測試。 */

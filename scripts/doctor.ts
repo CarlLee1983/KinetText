@@ -1,6 +1,11 @@
 import { formatCliError } from '../src/cli/common'
 import { evaluateProfile, exitCodeFor, renderHuman, renderJson } from '../src/diagnostics/evaluate'
-import { allProfiles, getProfile, PROFILE_NAMES } from '../src/diagnostics/profiles'
+import {
+  allProfiles,
+  getProfile,
+  PROFILE_NAMES,
+  withAdapterCapabilities,
+} from '../src/diagnostics/profiles'
 import { probeCapabilities } from '../src/diagnostics/probes'
 import type { ProfileVerdict, WorkflowProfile } from '../src/diagnostics/types'
 
@@ -8,7 +13,7 @@ import type { ProfileVerdict, WorkflowProfile } from '../src/diagnostics/types'
 const EXIT_CANCELLED = 130
 
 const KNOWN_FLAGS = ['--help', '-h', '--json'] as const
-const KNOWN_PREFIXES = ['--profile=', '--timeout='] as const
+const KNOWN_PREFIXES = ['--profile=', '--timeout=', '--url='] as const
 
 function printUsage() {
   console.log('Usage: bun run doctor [options]')
@@ -17,6 +22,7 @@ function printUsage() {
   console.log('  --profile=<name>   只檢查指定的工作流程設定檔（預設檢查全部）')
   console.log('  --json             以 JSON 輸出，供腳本消費')
   console.log('  --timeout=<ms>     單一探測的逾時上限（預設 5000）')
+  console.log('  --url=<url>        一併檢查該網址所屬適配器的前置條件')
   console.log(`可用設定檔：${PROFILE_NAMES.join(', ')}`)
   console.log('選取範圍內存在阻斷項時，以非零結束碼結束。')
 }
@@ -67,6 +73,18 @@ function secretValuesFor(
   return values
 }
 
+/**
+ * 解析網址對應的適配器。
+ *
+ * 動態載入：適配器註冊表會連帶載入 puppeteer，只有真的給了網址才值得付這個
+ * 載入成本——診斷的賣點正是開始前很快就知道能不能跑。
+ */
+async function resolveAdapter(url: string | undefined) {
+  if (!url) return undefined
+  const { getAdapterForUrl } = await import('../src/adapters')
+  return getAdapterForUrl(url)
+}
+
 async function main() {
   const args = process.argv.slice(2)
 
@@ -78,7 +96,22 @@ async function main() {
   assertKnownFlags(args)
   const asJson = args.includes('--json')
   const timeoutMs = parseTimeout(args)
-  const selected = selectProfiles(args)
+  const urlFlag = args.find((arg) => arg.startsWith('--url='))
+  const url = urlFlag?.substring('--url='.length)
+  if (urlFlag && !url) {
+    throw new Error('--url 需要一個網址')
+  }
+
+  const adapter = await resolveAdapter(url)
+  if (url && !adapter && !asJson) {
+    console.warn(`[Warn] 沒有適配器匹配 ${url}，診斷將不含任何適配器前置條件`)
+  }
+
+  // 網站適配器前置條件只在網址解析到該適配器後才成為檢查項；含爬取階段的
+  // 流程（crawl 與 youtube）都適用，yt-pipeline 的第一步就是爬取。
+  const selected = selectProfiles(args).map((profile) =>
+    withAdapterCapabilities(profile, adapter)
+  )
 
   // Ctrl-C 取消進行中的診斷，而不是留下半跑完的探測。
   const controller = new AbortController()
@@ -102,7 +135,7 @@ async function main() {
     evaluateProfile(profile, outcomes, secretValuesFor(profile, process.env))
   )
 
-  console.log(asJson ? renderJson(verdicts) : renderHuman(verdicts))
+  console.log(asJson ? renderJson(verdicts, { adapter: adapter?.siteName ?? null }) : renderHuman(verdicts))
   process.exit(exitCodeFor(verdicts))
 }
 

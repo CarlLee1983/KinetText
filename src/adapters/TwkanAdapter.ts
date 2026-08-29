@@ -12,6 +12,8 @@ puppeteer.use(StealthPlugin());
 
 export class TwkanAdapter implements NovelSiteAdapter {
     siteName = 'twkan';
+    /** 本適配器以 puppeteer 啟動瀏覽器抓取，因此需要本機可用的 Chromium。 */
+    readonly requiredCapabilities = ['browser'] as const;
     resourceProfile = {
         maxConcurrency: 2,
         requestIntervalMs: 900,
